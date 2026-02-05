@@ -68,8 +68,18 @@ const App: React.FC = () => {
           }
         }
 
+        // Se temos usuário mas ele não tem tenant_id no profile, vamos vincular ao tenant principal
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', session.user.id).single();
+          if (!profile?.tenant_id && tId) {
+            console.log('[Bootstrap] Vinculando usuário ao tenant:', tId);
+            await supabase.from('profiles').update({ tenant_id: tId }).eq('id', session.user.id);
+          }
+        }
+
         console.log('✅ TENANT ATIVO:', tId);
-        if (tId && config.tenantId !== 'default') {
+        if (config.tenantId !== 'default') {
           fetchLeads();
         }
       } catch (err) {
@@ -81,9 +91,12 @@ const App: React.FC = () => {
   }, [config.tenantId]);
 
   const fetchLeads = async () => {
+    if (!config.tenantId || config.tenantId === 'default') return;
+
     const { data, error } = await supabase
       .from('leads')
       .select('*')
+      .eq('tenant_id', config.tenantId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -134,8 +147,14 @@ const App: React.FC = () => {
       return;
     }
 
-    // Se o branding ainda não carregou o ID real, não tentamos salvar no banco
-    if (config.tenantId === 'default') {
+    // Se o branding ainda não carregou o ID real, tentamos resolver via perfil se possível
+    let activeTenantId = config.tenantId;
+    if (activeTenantId === 'default' && session?.user) {
+      const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', session.user.id).single();
+      if (profile?.tenant_id) activeTenantId = profile.tenant_id;
+    }
+
+    if (activeTenantId === 'default') {
       console.warn('Proteção: Tenant ID ainda é default. Salvando apenas localmente.');
       const localFormatted = uniqueNewLeads.map(l => ({ ...l, id: Math.random().toString(), status: LeadStatus.NEW }));
       setLeads(prev => [...localFormatted, ...prev]);
@@ -144,7 +163,7 @@ const App: React.FC = () => {
     }
 
     const leadsToSave = uniqueNewLeads.map(l => ({
-      tenant_id: config.tenantId,
+      tenant_id: activeTenantId,
       name: l.name,
       website: l.website,
       phone: l.phone,

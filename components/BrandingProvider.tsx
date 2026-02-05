@@ -19,7 +19,7 @@ export const useBranding = () => useContext(BrandingContext);
 
 export const BrandingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [config, setConfig] = useState<BrandingConfig>(DEFAULT_BRANDING);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const loadBranding = async () => {
         setIsLoading(true);

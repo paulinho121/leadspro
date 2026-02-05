@@ -97,8 +97,9 @@ export class ApiGatewayService {
     private static async callGeminiReal(endpoint: string, payload: any, apiKey: string, model: string = 'gemini-1.5-flash') {
         if (!apiKey) throw new Error("GEMINI_API_KEY_MISSING");
 
-        // Use o modelo passado (gemini-1.5-flash ou outro) para evitar 404
-        const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        // Forçar lowercase para evitar erros de case-sensitivity da API
+        const safeModel = model.toLowerCase();
+        const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent?key=${apiKey}`;
 
         const prompt = endpoint === 'analyze-website'
             ? `Analise a empresa ${payload.leadName} no nicho ${payload.industry}. Site: ${payload.website}. Gere 3 insights de vendas curtos.`
