@@ -12,31 +12,53 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     const { config } = useBranding();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [fullName, setFullName] = useState(''); // Estado para nome no registro
+    const [isRegistering, setIsRegistering] = useState(false); // Alternar entre Login/Registro
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setSuccessMsg(null);
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password
-            });
+            if (isRegistering) {
+                // FLUXO DE REGISTRO
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            full_name: fullName
+                        }
+                    }
+                });
 
-            if (error) throw error;
+                if (error) throw error;
 
-            if (data.session) {
-                // Check for Profile/Role if needed, but for now just let them in
-                // Ideally, we would fetch the profile here to check for 'master' role
-                // const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+                // Sucesso no cadastro
+                if (data.user) {
+                    setSuccessMsg('Cadastro realizado com sucesso! Verifique seu e-mail para confirmar a conta (se necessário) ou faça login.');
+                    setIsRegistering(false); // Volta para login
+                }
+            } else {
+                // FLUXO DE LOGIN
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
 
-                onLoginSuccess(data.session);
+                if (error) throw error;
+
+                if (data.session) {
+                    onLoginSuccess(data.session);
+                }
             }
         } catch (err: any) {
-            setError(err.message || 'Falha ao realizar login. Verifique suas credenciais.');
+            setError(err.message || 'Falha na autenticação. Verifique os dados.');
         } finally {
             setLoading(false);
         }
@@ -61,11 +83,31 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                         {config.platformName}
                     </h1>
                     <p className="text-slate-400 text-sm font-medium">
-                        Acesso Administrativo Master
+                        {isRegistering ? 'Crie sua conta Master' : 'Acesso Administrativo Master'}
                     </p>
                 </div>
 
-                <form onSubmit={handleLogin} className="space-y-6">
+                <form onSubmit={handleAuth} className="space-y-6">
+                    {/* Campo de Nome (Apenas Registro) */}
+                    {isRegistering && (
+                        <div className="space-y-2 animate-fade-in-up">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nome Completo</label>
+                            <div className="relative group">
+                                <div className="absolute left-4 top-3.5 text-slate-500 w-5 h-5 group-focus-within:text-primary transition-colors">
+                                    <ShieldCheck size={20} />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                    className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all"
+                                    placeholder="Ex: Ana Silva"
+                                    required={isRegistering}
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">E-mail Corporativo</label>
                         <div className="relative group">
@@ -97,9 +139,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     </div>
 
                     {error && (
-                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
+                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 animate-head-shake">
                             <AlertCircle className="text-red-500 shrink-0" size={18} />
                             <p className="text-xs text-red-200 font-medium">{error}</p>
+                        </div>
+                    )}
+
+                    {successMsg && (
+                        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start gap-3 animate-fade-in-up">
+                            <ShieldCheck className="text-emerald-500 shrink-0" size={18} />
+                            <p className="text-xs text-emerald-200 font-medium">{successMsg}</p>
                         </div>
                     )}
 
@@ -111,14 +160,24 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                         {loading ? (
                             <>
                                 <Loader2 size={16} className="animate-spin" />
-                                Validando Credenciais...
+                                Processando...
                             </>
                         ) : (
                             <>
-                                Entrar no Painel <ChevronRight size={16} />
+                                {isRegistering ? 'Criar Conta' : 'Entrar no Painel'} <ChevronRight size={16} />
                             </>
                         )}
                     </button>
+
+                    <div className="text-center pt-2">
+                        <button
+                            type="button"
+                            onClick={() => { setIsRegistering(!isRegistering); setError(null); setSuccessMsg(null); }}
+                            className="text-xs text-slate-400 hover:text-white transition-colors underline decoration-slate-700 underline-offset-4"
+                        >
+                            {isRegistering ? 'Já tem conta? Clique para Entrar.' : 'Não tem conta? Registre-se agora.'}
+                        </button>
+                    </div>
                 </form>
 
                 <div className="mt-8 pt-6 border-t border-white/5 text-center">
