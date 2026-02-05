@@ -195,28 +195,71 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
             <div className="flex items-center gap-3 w-full sm:w-auto">
               {leads.some(l => l.status === LeadStatus.NEW) && (
                 <div className="relative flex-1 sm:flex-none">
+                  {isEnrichMenuOpen && !isEnriching && (
+                    <div className="absolute bottom-full left-0 mb-2 w-48 glass border border-white/10 rounded-2xl p-2 z-[60] animate-in slide-in-from-bottom-2 duration-300">
+                      <button
+                        onClick={() => { onBulkEnrich(leads.filter(l => l.status === LeadStatus.NEW).slice(0, 5)); setIsEnrichMenuOpen(false); }}
+                        className="w-full text-left px-4 py-3 hover:bg-white/5 rounded-xl text-[10px] font-black uppercase text-slate-300 hover:text-primary transition-all flex items-center gap-2"
+                      >
+                        <Zap size={14} /> Amostra (5 leads)
+                      </button>
+                      <button
+                        onClick={() => { onBulkEnrich(leads.filter(l => l.status === LeadStatus.NEW)); setIsEnrichMenuOpen(false); }}
+                        className="w-full text-left px-4 py-3 hover:bg-white/5 rounded-xl text-[10px] font-black uppercase text-slate-300 hover:text-primary transition-all flex items-center gap-2"
+                      >
+                        <Layers size={14} /> Todos os Novos
+                      </button>
+                    </div>
+                  )}
+
                   <button
                     onClick={() => {
                       if (isEnriching && onStopEnrichment) {
                         onStopEnrichment();
                       } else {
-                        setIsEnrichMenuOpen(!isEnrichMenuOpen);
+                        const hasNew = leads.some(l => l.status === LeadStatus.NEW);
+                        if (hasNew) {
+                          setIsEnrichMenuOpen(!isEnrichMenuOpen);
+                        } else {
+                          alert('Nenhum lead novo para enriquecer.');
+                        }
                       }
                     }}
-                    className={`flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-white/10 ${isEnriching
-                      ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500 hover:text-white'
-                      : 'bg-gradient-to-r from-pink-600 to-cyan-500 text-white shadow-2xl shadow-pink-500/20'
+                    className={`flex items-center justify-center gap-3 w-full sm:w-auto px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border relative overflow-hidden group/enrich ${isEnriching
+                      ? 'bg-red-500/20 text-red-500 border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.2)]'
+                      : 'bg-slate-900 text-white border-white/10 hover:border-primary/50 shadow-2xl'
                       }`}
                   >
+                    {/* Background Progress / Animation */}
                     {isEnriching ? (
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-white/40 blur-md rounded-full animate-pulse"></div>
-                        <Square size={14} fill="currentColor" className="relative z-10" />
-                      </div>
+                      <>
+                        <div className="absolute inset-0 bg-red-500/5 animate-pulse" />
+                        <div className="absolute bottom-0 left-0 h-0.5 bg-red-500 animate-pulse w-full" />
+                        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden text-red-500/10 text-[6px] font-mono leading-none select-none">
+                          {Array.from({ length: 10 }).map((_, i) => (
+                            <div key={i} className="whitespace-nowrap animate-scan">
+                              {Math.random().toString(36).substring(2, 15)} {Math.random().toString(36).substring(2, 15)}
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     ) : (
-                      <BrainCircuit size={14} className="animate-neural" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-cyan-500 opacity-90 group-hover/enrich:opacity-100 transition-opacity" />
                     )}
-                    {isEnriching ? 'PARAR' : 'IA ENRICH'}
+
+                    <div className="relative z-10 flex items-center gap-3">
+                      {isEnriching ? (
+                        <>
+                          <Atom size={16} className="animate-spin text-red-500" />
+                          <span className="tracking-[0.2em]">PROCESSANDO LAB...</span>
+                        </>
+                      ) : (
+                        <>
+                          <BrainCircuit size={16} className={`${leads.some(l => l.status === LeadStatus.NEW) ? 'animate-neural' : ''}`} />
+                          <span className="group-hover/enrich:tracking-widest transition-all duration-500">IA ENRICH</span>
+                        </>
+                      )}
+                    </div>
                   </button>
                 </div>
               )}

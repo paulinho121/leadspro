@@ -200,6 +200,44 @@ body {
   animation: wave 4s linear infinite;
 }
 
+@keyframes scan {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes glow-intense {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 5px var(--color-primary));
+    border-color: rgba(6, 182, 212, 0.2);
+  }
+
+  50% {
+    filter: drop-shadow(0 0 20px var(--color-primary));
+    border-color: rgba(6, 182, 212, 0.8);
+  }
+}
+
+.animate-scan {
+  animation: scan 2s linear infinite;
+}
+
+.animate-glow-intense {
+  animation: glow-intense 2s ease-in-out infinite;
+}
+
 /* Responsiveness Utilities */
 @media (max-width: 768px) {
   .body-no-scroll {
