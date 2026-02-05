@@ -39,7 +39,11 @@ export class ApiGatewayService {
                 return await this.callSerperMaps(payload, apiKeys?.serper || import.meta.env.VITE_SERPER_API_KEY);
             }
 
-            if (apiName === 'gemini') {
+            if (apiName === 'google-search') {
+                return await this.callSerperSearch(payload, apiKeys?.serper || import.meta.env.VITE_SERPER_API_KEY);
+            }
+
+            if (apiName === 'gemini' || apiName === 'gemini-1.5-flash') {
                 return await this.callGeminiReal(endpoint, payload, apiKeys?.gemini || import.meta.env.VITE_GEMINI_API_KEY);
             }
 
@@ -70,6 +74,22 @@ export class ApiGatewayService {
         });
 
         if (!response.ok) throw new Error(`Serper Error: ${response.statusText}`);
+        return await response.json();
+    }
+
+    private static async callSerperSearch(payload: any, apiKey: string) {
+        if (!apiKey) throw new Error("SERPER_API_KEY_MISSING");
+
+        const response = await fetch('https://google.serper.dev/search', {
+            method: 'POST',
+            headers: {
+                'X-API-KEY': apiKey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ q: payload.q, num: 5 })
+        });
+
+        if (!response.ok) throw new Error(`Serper Search Error: ${response.statusText}`);
         return await response.json();
     }
 

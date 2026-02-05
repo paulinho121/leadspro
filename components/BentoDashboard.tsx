@@ -92,7 +92,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich }) => {
           </h3>
           <div className="flex flex-col items-end">
             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Saldo Estimado</span>
-            <span className="text-lg font-mono font-bold text-emerald-400">R$ 142,80</span>
+            <span className="text-lg font-mono font-bold text-emerald-400">R$ 0,00</span>
           </div>
         </div>
 

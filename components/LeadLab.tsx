@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import {
   FlaskConical, Search, Filter, Mail, Phone, ExternalLink,
   MoreHorizontal, ChevronDown, CheckCircle, Database, Sparkles,
-  Zap, Globe, Download, LayoutList, Trash2, MapPin, MessageCircle, Layers, Loader2
+  Zap, Globe, Download, LayoutList, Trash2, MapPin, MessageCircle, Layers, Loader2, Square
 } from 'lucide-react';
+import LiquidBattery from './LiquidBattery';
 import { Lead, LeadStatus } from '../types';
 
 interface LeadLabProps {
@@ -11,9 +12,10 @@ interface LeadLabProps {
   onEnrich: (lead: Lead) => void;
   onBulkEnrich: (leadsToEnrich: Lead[]) => void;
   isEnriching?: boolean;
+  onStopEnrichment?: () => void;
 }
 
-const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnriching = false }) => {
+const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnriching = false, onStopEnrichment }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNiche, setSelectedNiche] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -132,15 +134,13 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
       <div className="flex-1 flex flex-col space-y-6 overflow-hidden">
         {/* KPI Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
-          <div className="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
-            <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <FlaskConical size={64} />
-            </div>
-            <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Total Capturado</p>
-            <div className="text-3xl font-black text-white">{leads.length}</div>
-            <div className="text-[10px] text-slate-500 mt-2 font-mono flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Base Bruta
-            </div>
+          <div className="glass rounded-2xl border border-white/5 relative overflow-hidden group h-[120px]">
+            <LiquidBattery
+              percentage={leads.length > 0 ? (leads.filter(l => l.status === LeadStatus.ENRICHED).length / leads.length) * 100 : 0}
+              isScanning={isEnriching}
+              label={isEnriching ? "ENRIQUECENDO..." : "PROGRESSO GERAL"}
+              subLabel={`${leads.filter(l => l.status === LeadStatus.ENRICHED).length} / ${leads.length} LEADS`}
+            />
           </div>
 
           <div className="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
@@ -181,12 +181,20 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
             {leads.some(l => l.status === LeadStatus.NEW) && (
               <div className="relative">
                 <button
-                  onClick={() => setIsEnrichMenuOpen(!isEnrichMenuOpen)}
-                  disabled={isEnriching}
-                  className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-pink-600 to-cyan-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-pink-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all border border-white/10 disabled:opacity-70 disabled:cursor-not-allowed"
+                  onClick={() => {
+                    if (isEnriching && onStopEnrichment) {
+                      onStopEnrichment();
+                    } else {
+                      setIsEnrichMenuOpen(!isEnrichMenuOpen);
+                    }
+                  }}
+                  className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all border border-white/10 ${isEnriching
+                      ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500 hover:text-white'
+                      : 'bg-gradient-to-r from-pink-600 to-cyan-500 text-white shadow-2xl shadow-pink-500/20 hover:scale-[1.02] active:scale-[0.98]'
+                    }`}
                 >
-                  {isEnriching ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                  {isEnriching ? 'Processando...' : 'Enriquecer com IA'}
+                  {isEnriching ? <Square size={16} fill="currentColor" /> : <Sparkles size={16} />}
+                  {isEnriching ? 'PARAR PROCESSO' : 'Enriquecer com IA'}
                   {!isEnriching && <ChevronDown size={14} className={`transition-transform ${isEnrichMenuOpen ? 'rotate-180' : ''}`} />}
                 </button>
 

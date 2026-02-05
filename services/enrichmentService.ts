@@ -8,7 +8,7 @@ export class EnrichmentService {
     /**
      * Enriquece um lead individualmente buscando dados em múltiplas fontes
      */
-    static async enrichLead(lead: Lead, apiKeys?: any): Promise<{ insights: string, details: any }> {
+    static async enrichLead(lead: Lead, apiKeys?: any): Promise<{ insights: string, details: any, socialData: any }> {
         console.log(`[Neural Enrichment] Processing: ${lead.name}`);
 
         // 1. Dados Governamentais (Se houver CNPJ)
@@ -17,8 +17,8 @@ export class EnrichmentService {
             officialData = await DiscoveryService.fetchRealCNPJData(lead.socialLinks.cnpj) || {};
         }
 
-        // 2. Presença Digital (Heurística baseada no nome)
-        const socialData = await this.discoverSocialPresence(lead);
+        // 2. Presença Digital (Busca Real Google)
+        const socialData = await this.discoverSocialPresence(lead, apiKeys);
 
         // 3. Análise Neural via Gemini (Insights de Venda)
         let insights = '';
@@ -65,23 +65,61 @@ export class EnrichmentService {
 
         return {
             insights,
-            details: enrichedDetails
+            details: enrichedDetails,
+            socialData // Exportar explicitamente para atualizar coluna social_links
         };
     }
 
-    private static async discoverSocialPresence(lead: Lead) {
-        // Simula o tempo de uma busca real em redes sociais
-        await new Promise(resolve => setTimeout(resolve, 800));
+    private static async discoverSocialPresence(lead: Lead, apiKeys?: any) {
+        try {
+            // Tenta busca real via Serper (Google Search)
+            // Requer chave configurada no painel ou .env
+            const hasKey = apiKeys?.serper || import.meta.env.VITE_SERPER_API_KEY;
 
-        const slug = lead.name.toLowerCase()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove acentos
-            .replace(/[^a-z0-9]/g, ''); // Apenas alfanuméricos
+            if (hasKey) {
+                console.log(`[Social Discovery] Buscando dados reais para: ${lead.name}`);
+                const searchResults: any = await ApiGatewayService.callApi(
+                    'google-search',
+                    'search',
+                    { q: `${lead.name} ${lead.location} site instagram facebook` },
+                    { apiKeys, ttl: 86400 * 7 } // Cache longo de 7 dias
+                );
 
+                const organic = searchResults.organic || [];
+
+                const findLink = (domain: string) => organic.find((r: any) => r.link && r.link.includes(domain))?.link;
+
+                // Tenta achar um site oficial que não seja rede social ou diretório comum
+                const websiteRaw = organic.find((r: any) => {
+                    const l = r.link || '';
+                    return !l.includes('instagram.com') &&
+                        !l.includes('facebook.com') &&
+                        !l.includes('linkedin.com') &&
+                        !l.includes('tripadvisor') &&
+                        !l.includes('ifood') &&
+                        !l.includes('solutudo') &&
+                        !l.includes('cnpj.biz') &&
+                        !l.includes('maps.google');
+                })?.link;
+
+                return {
+                    instagram: findLink('instagram.com') || '',
+                    facebook: findLink('facebook.com') || '',
+                    linkedin: findLink('linkedin.com') || '',
+                    website: lead.website || websiteRaw || ''
+                };
+            }
+        } catch (e) {
+            console.warn('Erro na busca social real, retornando vazios:', e);
+        }
+
+        // Se falhar ou não tiver chave, retorna vazio para evitar dados "inventados" (Slug based) que o usuário reclamou
+        // Melhor sem link do que link errado.
         return {
-            instagram: `https://instagram.com/${slug}`,
-            facebook: `https://facebook.com/${slug}`,
-            linkedin: `https://linkedin.com/company/${slug}`,
-            website: lead.website || `https://www.${slug}.com.br`
+            instagram: '',
+            facebook: '',
+            linkedin: '',
+            website: lead.website || ''
         };
     }
 

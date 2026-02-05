@@ -170,6 +170,8 @@ const App: React.FC = () => {
     }
   };
 
+  const stopEnrichmentSignal = React.useRef(false);
+
   const handleBulkEnrich = async (leadsToEnrich?: Lead[]) => {
     // Se recebeu uma lista específica do LeadLab, usa ela. Senão, pega todos os novos.
     const targets = leadsToEnrich || leads.filter(l => l.status === LeadStatus.NEW);
@@ -181,34 +183,47 @@ const App: React.FC = () => {
 
     setActiveTab('lab');
     setIsEnriching(true);
+    stopEnrichmentSignal.current = false;
 
     try {
       for (const lead of targets) {
+        if (stopEnrichmentSignal.current) {
+          console.log('Enriquecimento interrompido pelo usuário.');
+          break;
+        }
+
         console.log(`[AI] Motor de Enriquecimento Ativado: ${lead.name}`);
 
         try {
-          const { insights, details } = await EnrichmentService.enrichLead(lead, config.apiKeys);
+          const { insights, details, socialData } = await EnrichmentService.enrichLead(lead, config.apiKeys);
 
-          await handleEnrichComplete(lead.id, insights, details);
+          await handleEnrichComplete(lead.id, insights, details, socialData);
         } catch (err) {
           console.error(`Erro ao enriquecer ${lead.name}:`, err);
         }
       }
     } finally {
       setIsEnriching(false);
-      alert('Processo de enriquecimento concluído!');
+      stopEnrichmentSignal.current = false;
     }
   };
 
-  const handleEnrichComplete = async (id: string, insights: string, details: any) => {
+  const handleEnrichComplete = async (id: string, insights: string, details: any, socialData?: any) => {
+    const updatePayload: any = {
+      status: LeadStatus.ENRICHED,
+      ai_insights: insights,
+      details: details,
+      updated_at: new Date().toISOString()
+    };
+
+    if (socialData) {
+      if (socialData.website) updatePayload.website = socialData.website;
+      updatePayload.social_links = socialData;
+    }
+
     const { error } = await supabase
       .from('leads')
-      .update({
-        status: LeadStatus.ENRICHED,
-        ai_insights: insights,
-        details: details,
-        updated_at: new Date().toISOString()
-      })
+      .update(updatePayload)
       .eq('id', id);
 
     if (error) {
@@ -225,7 +240,13 @@ const App: React.FC = () => {
       case 'discovery':
         return <LeadDiscovery onResultsFound={handleAddLeads} onStartEnrichment={handleBulkEnrich} />;
       case 'lab':
-        return <LeadLab leads={leads} onEnrich={setSelectedLead} onBulkEnrich={handleBulkEnrich} isEnriching={isEnriching} />;
+        return <LeadLab
+          leads={leads}
+          onEnrich={setSelectedLead}
+          onBulkEnrich={handleBulkEnrich}
+          isEnriching={isEnriching}
+          onStopEnrichment={() => stopEnrichmentSignal.current = true}
+        />;
       case 'enriched':
         return <EnrichedLeadsView leads={leads} />;
       case 'partner':
