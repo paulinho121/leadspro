@@ -155,13 +155,10 @@ const App: React.FC = () => {
 
     const { data: profile } = await supabase.from('profiles').select('tenant_id, is_master_admin').eq('id', session.user.id).single();
     const userTenantId = profile?.tenant_id;
-    const userIsMaster = profile?.is_master_admin || session.user.email?.toLowerCase().trim() === 'paulofernandoautomacao@gmail.com';
+    const activeTenantId = userTenantId || (config.tenantId !== 'default' ? config.tenantId : null);
 
-    let activeTenantId = userTenantId || config.tenantId;
-    if (activeTenantId === 'default') activeTenantId = '00000000-0000-0000-0000-000000000000';
-
-    if (!activeTenantId || (activeTenantId === '00000000-0000-0000-0000-000000000000' && !userIsMaster && activeTab === 'master')) {
-      console.warn('[Fetch] Acesso negado ao tenant ou tenant não configurado.');
+    if (!activeTenantId) {
+      console.warn('[Fetch] Nenhum Tenant ID válido encontrado. Ignorando fetch.');
       setLeads([]);
       return;
     }
@@ -232,14 +229,16 @@ const App: React.FC = () => {
     }
 
     // Se o branding ainda não carregou o ID real, tentamos resolver via perfil se possível
-    let activeTenantId = config.tenantId;
-    if (activeTenantId === 'default' && session?.user) {
+    let activeTenantId = (config.tenantId !== 'default' ? config.tenantId : null);
+    if (!activeTenantId && session?.user) {
       const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', session.user.id).single();
       if (profile?.tenant_id) activeTenantId = profile.tenant_id;
     }
 
-    if (activeTenantId === 'default') {
-      activeTenantId = '00000000-0000-0000-0000-000000000000';
+    if (!activeTenantId) {
+      console.error('Erro Crítico: Tentativa de salvar leads sem um Tenant ID definido.');
+      alert('Sua sessão de empresa não foi identificada. Tente recarregar a página.');
+      return;
     }
 
     const leadsToSave = uniqueNewLeads.map(l => ({
