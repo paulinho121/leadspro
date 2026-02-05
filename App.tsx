@@ -489,10 +489,16 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 md:gap-6">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-2xl border border-white/5">
-              <Zap size={12} className="text-primary animate-pulse" />
-              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Sync</span>
-            </div>
+            <button
+              onClick={() => {
+                console.log('[Global Sync] Recarregando leads...');
+                fetchLeads();
+              }}
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 active:scale-95 transition-all group"
+            >
+              <Zap size={12} className="text-primary group-hover:animate-pulse" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary transition-colors">Sync</span>
+            </button>
             <button className="relative group p-2.5 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5">
               <Bell size={18} className="text-slate-400 group-hover:text-white transition-colors" />
               <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-primary rounded-full ring-2 ring-slate-900"></span>

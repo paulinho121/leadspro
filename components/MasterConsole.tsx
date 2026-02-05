@@ -35,28 +35,40 @@ const MasterConsole: React.FC = () => {
     });
 
     const fetchData = async () => {
+        console.log('[Master Console] Iniciando sincronização de dados...');
         setIsLoading(true);
         try {
             // 1. Fetch Tenants
-            const { data: tenantsData } = await supabase
+            const { data: tenantsData, error: tenantsError } = await supabase
                 .from('tenants')
                 .select('*')
                 .order('created_at', { ascending: false });
 
-            if (tenantsData) setTenants(tenantsData);
+            if (tenantsError) throw tenantsError;
+            if (tenantsData) {
+                console.log(`[Master Console] ${tenantsData.length} tenants carregados.`);
+                setTenants(tenantsData);
+            }
 
             // 2. Fetch Profiles (User information)
-            // Note: We'd need a view or special permission to get emails if they aren't in profiles
-            const { data: profilesData } = await supabase
+            const { data: profilesData, error: profilesError } = await supabase
                 .from('profiles')
                 .select('*');
 
-            if (profilesData) setProfiles(profilesData);
+            if (profilesError) throw profilesError;
+            if (profilesData) {
+                console.log(`[Master Console] ${profilesData.length} perfis carregados.`);
+                setProfiles(profilesData);
+            }
 
             // 3. Fetch Total Leads Count
-            const { count: leadsCount } = await supabase
+            const { count: leadsCount, error: leadsError } = await supabase
                 .from('leads')
                 .select('*', { count: 'exact', head: true });
+
+            if (leadsError) throw leadsError;
+
+            console.log(`[Master Console] ${leadsCount} leads totais encontrados.`);
 
             setStats({
                 totalLeads: leadsCount || 0,
@@ -64,8 +76,10 @@ const MasterConsole: React.FC = () => {
                 totalUsers: profilesData?.length || 0
             });
 
-        } catch (err) {
-            console.error('Master Console Error:', err);
+            console.log('[Master Console] Sincronização concluída com sucesso.');
+        } catch (err: any) {
+            console.error('Master Console Error:', err.message || err);
+            alert('Erro ao sincronizar dados: ' + (err.message || 'Verifique o console.'));
         } finally {
             setIsLoading(false);
         }
@@ -81,7 +95,13 @@ const MasterConsole: React.FC = () => {
             .update({ is_active: !currentStatus })
             .eq('id', tenantId);
 
-        if (!error) fetchData();
+        if (error) {
+            console.error('Erro ao alterar status do tenant:', error);
+            alert('Não foi possível alterar o status. Verifique suas permissões.');
+        } else {
+            console.log(`Tenant ${tenantId} ${!currentStatus ? 'ativado' : 'suspenso'} com sucesso.`);
+            fetchData();
+        }
     };
 
     return (
@@ -127,8 +147,22 @@ const MasterConsole: React.FC = () => {
                             <LayoutDashboard size={16} lg:size={18} className="text-primary" />
                             LICENCIAMENTOS
                         </h3>
-                        <button onClick={fetchData} className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 transition-all">
-                            Sincronizar
+                        <button
+                            onClick={fetchData}
+                            disabled={isLoading}
+                            className="flex items-center gap-2 text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 transition-all disabled:opacity-50"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <Zap size={12} className="animate-spin" />
+                                    Sincronizando...
+                                </>
+                            ) : (
+                                <>
+                                    <TrendingUp size={12} />
+                                    Sincronizar
+                                </>
+                            )}
                         </button>
                     </div>
 
