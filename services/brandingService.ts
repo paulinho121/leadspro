@@ -46,16 +46,10 @@ export class BrandingService {
                 }
             }
 
-            // 3. Fallback: Buscar configuração do tenant default (0000...)
-            const { data: defaultConfig } = await supabase
-                .from('white_label_configs')
-                .select('*')
-                .eq('tenant_id', '00000000-0000-0000-0000-000000000000')
-                .maybeSingle();
-
-            if (defaultConfig) {
-                return BrandingService.mapToConfig(defaultConfig, true); // True para indicar fallback/seguro
-            }
+            // 3. Fallback: Se nada for encontrado, usamos o DEFAULT_BRANDING puro
+            // Não buscamos do banco aqui para evitar vazamento de contexto 
+            // O componente App.tsx deve lidar com o estado 'default'
+            return DEFAULT_BRANDING;
 
         } catch (err) {
             console.error('[Branding] Erro ao carregar do banco:', err);

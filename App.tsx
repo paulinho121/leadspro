@@ -119,17 +119,7 @@ const App: React.FC = () => {
           }
         }
 
-        // Se temos usuário mas ele não tem tenant_id no profile, vamos vincular ao tenant principal
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', session.user.id).single();
-          if (!profile?.tenant_id && tId) {
-            console.log('[Bootstrap] Vinculando usuário ao tenant:', tId);
-            await supabase.from('profiles').update({ tenant_id: tId }).eq('id', session.user.id);
-          }
-        }
-
-        console.log('✅ TENANT ATIVO:', tId);
+        console.log('✅ BOOTSTRAP READY');
         if (config.tenantId !== 'default') {
           fetchLeads();
         }
@@ -142,14 +132,28 @@ const App: React.FC = () => {
   }, [config.tenantId]);
 
   const fetchLeads = async () => {
-    if (!config.tenantId || config.tenantId === 'default') return;
+    // 1. Identificar o Tenant Real do Usuário via Session/Profile
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    const { data: profile } = await supabase.from('profiles').select('tenant_id, is_master_admin').eq('id', session.user.id).single();
+    const userTenantId = profile?.tenant_id;
+    const userIsMaster = profile?.is_master_admin || session.user.email?.toLowerCase() === 'paulofernandoautomacao@gmail.com';
+
+    if (!userTenantId || (userTenantId === '00000000-0000-0000-0000-000000000000' && !userIsMaster)) {
+      console.warn('[Fetch] Acesso negado ao tenant ou tenant não configurado.');
+      setLeads([]);
+      return;
+    }
 
     let query = supabase.from('leads').select('*');
 
-    // SEGURANÇA: Se NÃO estiver no modo master, filtrar RIGOROSAMENTE pelo tenant
-    // Se estiver no modo master, carregar tudo para o dashboard master
+    // SEGURANÇA: No modo normal, SEMPRE filtrar pelo Tenant ID real do Perfil do usuário
     if (activeTab !== 'master') {
-      query = query.eq('tenant_id', config.tenantId);
+      query = query.eq('tenant_id', userTenantId);
+    } else if (!userIsMaster) {
+      // Proteção extra: Alguém tentou forçar aba master sem ser master
+      query = query.eq('tenant_id', userTenantId);
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
