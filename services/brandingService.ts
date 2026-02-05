@@ -58,7 +58,7 @@ export class BrandingService {
                         background: firstConfig.background_color,
                         sidebar: firstConfig.sidebar_color,
                     },
-                    apiKeys: firstConfig.api_keys
+                    apiKeys: {} // SEGURANÇA: Não vazar chaves do admin no fallback
                 };
             }
 

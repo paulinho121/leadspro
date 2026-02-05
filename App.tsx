@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Search, Database, Settings,
   HelpCircle, LogOut, Bell, Menu, X, Sparkles,
   ChevronRight, BrainCircuit, Activity, Globe, Map as MapIcon,
-  Zap, ShieldCheck, Rocket
+  Zap, ShieldCheck, Rocket, AlertTriangle, ArrowRight
 } from 'lucide-react';
 import LeadDiscovery from './components/LeadDiscovery';
 import BentoDashboard from './components/BentoDashboard';
@@ -229,11 +229,14 @@ const App: React.FC = () => {
       case 'enriched':
         return <EnrichedLeadsView leads={leads} />;
       case 'partner':
-        return <WhiteLabelAdmin />;
+        return <WhiteLabelAdmin initialTab="api" />;
       default:
         return <BentoDashboard leads={leads} onEnrich={() => setActiveTab('lab')} />;
     }
   };
+
+  // Verificação de Chaves de API Ausentes
+  const missingKeys = !config.apiKeys?.gemini || !config.apiKeys?.serper;
 
   if (isLoading) {
     return (
@@ -326,6 +329,27 @@ const App: React.FC = () => {
             </button>
           </div>
         </header>
+
+        {/* ALERTA DE CONFIGURAÇÃO PENDENTE */}
+        {missingKeys && activeTab !== 'partner' && (
+          <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-10 py-4 flex items-center justify-between animate-fade-in-down">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-yellow-500/20 rounded-lg">
+                <AlertTriangle className="text-yellow-500" size={20} />
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">Configuração de API Necessária</h4>
+                <p className="text-xs text-slate-400">Para utilizar a extração e IA, você precisa configurar suas chaves de API.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTab('partner')}
+              className="bg-yellow-500 text-slate-900 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider hover:scale-105 transition-all flex items-center gap-2"
+            >
+              Configurar Agora <ArrowRight size={14} />
+            </button>
+          </div>
+        )}
 
         <section className="flex-1 overflow-y-auto p-10 custom-scrollbar">
           <div className="max-w-7xl mx-auto space-y-10">

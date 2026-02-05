@@ -3,9 +3,9 @@ import { Save, Globe, Palette, Layout, Link2, ShieldCheck, Mail, Database, Loade
 import { useBranding } from './BrandingProvider';
 import { supabase } from '../lib/supabase';
 
-const WhiteLabelAdmin: React.FC = () => {
+const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' | 'api' }> = ({ initialTab = 'branding' }) => {
     const { config, refreshBranding } = useBranding();
-    const [activeSettingsTab, setSettingsTab] = useState<'branding' | 'domain' | 'users' | 'api'>('branding');
+    const [activeSettingsTab, setSettingsTab] = useState<'branding' | 'domain' | 'users' | 'api'>(initialTab);
     const [formData, setFormData] = useState<any>({
         platformName: '',
         logoUrl: '',
