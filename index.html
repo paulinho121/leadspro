@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeadFlow Pro - B2B Intelligence Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    window.onerror = function (msg, url, line, col, error) {
+      alert("⚠️ ERRO DE SISTEMA:\n" + msg + "\n\nArquivo: " + url + "\nLinha: " + line);
+    };
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: 'var(--color-primary)',
+            secondary: 'var(--color-secondary)',
+            accent: 'var(--color-accent)',
+          }
+        }
+      }
+    }
+  </script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: #06b6d4;
+      --color-secondary: #3b82f6;
+      --color-accent: #06b6d4;
+      --color-background: #0f172a;
+      --color-sidebar: rgba(30, 41, 59, 0.7);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+      color: #f1f5f9;
+      overflow: hidden;
+      /* App handles its own scroll */
+    }
+
+    .font-mono {
+      font-family: 'Roboto Mono', monospace;
+    }
+
+    .glass {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .neon-glow-cyan {
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+    }
+
+    .neon-glow-magenta {
+      box-shadow: 0 0 15px rgba(217, 70, 239, 0.3);
+    }
+
+    .liquid-gradient {
+      background: linear-gradient(135deg, #3b82f6 0%, #d946ef 100%);
+    }
+  </style>
+  <link rel="stylesheet" href="/index.css">
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>

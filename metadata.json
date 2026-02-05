@@ -1,0 +1,7 @@
+{
+  "name": "LeadFlow Pro",
+  "description": "An advanced B2B Lead Generation and Enrichment SaaS. Discover potential clients using location and sector filters, enrich data with official company records, and use Gemini AI to analyze websites for personalized sales insights.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
