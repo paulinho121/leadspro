@@ -258,8 +258,16 @@ const App: React.FC = () => {
       {/* Sidebar */}
       <aside className={`glass border-r border-white/5 transition-all duration-500 ease-in-out z-50 flex flex-col ${isSidebarOpen ? 'w-80' : 'w-24'}`}>
         <div className="p-8 flex items-center gap-4 group cursor-pointer overflow-hidden" onClick={() => setActiveTab('dashboard')}>
-          <div className="bg-primary/20 p-3 rounded-2xl group-hover:scale-110 group-hover:bg-primary/30 transition-all duration-500 shadow-2xl shadow-primary/20">
-            <BrainCircuit className="text-primary" size={32} />
+          <div className={`bg-primary/20 p-2 rounded-2xl group-hover:scale-110 group-hover:bg-primary/30 transition-all duration-500 shadow-2xl shadow-primary/20 flex items-center justify-center ${config.logoUrl ? 'bg-white/5' : ''}`}>
+            {config.logoUrl ? (
+              <img
+                src={config.logoUrl}
+                alt="Logo"
+                className="w-8 h-8 object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+              />
+            ) : (
+              <BrainCircuit className="text-primary" size={32} />
+            )}
           </div>
           {isSidebarOpen && (
             <div className="transition-all duration-500">
