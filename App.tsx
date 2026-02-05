@@ -157,7 +157,10 @@ const App: React.FC = () => {
     const userTenantId = profile?.tenant_id;
     const userIsMaster = profile?.is_master_admin || session.user.email?.toLowerCase().trim() === 'paulofernandoautomacao@gmail.com';
 
-    if (!userTenantId || (userTenantId === '00000000-0000-0000-0000-000000000000' && !userIsMaster)) {
+    let activeTenantId = userTenantId || config.tenantId;
+    if (activeTenantId === 'default') activeTenantId = '00000000-0000-0000-0000-000000000000';
+
+    if (!activeTenantId || (activeTenantId === '00000000-0000-0000-0000-000000000000' && !userIsMaster && activeTab === 'master')) {
       console.warn('[Fetch] Acesso negado ao tenant ou tenant não configurado.');
       setLeads([]);
       return;
@@ -167,10 +170,7 @@ const App: React.FC = () => {
 
     // SEGURANÇA: No modo normal, SEMPRE filtrar pelo Tenant ID real do Perfil do usuário
     if (activeTab !== 'master') {
-      query = query.eq('tenant_id', userTenantId);
-    } else if (!userIsMaster) {
-      // Proteção extra: Alguém tentou forçar aba master sem ser master
-      query = query.eq('tenant_id', userTenantId);
+      query = query.eq('tenant_id', activeTenantId);
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
@@ -239,11 +239,7 @@ const App: React.FC = () => {
     }
 
     if (activeTenantId === 'default') {
-      console.warn('Proteção: Tenant ID ainda é default. Salvando apenas localmente.');
-      const localFormatted = uniqueNewLeads.map(l => ({ ...l, id: Math.random().toString(), status: LeadStatus.NEW }));
-      setLeads(prev => [...localFormatted, ...prev]);
-      setActiveTab('lab');
-      return;
+      activeTenantId = '00000000-0000-0000-0000-000000000000';
     }
 
     const leadsToSave = uniqueNewLeads.map(l => ({

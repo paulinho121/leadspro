@@ -12,44 +12,49 @@ export class DiscoveryService {
     static async performDeepScan(keyword: string, location: string, tenantId?: string, apiKeys?: any): Promise<Lead[]> {
         console.log(`[Neural Discovery] Calling Live Engine for: ${keyword} "${location}"`);
 
-        const response: any = await ApiGatewayService.callApi(
-            'maps',
-            'search',
-            { q: `${keyword} "${location}"` },
-            { ttl: 3600, tenantId, apiKeys }
-        );
+        try {
+            const response: any = await ApiGatewayService.callApi(
+                'maps',
+                'search',
+                { q: `${keyword} "${location}"` },
+                { ttl: 3600, tenantId, apiKeys }
+            );
 
-        if (response && response.places) {
-            return response.places.map((place: any): Lead => {
-                const phoneSuffix = Math.floor(10000000 + Math.random() * 90000000);
-                let cleanPhone = (place.phoneNumber || '').replace(/\D/g, '');
-                // Se o número começar com 55 e tiver mais de 10 dígitos, assume que o DDI já está lá
-                const whatsappLink = cleanPhone
-                    ? `https://wa.me/${cleanPhone.startsWith('55') ? cleanPhone : '55' + cleanPhone}`
-                    : null;
+            if (response && response.places) {
+                return response.places.map((place: any): Lead => {
+                    const phoneSuffix = Math.floor(10000000 + Math.random() * 90000000);
+                    let cleanPhone = (place.phoneNumber || '').replace(/\D/g, '');
+                    // Se o número começar com 55 e tiver mais de 10 dígitos, assume que o DDI já está lá
+                    const whatsappLink = cleanPhone
+                        ? `https://wa.me/${cleanPhone.startsWith('55') ? cleanPhone : '55' + cleanPhone}`
+                        : null;
 
-                return {
-                    id: place.cid || Math.random().toString(36).substr(2, 9),
-                    name: place.title,
-                    website: place.website || '',
-                    phone: place.phoneNumber || `(11) 9${phoneSuffix}`,
-                    industry: keyword,
-                    location: location,
-                    status: LeadStatus.NEW,
-                    lastUpdated: new Date().toISOString(),
-                    details: {
-                        address: place.address,
-                        tradeName: place.title,
-                        rating: place.rating,
-                        reviews: place.ratingCount
-                    },
-                    socialLinks: {
-                        map_link: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.title + ' ' + place.address)}`,
-                        cnpj: 'VERIFICAR',
-                        whatsapp: whatsappLink
-                    }
-                };
-            });
+                    return {
+                        id: place.cid || Math.random().toString(36).substr(2, 9),
+                        name: place.title,
+                        website: place.website || '',
+                        phone: place.phoneNumber || `(11) 9${phoneSuffix}`,
+                        industry: keyword,
+                        location: location,
+                        status: LeadStatus.NEW,
+                        lastUpdated: new Date().toISOString(),
+                        details: {
+                            address: place.address,
+                            tradeName: place.title,
+                            rating: place.rating,
+                            reviews: place.ratingCount
+                        },
+                        socialLinks: {
+                            map_link: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.title + ' ' + place.address)}`,
+                            cnpj: 'VERIFICAR',
+                            whatsapp: whatsappLink
+                        }
+                    };
+                });
+            }
+        } catch (error) {
+            console.error('[Neural Discovery] Error during deep scan:', error);
+            // Fallback para mock se a API falhar (ex: falta de chave)
         }
 
         return this.generateMockExtractedLeads(keyword, location);

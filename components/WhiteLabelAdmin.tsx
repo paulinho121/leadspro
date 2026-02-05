@@ -164,31 +164,43 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
         setSaving(true);
 
         try {
-            // Se estiver no modo default, precisamos identificar o tenant real do usuário logado
-            let activeTenantId = config.tenantId;
-
-            if (activeTenantId === 'default') {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session?.user) {
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('tenant_id')
-                        .eq('id', session.user.id)
-                        .single();
-
-                    if (profile?.tenant_id) {
-                        activeTenantId = profile.tenant_id;
-                        console.log('[WhiteLabelAdmin] Tenant ID resolvido via perfil:', activeTenantId);
-                    }
-                }
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.user) {
+                alert('Sessão expirada. Faça login novamente.');
+                return;
             }
 
-            // Fallback final para o tenant demo se nada funcionar
+            // Identificar o tenant ID correto
+            let activeTenantId = config.tenantId;
+
+            // Se for admin master ou estiver no modo default, buscamos do perfil para garantir precisão
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('tenant_id, is_master_admin')
+                .eq('id', session.user.id)
+                .single();
+
+            if (profile?.tenant_id) {
+                activeTenantId = profile.tenant_id;
+                console.log('[WhiteLabelAdmin] Usando Tenant ID do perfil:', activeTenantId);
+            }
+
             if (activeTenantId === 'default') {
                 activeTenantId = '00000000-0000-0000-0000-000000000000';
             }
 
-            console.log('[WhiteLabelAdmin] Salvando para o Tenant:', activeTenantId);
+            console.log('[WhiteLabelAdmin] Salvando Configurações:', {
+                tenant: activeTenantId,
+                keys: Object.keys(formData.apiKeys).filter(k => !!formData.apiKeys[k])
+            });
+
+            // Garantir que apiKeys seja um objeto limpo antes de salvar
+            const apiKeysToSave = {
+                gemini: formData.apiKeys?.gemini?.trim() || null,
+                serper: formData.apiKeys?.serper?.trim() || null,
+                openai: formData.apiKeys?.openai?.trim() || null,
+                deepseek: formData.apiKeys?.deepseek?.trim() || null
+            };
 
             const { error } = await supabase
                 .from('white_label_configs')
@@ -201,21 +213,20 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                     secondary_color: formData.secondaryColor,
                     custom_domain: formData.customDomain || null,
                     subdomain: formData.subdomain || null,
-                    api_keys: formData.apiKeys,
+                    api_keys: apiKeysToSave,
                     updated_at: new Date().toISOString()
                 }, { onConflict: 'tenant_id' });
 
             if (error) {
-                console.error('[WhiteLabelAdmin] Erro detalhado ao salvar:', error);
-                alert(`Erro ao salvar: ${error.message} (Código: ${error.code})`);
-            } else {
-                console.log('[WhiteLabelAdmin] Sucesso! Sincronizando branding...');
-                await refreshBranding();
-                alert('Configurações salvas com sucesso! As chaves de API agora estão ativas.');
+                console.error('[WhiteLabelAdmin] Erro ao salvar:', error);
+                throw error;
             }
+
+            await refreshBranding();
+            alert('Configurações salvas com sucesso!');
         } catch (err: any) {
-            console.error('[WhiteLabelAdmin] Erro inesperado:', err);
-            alert('Erro inesperado: ' + (err.message || 'Verifique o console.'));
+            console.error('[WhiteLabelAdmin] Erro crítico:', err);
+            alert(`Falha ao salvar: ${err.message || 'Erro desconhecido'}`);
         } finally {
             setSaving(false);
         }
@@ -622,6 +633,7 @@ const ApiConfigItem: React.FC<{
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder}
+                    autoComplete="new-password"
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary outline-none transition-all pr-12 font-mono text-sm"
                 />
                 <button
