@@ -291,16 +291,34 @@ const App: React.FC = () => {
         </nav>
 
         <div className="p-4 mt-auto">
-          <div className={`glass border border-white/5 rounded-3xl p-4 transition-all duration-500 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 scale-90'}`}>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-magenta-500 p-px">
-                <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center font-bold text-xs">AD</div>
+          <div className="glass border border-white/5 rounded-[2rem] p-5 premium-card group cursor-pointer relative overflow-hidden transition-all duration-300 hover:border-primary/30">
+            {/* Background Decor */}
+            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-[50px] -mr-10 -mt-10 rounded-full group-hover:bg-primary/10 transition-colors"></div>
+
+            <div className={`flex items-center gap-4 transition-all duration-500 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 scale-90'}`}>
+              <div className="relative">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-blue-600 p-[2px] shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+                  <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center font-bold text-sm text-white">
+                    {session?.user?.email?.slice(0, 2).toUpperCase() || 'AD'}
+                  </div>
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-slate-900 shadow-sm flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+                </div>
               </div>
+
               <div className="flex-1 overflow-hidden">
-                <p className="text-xs font-bold text-white truncate">Admin Root</p>
-                <p className="text-[10px] text-slate-500 truncate">Sessão Ativa // 12h</p>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <p className="text-sm font-black text-white truncate drop-shadow-md">Admin {config.platformName.split(' ')[0]}</p>
+                  <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded border border-primary/20 font-bold uppercase">PRO</span>
+                </div>
+                <p className="text-[10px] text-slate-400 truncate font-mono flex items-center gap-1.5">
+                  <Activity size={10} className="text-emerald-500" />
+                  Sessão Segura
+                </p>
               </div>
-              <LogOut size={14} className="text-slate-500 hover:text-white cursor-pointer transition-colors" />
+
+              <LogOut size={16} className="text-slate-500 hover:text-red-400 cursor-pointer transition-all hover:scale-110" onClick={() => supabase.auth.signOut()} />
             </div>
           </div>
         </div>

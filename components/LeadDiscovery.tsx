@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, MapPin, Building2, Filter, Loader2, Target, Globe, Crosshair, Sparkles, Zap, Square, ChevronDown } from 'lucide-react';
+import LiquidBattery from './LiquidBattery';
 import { CNAE_LIST } from '../constants';
 import { SearchFilters } from '../types';
 import { DiscoveryService } from '../services/discoveryService';
@@ -190,6 +191,15 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
             <FeatureTag icon={<Zap size={12} />} label="Loops Ativos" />
             <FeatureTag icon={<Crosshair size={12} />} label="Auto-Pilot" />
             <FeatureTag icon={<Sparkles size={12} />} label="AI Enrich" />
+          </div>
+
+          <div className="mt-6">
+            <LiquidBattery
+              percentage={leadsFound > 0 ? (Math.min(leadsFound, 100) / 100) * 100 : 0}
+              isScanning={isScanning}
+              label={isScanning ? "VARRENDO..." : "LEADS DETECTADOS"}
+              subLabel={`${leadsFound} ENCONTRADOS`}
+            />
           </div>
 
           {hasFinished && leadsFound > 0 && (
