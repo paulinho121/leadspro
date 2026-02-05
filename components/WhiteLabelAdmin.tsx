@@ -486,21 +486,21 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                                 <ApiConfigItem
                                     label="Serper.dev API (Google Maps)"
                                     placeholder="8c2a..."
-                                    value={formData.apiKeys.serper}
+                                    value={formData.apiKeys?.serper || ''}
                                     onChange={(val) => setFormData({ ...formData, apiKeys: { ...formData.apiKeys, serper: val } })}
                                     description="Obrigatória para extração real do Google Maps (places, telefones, reviews)."
                                 />
                                 <ApiConfigItem
                                     label="Google Gemini API"
                                     placeholder="AIzaSy..."
-                                    value={formData.apiKeys.gemini}
+                                    value={formData.apiKeys?.gemini || ''}
                                     onChange={(val) => setFormData({ ...formData, apiKeys: { ...formData.apiKeys, gemini: val } })}
                                     description="Usado para análise neural, score de leads e extração inteligente."
                                 />
                                 <ApiConfigItem
                                     label="OpenAI API (GPT-4)"
                                     placeholder="sk-..."
-                                    value={formData.apiKeys.openai}
+                                    value={formData.apiKeys?.openai || ''}
                                     onChange={(val) => setFormData({ ...formData, apiKeys: { ...formData.apiKeys, openai: val } })}
                                     description="Alternativa para enriquecimento de dados e cópia de vendas."
                                 />

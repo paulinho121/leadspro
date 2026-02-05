@@ -11,55 +11,50 @@ export class BrandingService {
 
         try {
             // 1. Tentar buscar por domínio customizado ou subdomínio
-            const { data, error } = await supabase
+            const { data: domainConfig } = await supabase
                 .from('white_label_configs')
                 .select('*')
                 .or(`custom_domain.eq.${hostname},subdomain.eq.${hostname.split('.')[0]}`)
                 .maybeSingle();
 
-            if (data) {
-                return {
-                    id: data.id,
-                    tenantId: data.tenant_id,
-                    platformName: data.platform_name,
-                    logoUrl: data.logo_url,
-                    faviconUrl: data.favicon_url,
-                    colors: {
-                        primary: data.primary_color,
-                        secondary: data.secondary_color,
-                        accent: data.accent_color,
-                        background: data.background_color,
-                        sidebar: data.sidebar_color,
-                    },
-                    domain: data.custom_domain,
-                    subdomain: data.subdomain,
-                    apiKeys: data.api_keys
-                };
+            if (domainConfig) {
+                return BrandingService.mapToConfig(domainConfig);
             }
 
-            // 2. Fallback: Tentar buscar qualquer config existente
-            const { data: firstConfig } = await supabase
+            // 2. Se não achou por domínio, verificar se temos um usuário logado e buscar pelo tenant dele
+            // Isso permite que o dono da empresa veja suas cores mesmo rodando em localhost ou domínio genérico
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (session?.user) {
+                // Buscamos o profile para saber o tenant_id
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('tenant_id')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (profile?.tenant_id) {
+                    const { data: tenantConfig } = await supabase
+                        .from('white_label_configs')
+                        .select('*')
+                        .eq('tenant_id', profile.tenant_id)
+                        .maybeSingle();
+
+                    if (tenantConfig) {
+                        return BrandingService.mapToConfig(tenantConfig);
+                    }
+                }
+            }
+
+            // 3. Fallback: Buscar configuração do tenant default (0000...)
+            const { data: defaultConfig } = await supabase
                 .from('white_label_configs')
                 .select('*')
-                .limit(1)
+                .eq('tenant_id', '00000000-0000-0000-0000-000000000000')
                 .maybeSingle();
 
-            if (firstConfig) {
-                return {
-                    id: firstConfig.id,
-                    tenantId: firstConfig.tenant_id,
-                    platformName: firstConfig.platform_name,
-                    logoUrl: firstConfig.logo_url,
-                    faviconUrl: firstConfig.favicon_url,
-                    colors: {
-                        primary: firstConfig.primary_color,
-                        secondary: firstConfig.secondary_color,
-                        accent: firstConfig.accent_color,
-                        background: firstConfig.background_color,
-                        sidebar: firstConfig.sidebar_color,
-                    },
-                    apiKeys: {} // SEGURANÇA: Não vazar chaves do admin no fallback
-                };
+            if (defaultConfig) {
+                return BrandingService.mapToConfig(defaultConfig, true); // True para indicar fallback/seguro
             }
 
         } catch (err) {
@@ -67,6 +62,30 @@ export class BrandingService {
         }
 
         return DEFAULT_BRANDING;
+    }
+
+    private static mapToConfig(data: any, isSecureFallback = false): BrandingConfig {
+        return {
+            id: data.id,
+            tenantId: data.tenant_id,
+            platformName: data.platform_name,
+            logoUrl: data.logo_url,
+            faviconUrl: data.favicon_url,
+            colors: {
+                primary: data.primary_color,
+                secondary: data.secondary_color,
+                accent: data.accent_color,
+                background: data.background_color,
+                sidebar: data.sidebar_color,
+            },
+            domain: data.custom_domain,
+            subdomain: data.subdomain,
+            apiKeys: isSecureFallback ? {} : {
+                gemini: data.api_keys?.gemini || '',
+                openai: data.api_keys?.openai || '',
+                serper: data.api_keys?.serper || ''
+            } // Proteção para fallbacks e normalização de nulos
+        };
     }
 
     static applyBranding(config: BrandingConfig) {
