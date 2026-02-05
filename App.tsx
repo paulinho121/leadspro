@@ -12,6 +12,7 @@ import LeadLab from './components/LeadLab';
 import EnrichedLeadsView from './components/EnrichedLeadsView';
 import EnrichmentModal from './components/EnrichmentModal';
 import WhiteLabelAdmin from './components/WhiteLabelAdmin';
+import LoginPage from './components/LoginPage';
 import { DiscoveryService } from './services/discoveryService';
 import { EnrichmentService } from './services/enrichmentService';
 import { Lead, LeadStatus } from './types';
@@ -26,6 +27,21 @@ const App: React.FC = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isEnriching, setIsEnriching] = useState(false);
+  const [session, setSession] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Sistema de Bootstrap para Provisionamento Automático de Tenant
   useEffect(() => {
@@ -228,6 +244,10 @@ const App: React.FC = () => {
         </div>
       </div>
     );
+  }
+
+  if (!session) {
+    return <LoginPage onLoginSuccess={setSession} />;
   }
 
   return (
