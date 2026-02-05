@@ -12,6 +12,7 @@ import LeadLab from './components/LeadLab';
 import EnrichedLeadsView from './components/EnrichedLeadsView';
 import EnrichmentModal from './components/EnrichmentModal';
 import WhiteLabelAdmin from './components/WhiteLabelAdmin';
+import MasterConsole from './components/MasterConsole';
 import LoginPage from './components/LoginPage';
 import { DiscoveryService } from './services/discoveryService';
 import { EnrichmentService } from './services/enrichmentService';
@@ -22,7 +23,8 @@ import { MOCK_LEADS } from './constants';
 
 const App: React.FC = () => {
   const { config, isLoading } = useBranding();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched' | 'master'>('dashboard');
+  const [isMaster, setIsMaster] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -30,17 +32,59 @@ const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
-    });
+      if (session?.user) {
+        // Verificação dupla: Perfil + E-mail Master Fixo para segurança máxima
+        const isMasterEmail = session.user.email === 'paulofernandoautomacao@gmail.com';
+
+        const { data: profile } = await supabase.from('profiles').select('is_master_admin').eq('id', session.user.id).single();
+        if (profile?.is_master_admin || isMasterEmail) setIsMaster(true);
+      }
+    };
+    checkSession();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session?.user) {
+        supabase.from('profiles').select('is_master_admin').eq('id', session.user.id).single().then(({ data }) => {
+          if (data?.is_master_admin) setIsMaster(true);
+        });
+      }
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  // SEGURANÇA: Desabilitar Inspeção (F12, Clic Direito, Atalhos)
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => e.preventDefault();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // F12
+      if (e.key === 'F12') {
+        e.preventDefault();
+      }
+      // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+      if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) {
+        e.preventDefault();
+      }
+      // Ctrl+U (Ver código fonte)
+      if (e.ctrlKey && e.key === 'u') {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   // Sistema de Bootstrap para Provisionamento Automático de Tenant
@@ -270,6 +314,8 @@ const App: React.FC = () => {
         return <EnrichedLeadsView leads={leads} />;
       case 'partner':
         return <WhiteLabelAdmin initialTab="api" />;
+      case 'master':
+        return <MasterConsole />;
       default:
         return <BentoDashboard leads={leads} onEnrich={() => setActiveTab('lab')} />;
     }
@@ -322,12 +368,18 @@ const App: React.FC = () => {
           <NavItem icon={<Search size={20} />} label="Extração em Massa" active={activeTab === 'discovery'} expanded={isSidebarOpen} onClick={() => setActiveTab('discovery')} />
           <NavItem icon={<Database size={20} />} label="Laboratório de Leads" active={activeTab === 'lab'} expanded={isSidebarOpen} onClick={() => setActiveTab('lab')} />
           <NavItem icon={<Rocket size={20} />} label="Leads Enriquecidos" active={activeTab === 'enriched'} expanded={isSidebarOpen} onClick={() => setActiveTab('enriched')} />
+
           <div className="pt-8 pb-4">
             {isSidebarOpen && <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Sistemas e IA</p>}
             <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mx-4 mb-4"></div>
           </div>
+
           <NavItem icon={<Activity size={20} />} label="Histórico Neural" expanded={isSidebarOpen} onClick={() => { }} />
           <NavItem icon={<ShieldCheck size={20} />} label="Painel do Parceiro" active={activeTab === 'partner'} expanded={isSidebarOpen} onClick={() => setActiveTab('partner')} />
+
+          {isMaster && (
+            <NavItem icon={<ShieldCheck className="text-primary" size={20} />} label="Painel Master" active={activeTab === 'master'} expanded={isSidebarOpen} onClick={() => setActiveTab('master')} />
+          )}
         </nav>
 
         <div className="p-4 mt-auto">
@@ -381,6 +433,7 @@ const App: React.FC = () => {
               {activeTab === 'lab' && 'Laboratório de Leads'}
               {activeTab === 'enriched' && 'Gestão Comercial'}
               {activeTab === 'partner' && 'Partner Admin Console'}
+              {activeTab === 'master' && 'Master Control Console'}
             </h2>
           </div>
 
