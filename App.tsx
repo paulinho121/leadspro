@@ -36,10 +36,10 @@ const App: React.FC = () => {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       if (session?.user) {
-        // Verificação dupla: Perfil + E-mail Master Fixo para segurança máxima
-        const isMasterEmail = session.user.email === 'paulofernandoautomacao@gmail.com';
+        // Verificação dupla: Perfil + E-mail Master Fixo (Case Insensitive)
+        const isMasterEmail = session.user.email?.toLowerCase() === 'paulofernandoautomacao@gmail.com';
 
-        const { data: profile } = await supabase.from('profiles').select('is_master_admin').eq('id', session.user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('is_master_admin').eq('id', session.user.id).maybeSingle();
         if (profile?.is_master_admin || isMasterEmail) setIsMaster(true);
       }
     };
@@ -47,12 +47,19 @@ const App: React.FC = () => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session?.user) {
-        supabase.from('profiles').select('is_master_admin').eq('id', session.user.id).single().then(({ data }) => {
-          if (data?.is_master_admin) setIsMaster(true);
-        });
+        const isMasterEmail = session.user.email?.toLowerCase() === 'paulofernandoautomacao@gmail.com';
+
+        const { data } = await supabase.from('profiles').select('is_master_admin').eq('id', session.user.id).maybeSingle();
+        if (data?.is_master_admin || isMasterEmail) {
+          setIsMaster(true);
+        } else {
+          setIsMaster(false);
+        }
+      } else {
+        setIsMaster(false);
       }
     });
 
@@ -137,11 +144,15 @@ const App: React.FC = () => {
   const fetchLeads = async () => {
     if (!config.tenantId || config.tenantId === 'default') return;
 
-    const { data, error } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('tenant_id', config.tenantId)
-      .order('created_at', { ascending: false });
+    let query = supabase.from('leads').select('*');
+
+    // SEGURANÇA: Se NÃO estiver no modo master, filtrar RIGOROSAMENTE pelo tenant
+    // Se estiver no modo master, carregar tudo para o dashboard master
+    if (activeTab !== 'master') {
+      query = query.eq('tenant_id', config.tenantId);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error('Erro ao buscar leads:', error);
@@ -172,6 +183,14 @@ const App: React.FC = () => {
       setLeads(uniqueLeads);
     }
   };
+
+  // Re-fetch leads when changing tabs to ensure correct isolation/context
+  useEffect(() => {
+    if (activeTab !== 'master') {
+      setLeads([]); // Limpa para evitar vazamento visual antes do novo fetch
+    }
+    fetchLeads();
+  }, [activeTab, config.tenantId]);
 
   const handleAddLeads = async (newLeads: any[]) => {
     // Deduplicação Inteligente: Evita adicionar leads com o mesmo nome que já estão na lista
