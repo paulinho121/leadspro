@@ -30,6 +30,9 @@ const App: React.FC = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isEnriching, setIsEnriching] = useState(false);
   const [session, setSession] = useState<any>(null);
+  const [showAccountCard, setShowAccountCard] = useState(false);
+  const [userName, setUserName] = useState('Administrador');
+  const [userTenantId, setUserTenantId] = useState('');
 
   useEffect(() => {
     const handleAuthCheck = async (currSession: any) => {
@@ -44,19 +47,24 @@ const App: React.FC = () => {
           return;
         }
 
-        // PRIORIDADE 2: Banco de Dados (Fallback)
+        // PRIORIDADE 2: Banco de Dados (Fallback + Carregar Dados)
         try {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('is_master_admin')
+            .select('is_master_admin, full_name, tenant_id')
             .eq('id', currSession.user.id)
             .maybeSingle();
 
-          if (profile?.is_master_admin) {
-            setIsMaster(true);
-            console.log('[Auth] Master Admin detectado via DB');
-          } else {
-            setIsMaster(false);
+          if (profile) {
+            setUserName(profile.full_name || 'Usuário');
+            setUserTenantId(profile.tenant_id || '');
+
+            if (profile.is_master_admin) {
+              setIsMaster(true);
+              console.log('[Auth] Master Admin detectado via DB');
+            } else {
+              setIsMaster(false);
+            }
           }
         } catch (err) {
           console.error('[Auth] Erro ao verificar master:', err);
@@ -430,18 +438,60 @@ const App: React.FC = () => {
         </nav>
 
         <div className="p-4 mt-auto">
-          <div className="glass border border-white/5 rounded-[2rem] p-4 md:p-5 premium-card group cursor-pointer relative overflow-hidden transition-all duration-300 hover:border-primary/30">
+          {showAccountCard && (
+            <div className="absolute bottom-28 left-4 right-4 animate-fade-in-up z-[70]">
+              <div className="glass border border-primary/20 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
+                {/* Background Decor */}
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-500"></div>
+
+                <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4">Informações da Conta</h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Operador</p>
+                    <p className="text-sm font-bold text-white tracking-tight">{userName}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">ID de Monitoramento</p>
+                    <div className="flex items-center gap-2">
+                      <div className="px-2 py-1 bg-white/5 rounded-lg border border-white/10">
+                        <p className="text-[10px] font-mono text-primary font-bold">
+                          #{userTenantId ? userTenantId.split('-')[0].toUpperCase() : '00000000'}
+                        </p>
+                      </div>
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      onClick={() => setShowAccountCard(false)}
+                      className="w-full py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-bold text-slate-400 hover:text-white transition-all border border-white/5"
+                    >
+                      Fechar Detalhes
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div
+            onClick={() => setShowAccountCard(!showAccountCard)}
+            className={`glass border border-white/5 rounded-[2rem] p-4 md:p-5 premium-card group cursor-pointer relative overflow-hidden transition-all duration-300 hover:border-primary/30 ${showAccountCard ? 'ring-2 ring-primary/20 border-primary/30' : ''}`}
+          >
             <div className={`flex items-center gap-4 transition-all duration-500 ${!isSidebarOpen ? 'opacity-100' : 'md:opacity-0'}`}>
               <div className="relative shrink-0">
                 <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-primary to-blue-600 p-[2px] shadow-[0_0_15px_rgba(6,182,212,0.3)]">
-                  <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center font-bold text-xs md:text-sm text-white">
-                    {session?.user?.email?.slice(0, 2).toUpperCase() || 'AD'}
+                  <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center font-bold text-xs md:text-sm text-white uppercase tracking-tighter">
+                    {userName.slice(0, 2)}
                   </div>
                 </div>
               </div>
 
               <div className="flex-1 overflow-hidden">
-                <p className="text-sm font-black text-white truncate">Admin</p>
+                <p className="text-sm font-black text-white truncate">{userName.split(' ')[0]}</p>
                 <p className="text-[10px] text-slate-400 truncate font-mono">Sessão Segura</p>
               </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Globe, Palette, Layout, Link2, ShieldCheck, Mail, Database, Loader2 } from 'lucide-react';
+import { Save, Globe, Palette, Layout, Link2, ShieldCheck, Mail, Database, Loader2, Cpu, Eye, EyeOff, X } from 'lucide-react';
 import { useBranding } from './BrandingProvider';
 import { supabase } from '../lib/supabase';
 
@@ -618,31 +618,67 @@ const ApiConfigItem: React.FC<{
 }> = ({ label, placeholder, description, value, onChange }) => {
     const [showKey, setShowKey] = useState(false);
 
+    const maskKey = (key: string) => {
+        if (!key) return '';
+        if (key.length <= 10) return '********';
+        return `${key.slice(0, 6)}****************${key.slice(-4)}`;
+    };
+
     return (
-        <div className="space-y-4 p-6 glass border-white/5 rounded-2xl">
+        <div className="space-y-4 p-6 glass border-white/5 rounded-2xl relative overflow-hidden group">
             <div className="flex justify-between items-center">
-                <h4 className="font-bold text-white">{label}</h4>
-                <div className={`px-2 py-1 ${value ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'} text-[10px] font-bold rounded uppercase`}>
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Cpu size={16} className="text-primary" />
+                    </div>
+                    <h4 className="font-bold text-white tracking-tight">{label}</h4>
+                </div>
+                <div className={`px-2 py-1 ${value ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'} text-[10px] font-black rounded uppercase tracking-widest border border-current/10 animate-pulse`}>
                     {value ? 'Configurado' : 'Pendente'}
                 </div>
             </div>
-            <p className="text-xs text-slate-500">{description}</p>
-            <div className="relative">
+            <p className="text-xs text-slate-500 font-medium leading-relaxed">{description}</p>
+
+            <div className="relative group/input">
                 <input
                     type={showKey ? "text" : "password"}
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
+                    value={showKey ? maskKey(value) : value}
+                    onChange={(e) => {
+                        if (!showKey) onChange(e.target.value);
+                    }}
+                    readOnly={showKey}
                     placeholder={placeholder}
                     autoComplete="new-password"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary outline-none transition-all pr-12 font-mono text-sm"
+                    className={`w-full bg-slate-900/50 border ${showKey ? 'border-primary/30 text-primary' : 'border-white/10 text-white'} rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition-all pr-24 font-mono text-sm`}
                 />
-                <button
-                    type="button"
-                    onClick={() => setShowKey(!showKey)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors text-[10px] font-bold uppercase tracking-widest"
-                >
-                    {showKey ? 'Ocultar' : 'Ver'}
-                </button>
+
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    {showKey && value && (
+                        <button
+                            onClick={() => {
+                                onChange('');
+                                setShowKey(false);
+                            }}
+                            className="text-[10px] font-bold text-red-500 hover:text-red-400 bg-red-500/10 px-2 py-1 rounded transition-all uppercase tracking-tighter"
+                            title="Limpar e Editar"
+                        >
+                            Trocar
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        onClick={() => setShowKey(!showKey)}
+                        className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg transition-all ${showKey ? 'bg-primary text-slate-900 shadow-[0_0_15px_rgba(6,182,212,0.4)]' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                    >
+                        {showKey ? 'Ocultar' : 'Ver'}
+                    </button>
+                </div>
+
+                {showKey && (
+                    <div className="absolute -bottom-5 left-0 text-[8px] font-black text-primary/50 uppercase tracking-[0.3em] animate-pulse">
+                        Modo de Visualização Censurado
+                    </div>
+                )}
             </div>
         </div>
     );
