@@ -21,11 +21,24 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     // Diagnóstico de Conexão na Montagem
     React.useEffect(() => {
         const checkConnection = async () => {
-            // 1. Checar se a URL é a placeholder
+            const envUrl = import.meta.env.VITE_SUPABASE_URL;
+            // console.log('[Debug] VITE_SUPABASE_URL:', envUrl); // Debug log
+
+            // 1. Checar se a URL é a placeholder ou indefinida
             // @ts-ignore
-            const url = supabase.supabaseUrl;
-            if (!url || url.includes('placeholder')) {
-                setError('CONFIGURAÇÃO PENDENTE: As credenciais do Supabase (VITE_SUPABASE_URL) não foram encontradas no arquivo .env.local.');
+            const clientUrl = supabase.supabaseUrl;
+
+            if (!envUrl || envUrl.includes('placeholder')) {
+                // Mascarar a URL para não mostrar em tela
+                const maskedEnv = envUrl ? envUrl.substring(0, 10) + '...' : 'undefined';
+
+                // Se a URL do client é diferente da ENV, pode ser problema de build
+                if (clientUrl && !clientUrl.includes('placeholder') && clientUrl !== envUrl) {
+                    // Estranho, mas talvez o client esteja OK
+                    return;
+                }
+
+                setError(`CONFIGURAÇÃO PENDENTE: Environment Variables não carregadas. Valor lido: ${maskedEnv}. Reinicie o servidor 'npm run dev' se acabou de editar o .env.local.`);
                 return;
             }
 
@@ -33,10 +46,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             try {
                 const { error } = await supabase.from('tenants').select('count', { count: 'exact', head: true });
                 if (error) {
-                    // Ignora erros de permissão (significa que conectou, mas 401/403)
                     if (error.code !== 'PGRST301' && error.code !== '42501') {
                         console.warn('Ping falhou:', error);
-                        // Não mostra erro fatal logo de cara, apenas loga. Deixa o usuário tentar logar.
                     }
                 }
             } catch (err) {
