@@ -183,7 +183,7 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                 <button
                   onClick={() => setIsEnrichMenuOpen(!isEnrichMenuOpen)}
                   disabled={isEnriching}
-                  className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-magenta-500 to-primary text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-magenta-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all border border-white/10 disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-pink-600 to-cyan-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-pink-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all border border-white/10 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {isEnriching ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                   {isEnriching ? 'Processando...' : 'Enriquecer com IA'}

@@ -27,7 +27,7 @@ export class EnrichmentService {
         try {
             // Chamada Real para Análise
             insights = await ApiGatewayService.callApi<string>(
-                'gemini',
+                'gemini-1.5-flash',
                 'analyze-website',
                 {
                     leadName: lead.name,
@@ -39,7 +39,7 @@ export class EnrichmentService {
 
             // Chamada Real para Scoring
             const scoreResult = await ApiGatewayService.callApi<{ score: number }>(
-                'gemini',
+                'gemini-1.5-flash',
                 'score-lead',
                 { leadData: { ...lead, ...officialData } },
                 { apiKeys, ttl: 86400 }

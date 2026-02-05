@@ -28,8 +28,9 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
   const [cities, setCities] = useState<string[]>([]);
   const [selectedCity, setSelectedCity] = useState('');
   const [loadingCities, setLoadingCities] = useState(false);
-  const [isStoppingUI, setIsStoppingUI] = useState(false);
-  const isStopping = useRef(false);
+
+  const [stopSignal, setStopSignal] = useState(false);
+  const isStoppingRef = useRef(false);
 
   useEffect(() => {
     if (selectedState) {
@@ -62,10 +63,14 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
     }
   }, [selectedCity, selectedState]);
 
+  const handleStop = () => {
+    isStoppingRef.current = true;
+    setStopSignal(true);
+  };
+
   const handleSearch = async () => {
     if (isScanning) {
-      isStopping.current = true;
-      setIsStoppingUI(true);
+      handleStop();
       return;
     }
 
@@ -73,56 +78,64 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
     setHasFinished(false);
     setScanProgress(10);
     setLeadsFound(0);
-    isStopping.current = false;
-    setIsStoppingUI(false);
+    isStoppingRef.current = false;
+    setStopSignal(false);
 
     const runDiscoveryLoop = async () => {
-      while (!isStopping.current) {
-        setScanProgress(20);
-        try {
-          if (isStopping.current) break;
+      // Loop infinito até o usuário parar
+      while (true) {
+        if (isStoppingRef.current) break;
 
+        setScanProgress(30);
+        try {
           let currentSearchLocation = filters.location;
 
-          // LOGICA DE VARREDURA ESTADUAL: Se escolheu "Todo o Estado", a cada loop pega uma cidade aleatória da lista
+          // LOGICA DE VARREDURA ESTADUAL
           if (selectedCity === 'TODO_ESTADO' && cities.length > 0) {
             const randomCity = cities[Math.floor(Math.random() * cities.length)];
             currentSearchLocation = `${randomCity}, ${selectedState}`;
-            console.log(`[Neural Scan] Varrendo cidade aleatória no estado: ${currentSearchLocation}`);
           }
+
+          if (isStoppingRef.current) break;
 
           let results: any[] = [];
           if (mode === 'MAPS') {
             results = await DiscoveryService.performDeepScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys);
           } else {
-            // Para CNPJ, talvez mantenha o estado todo ou use a mesma lógica
             results = await DiscoveryService.performCNPJScan(filters.keyword, currentSearchLocation, config.tenantId);
           }
 
-          if (isStopping.current) break;
+          if (isStoppingRef.current) break;
 
-          setLeadsFound(prev => prev + results.length);
-          onResultsFound(results);
-          setScanProgress(100);
-
-          // Aguarda 3 segundos ou para imediatamente se solicitado
-          for (let i = 0; i < 30; i++) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            if (isStopping.current) break;
+          if (results.length > 0) {
+            setLeadsFound(prev => prev + results.length);
+            onResultsFound(results);
           }
 
-          if (isStopping.current) break;
-          setScanProgress(10);
+          setScanProgress(100);
+
+          // Delay inteligente com verificação de parada
+          for (let i = 0; i < 30; i++) { // 3 segundos de delay
+            await new Promise(resolve => setTimeout(resolve, 100));
+            if (isStoppingRef.current) break;
+          }
+
+          if (isStoppingRef.current) break;
+          setScanProgress(10); // Reset for next loop
         } catch (err) {
           console.error(err);
-          break;
+          // Se der erro, espera um pouco e tenta de novo (ou para)
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          if (isStoppingRef.current) break;
         }
       }
+
+      // Cleanup
       setIsScanning(false);
       setScanProgress(0);
-      isStopping.current = false;
-      setIsStoppingUI(false);
       setHasFinished(true);
+      isStoppingRef.current = false;
+      setStopSignal(false);
     };
 
     runDiscoveryLoop();
@@ -268,21 +281,21 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           <div className="relative pt-4">
             <button
               onClick={handleSearch}
-              disabled={(!isScanning && (!filters.keyword || !filters.location)) || isStoppingUI}
+              disabled={(!isScanning && (!filters.keyword || !filters.location)) || stopSignal}
               className={`w-full py-5 rounded-[1.5rem] font-black text-lg flex items-center justify-center gap-3 transition-all relative overflow-hidden group/btn disabled:opacity-50 disabled:cursor-not-allowed ${isScanning ? 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white' : 'bg-primary text-slate-900 shadow-2xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99]'
                 }`}
             >
               {isScanning ? (
                 <>
-                  {isStoppingUI ? (
+                  {stopSignal ? (
                     <>
                       <Loader2 size={24} className="animate-spin" />
-                      <span>PARANDO... AGUARDE</span>
+                      <span>PARANDO...</span>
                     </>
                   ) : (
                     <>
                       <Square size={24} fill="currentColor" />
-                      <span>PARAR EXTRAÇÃO CONTÍNUA ({leadsFound})</span>
+                      <span>PARAR ({leadsFound})</span>
                     </>
                   )}
                   <div

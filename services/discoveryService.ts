@@ -71,6 +71,21 @@ export class DiscoveryService {
         return results;
     }
 
+    /**
+     * Busca dados reais de um CNPJ específico (Simulação de API Oficial)
+     */
+    static async fetchRealCNPJData(cnpj: string): Promise<any> {
+        // Em produção: fetch(`https://publica.cnpj.ws/cnpj/${cnpj.replace(/\D/g, '')}`)
+        await new Promise(resolve => setTimeout(resolve, 600));
+
+        return {
+            status: 'ATIVA',
+            capital_social: Math.floor(Math.random() * 500000),
+            foundedDate: '2015-01-01',
+            natureza_juridica: '206-2 - Sociedade Empresária Limitada'
+        };
+    }
+
     private static async mockCNPJDiscovery(keyword: string, location: string): Promise<Lead[]> {
         await new Promise(resolve => setTimeout(resolve, 1500)); // Delay para parecer busca real
 
