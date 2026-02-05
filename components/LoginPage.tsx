@@ -13,6 +13,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState(''); // Estado para nome no registro
+    const [companyName, setCompanyName] = useState(''); // Estado para nome da empresa
     const [isRegistering, setIsRegistering] = useState(false); // Alternar entre Login/Registro
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -67,8 +68,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
         try {
             if (isRegistering) {
-                // FLUXO DE REGISTRO
-                const { data, error } = await supabase.auth.signUp({
+                // 1. FLUXO DE REGISTRO
+                const { data: authData, error: authError } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
@@ -78,13 +79,64 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     }
                 });
 
-                if (error) throw error;
+                if (authError) throw authError;
 
-                // Sucesso no cadastro
-                if (data.user) {
-                    setSuccessMsg('Cadastro realizado com sucesso! Verifique seu e-mail para confirmar a conta (se necessário) ou faça login.');
-                    setIsRegistering(false); // Volta para login
+                // 2. Se o registro funcionou e temos um usuário, vamos criar a EMPRESA (Tenant)
+                if (authData.user) {
+                    try {
+                        // A. Criar o Tenant
+                        const slug = companyName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Math.floor(Math.random() * 1000);
+                        const { data: tenantData, error: tenantError } = await supabase
+                            .from('tenants')
+                            .insert({
+                                name: companyName,
+                                slug: slug,
+                                plan: 'pro'
+                            })
+                            .select()
+                            .single();
+
+                        if (tenantError) throw tenantError;
+
+                        if (tenantData) {
+                            // B. Criar Configuração White Label Padrão para esse Tenant
+                            await supabase.from('white_label_configs').insert({
+                                tenant_id: tenantData.id,
+                                platform_name: companyName, // O nome da plataforma começa como o nome da empresa
+                                primary_color: '#06b6d4',
+                                secondary_color: '#3b82f6'
+                            });
+
+                            // C. MOVER o usuário para o novo Tenant (O trigger inicial jogou ele pro default '0000...')
+                            // Precisamos dar um pequeno delay para garantir que o trigger do banco já rodou
+                            // Mas como o trigger é AFTER INSERT, normalmente ele roda na mesma transação.
+                            // Porém, update via client side pode ter delay. Vamos tentar direto.
+
+                            const { error: profileError } = await supabase
+                                .from('profiles')
+                                .update({
+                                    tenant_id: tenantData.id,
+                                    role: 'admin' // Quem cria a empresa é Admin dela
+                                })
+                                .eq('id', authData.user.id);
+
+                            if (profileError) {
+                                console.warn('Erro ao mover perfil para novo tenant:', profileError);
+                                // Não vamos falhar o registro por isso, o usuário pode pedir suporte ou tentamos recuperar depois
+                            }
+                        }
+
+                        setSuccessMsg('Conta e Empresa criadas com sucesso! Faça login para começar.');
+                        setIsRegistering(false);
+
+                    } catch (setupError: any) {
+                        console.error('Erro no setup da empresa:', setupError);
+                        // Mesmo com erro no setup, o usuário foi criado. 
+                        setSuccessMsg('Usuário criado, mas houve um erro ao configurar a empresa: ' + setupError.message);
+                        setIsRegistering(false);
+                    }
                 }
+
             } else {
                 // FLUXO DE LOGIN
                 const { data, error } = await supabase.auth.signInWithPassword({
@@ -129,22 +181,40 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 </div>
 
                 <form onSubmit={handleAuth} className="space-y-6">
-                    {/* Campo de Nome (Apenas Registro) */}
+                    {/* Campo de Nome e Empresa (Apenas Registro) */}
                     {isRegistering && (
-                        <div className="space-y-2 animate-fade-in-up">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nome Completo</label>
-                            <div className="relative group">
-                                <div className="absolute left-4 top-3.5 text-slate-500 w-5 h-5 group-focus-within:text-primary transition-colors">
-                                    <ShieldCheck size={20} />
+                        <div className="space-y-4 animate-fade-in-up">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nome Completo</label>
+                                <div className="relative group">
+                                    <div className="absolute left-4 top-3.5 text-slate-500 w-5 h-5 group-focus-within:text-primary transition-colors">
+                                        <ShieldCheck size={20} />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all"
+                                        placeholder="Ex: Ana Silva"
+                                        required={isRegistering}
+                                    />
                                 </div>
-                                <input
-                                    type="text"
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all"
-                                    placeholder="Ex: Ana Silva"
-                                    required={isRegistering}
-                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nome da Sua Empresa</label>
+                                <div className="relative group">
+                                    <div className="absolute left-4 top-3.5 text-slate-500 w-5 h-5 group-focus-within:text-primary transition-colors">
+                                        <ShieldCheck size={20} />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={companyName}
+                                        onChange={(e) => setCompanyName(e.target.value)}
+                                        className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all"
+                                        placeholder="Ex: Agência Digital X"
+                                        required={isRegistering}
+                                    />
+                                </div>
                             </div>
                         </div>
                     )}
