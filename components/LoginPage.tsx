@@ -18,6 +18,36 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     const [error, setError] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+    // Diagnóstico de Conexão na Montagem
+    React.useEffect(() => {
+        const checkConnection = async () => {
+            // 1. Checar se a URL é a placeholder
+            // @ts-ignore
+            const url = supabase.supabaseUrl;
+            if (!url || url.includes('placeholder')) {
+                setError('CONFIGURAÇÃO PENDENTE: As credenciais do Supabase (VITE_SUPABASE_URL) não foram encontradas no arquivo .env.local.');
+                return;
+            }
+
+            // 2. Tentar um ping simples
+            try {
+                const { error } = await supabase.from('tenants').select('count', { count: 'exact', head: true });
+                if (error) {
+                    // Ignora erros de permissão (significa que conectou, mas 401/403)
+                    if (error.code !== 'PGRST301' && error.code !== '42501') {
+                        console.warn('Ping falhou:', error);
+                        // Não mostra erro fatal logo de cara, apenas loga. Deixa o usuário tentar logar.
+                    }
+                }
+            } catch (err) {
+                console.error('Ping falhou completamente:', err);
+                setError('ERRO DE REDE: Não foi possível conectar ao servidor. Verifique sua conexão.');
+            }
+        };
+
+        checkConnection();
+    }, []);
+
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
