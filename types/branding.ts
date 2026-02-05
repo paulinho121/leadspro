@@ -27,8 +27,8 @@ export interface BrandingConfig {
 export const DEFAULT_BRANDING: BrandingConfig = {
     id: 'default',
     tenantId: 'default',
-    platformName: 'LeadFlow Pro',
-    logoUrl: '', // Default logo logic in component
+    platformName: 'LeadFlow Neural',
+    logoUrl: '',
     colors: {
         primary: '#06b6d4', // cyan-500
         secondary: '#3b82f6', // blue-500

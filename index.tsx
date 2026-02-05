@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 
 import { BrandingProvider } from './components/BrandingProvider';
+import { Analytics } from "@vercel/analytics/react";
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -15,6 +16,7 @@ root.render(
   <React.StrictMode>
     <BrandingProvider>
       <App />
+      <Analytics />
     </BrandingProvider>
   </React.StrictMode>
 );
