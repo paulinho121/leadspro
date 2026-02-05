@@ -430,7 +430,18 @@ const App: React.FC = () => {
                 <p className="text-[10px] text-slate-400 truncate font-mono">Sessão Segura</p>
               </div>
 
-              <LogOut size={16} className="text-slate-500 hover:text-red-400 shrink-0" onClick={() => supabase.auth.signOut()} />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  supabase.auth.signOut();
+                  setSession(null);
+                  setIsMaster(false);
+                }}
+                className="p-2 hover:bg-red-500/10 rounded-xl text-slate-500 hover:text-red-400 transition-colors shrink-0 group/logout"
+                title="Sair"
+              >
+                <LogOut size={18} />
+              </button>
             </div>
           </div>
         </div>

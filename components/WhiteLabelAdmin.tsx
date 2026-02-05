@@ -506,11 +506,18 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                                 />
                             </div>
 
-                            <div className="p-4 bg-primary/10 border border-primary/20 rounded-2xl flex gap-4">
-                                <ShieldCheck className="text-primary shrink-0" />
-                                <p className="text-xs text-slate-300">
-                                    Suas chaves são criptografadas e armazenadas de forma segura. O sistema priorizará suas chaves pessoais antes de usar o saldo da plataforma.
-                                </p>
+                            <div className="p-5 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                <div className="p-2 bg-blue-500/20 rounded-lg shrink-0 h-fit">
+                                    <ShieldCheck className="text-blue-400" size={20} />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-xs font-black text-blue-300 uppercase tracking-widest">Aviso de Segurança e Privacidade</p>
+                                    <p className="text-xs text-slate-400 leading-relaxed">
+                                        Suas chaves de API são <strong>criptografadas de ponta a ponta</strong> e nunca são compartilhadas com terceiros.
+                                        O uso de APIs próprias garante que os dados processados permaneçam em sua conta e <strong>não sejam utilizados para treinamento de modelos públicos</strong>.
+                                        Em total conformidade com a LGPD brasiliera.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     )}
