@@ -36,16 +36,16 @@ export class ApiGatewayService {
             console.log(`[Neural Gateway] Connecting to ${apiName} Live Engine...`);
 
             if (apiName === 'maps') {
-                return await this.callSerperMaps(payload, apiKeys?.serper || import.meta.env.VITE_SERPER_API_KEY);
+                return await this.callSerperMaps(payload, apiKeys?.serper);
             }
 
             if (apiName === 'google-search') {
-                return await this.callSerperSearch(payload, apiKeys?.serper || import.meta.env.VITE_SERPER_API_KEY);
+                return await this.callSerperSearch(payload, apiKeys?.serper);
             }
 
             if (apiName === 'gemini' || apiName === 'gemini-1.5-flash') {
                 const model = apiName === 'gemini' ? 'gemini-pro' : 'gemini-1.5-flash';
-                return await this.callGeminiReal(endpoint, payload, apiKeys?.gemini || import.meta.env.VITE_GEMINI_API_KEY, model);
+                return await this.callGeminiReal(endpoint, payload, apiKeys?.gemini, model);
             }
 
             return await this.mockRealApiCall(apiName, endpoint, payload);

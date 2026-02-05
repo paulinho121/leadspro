@@ -72,8 +72,6 @@ export class EnrichmentService {
 
     private static async discoverSocialPresence(lead: Lead, apiKeys?: any) {
         try {
-            // Tenta busca real via Serper (Google Search)
-            // Requer chave configurada no painel ou .env
             const hasKey = apiKeys?.serper || import.meta.env.VITE_SERPER_API_KEY;
 
             if (hasKey) {
@@ -82,14 +80,12 @@ export class EnrichmentService {
                     'google-search',
                     'search',
                     { q: `${lead.name} ${lead.location} site instagram facebook` },
-                    { apiKeys, ttl: 86400 * 7 } // Cache longo de 7 dias
+                    { apiKeys, ttl: 86400 * 7 }
                 );
 
                 const organic = searchResults.organic || [];
-
                 const findLink = (domain: string) => organic.find((r: any) => r.link && r.link.includes(domain))?.link;
 
-                // Tenta achar um site oficial que não seja rede social ou diretório comum
                 const websiteRaw = organic.find((r: any) => {
                     const l = r.link || '';
                     return !l.includes('instagram.com') &&
@@ -110,27 +106,15 @@ export class EnrichmentService {
                 };
             }
         } catch (e) {
-            console.warn('Erro na busca social real, retornando vazios:', e);
+            console.warn('Erro na busca social real:', e);
         }
 
-        // Se falhar ou não tiver chave, retorna vazio para evitar dados "inventados" (Slug based) que o usuário reclamou
-        // Melhor sem link do que link errado.
+        // REMOVIDO: Geração de dados simulados (Demo)
         return {
             instagram: '',
             facebook: '',
             linkedin: '',
             website: lead.website || ''
-        };
-    }
-
-    private static generateHeuristicData(lead: Lead) {
-        // Gera dados estatísticos baseados no tipo de negócio para preencher o painel
-        const years = [2010, 2012, 2015, 2018, 2020, 2021];
-        const sizes = ['Microempreendedor', 'Pequeno Porte', 'Médio Porte', 'Grande Empresa'];
-
-        return {
-            foundedDate: `${years[Math.floor(Math.random() * years.length)]}-01-01`,
-            size: sizes[Math.floor(Math.random() * sizes.length)]
         };
     }
 }
