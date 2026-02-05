@@ -160,36 +160,65 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
     }, [formData.primaryColor, formData.secondaryColor]);
 
     const handleSave = async () => {
+        console.log('[WhiteLabelAdmin] Iniciando salvamento...');
         setSaving(true);
 
-        // Se estiver no modo default, precisamos de um tenant real para salvar no banco UUID
-        const activeTenantId = config.tenantId === 'default'
-            ? '00000000-0000-0000-0000-000000000000' // UUID nulo para demonstração ou primeiro setup
-            : config.tenantId;
+        try {
+            // Se estiver no modo default, precisamos identificar o tenant real do usuário logado
+            let activeTenantId = config.tenantId;
 
-        const { error } = await supabase
-            .from('white_label_configs')
-            .upsert({
-                tenant_id: activeTenantId,
-                platform_name: formData.platformName,
-                logo_url: formData.logoUrl,
-                favicon_url: formData.faviconUrl,
-                primary_color: formData.primaryColor,
-                secondary_color: formData.secondaryColor,
-                custom_domain: formData.customDomain || null, // Importante: null em vez de string vazia
-                subdomain: formData.subdomain || null,     // Importante: null em vez de string vazia
-                api_keys: formData.apiKeys,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'tenant_id' });
+            if (activeTenantId === 'default') {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.user) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('tenant_id')
+                        .eq('id', session.user.id)
+                        .single();
 
-        if (error) {
-            console.error('Erro detalhado ao salvar:', error);
-            alert(`Erro ao salvar: ${error.message || 'Verifique as permissões de banco RLS.'}`);
-        } else {
-            await refreshBranding();
-            alert('Configurações salvas com sucesso! As chaves de API agora estão ativas.');
+                    if (profile?.tenant_id) {
+                        activeTenantId = profile.tenant_id;
+                        console.log('[WhiteLabelAdmin] Tenant ID resolvido via perfil:', activeTenantId);
+                    }
+                }
+            }
+
+            // Fallback final para o tenant demo se nada funcionar
+            if (activeTenantId === 'default') {
+                activeTenantId = '00000000-0000-0000-0000-000000000000';
+            }
+
+            console.log('[WhiteLabelAdmin] Salvando para o Tenant:', activeTenantId);
+
+            const { error } = await supabase
+                .from('white_label_configs')
+                .upsert({
+                    tenant_id: activeTenantId,
+                    platform_name: formData.platformName,
+                    logo_url: formData.logoUrl,
+                    favicon_url: formData.faviconUrl,
+                    primary_color: formData.primaryColor,
+                    secondary_color: formData.secondaryColor,
+                    custom_domain: formData.customDomain || null,
+                    subdomain: formData.subdomain || null,
+                    api_keys: formData.apiKeys,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'tenant_id' });
+
+            if (error) {
+                console.error('[WhiteLabelAdmin] Erro detalhado ao salvar:', error);
+                alert(`Erro ao salvar: ${error.message} (Código: ${error.code})`);
+            } else {
+                console.log('[WhiteLabelAdmin] Sucesso! Sincronizando branding...');
+                await refreshBranding();
+                alert('Configurações salvas com sucesso! As chaves de API agora estão ativas.');
+            }
+        } catch (err: any) {
+            console.error('[WhiteLabelAdmin] Erro inesperado:', err);
+            alert('Erro inesperado: ' + (err.message || 'Verifique o console.'));
+        } finally {
+            setSaving(false);
         }
-        setSaving(false);
     };
 
     return (
@@ -575,28 +604,36 @@ const ApiConfigItem: React.FC<{
     description: string;
     value: string;
     onChange: (val: string) => void
-}> = ({ label, placeholder, description, value, onChange }) => (
-    <div className="space-y-4 p-6 glass border-white/5 rounded-2xl">
-        <div className="flex justify-between items-center">
-            <h4 className="font-bold text-white">{label}</h4>
-            <div className={`px-2 py-1 ${value ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'} text-[10px] font-bold rounded uppercase`}>
-                {value ? 'Configurado' : 'Pendente'}
+}> = ({ label, placeholder, description, value, onChange }) => {
+    const [showKey, setShowKey] = useState(false);
+
+    return (
+        <div className="space-y-4 p-6 glass border-white/5 rounded-2xl">
+            <div className="flex justify-between items-center">
+                <h4 className="font-bold text-white">{label}</h4>
+                <div className={`px-2 py-1 ${value ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'} text-[10px] font-bold rounded uppercase`}>
+                    {value ? 'Configurado' : 'Pendente'}
+                </div>
+            </div>
+            <p className="text-xs text-slate-500">{description}</p>
+            <div className="relative">
+                <input
+                    type={showKey ? "text" : "password"}
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder={placeholder}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary outline-none transition-all pr-12 font-mono text-sm"
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowKey(!showKey)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors text-[10px] font-bold uppercase tracking-widest"
+                >
+                    {showKey ? 'Ocultar' : 'Ver'}
+                </button>
             </div>
         </div>
-        <p className="text-xs text-slate-500">{description}</p>
-        <div className="relative">
-            <input
-                type="password"
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={placeholder}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary outline-none transition-all pr-12"
-            />
-            <button className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
-                Ver
-            </button>
-        </div>
-    </div>
-);
+    );
+};
 
 export default WhiteLabelAdmin;
