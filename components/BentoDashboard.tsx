@@ -31,16 +31,16 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich }) => {
   const totalLeads = leads.length;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6 max-w-7xl mx-auto animate-fade-in">
+    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6 max-w-7xl mx-auto animate-fade-in pb-10">
 
       {/* 1. Main Performance - Fluxo de Leads */}
-      <div className="col-span-1 md:col-span-4 lg:col-span-4 glass rounded-[2rem] p-8 premium-card relative overflow-hidden">
+      <div className="col-span-1 md:col-span-4 lg:col-span-4 glass rounded-[2rem] p-6 md:p-8 premium-card relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 blur-[100px] -mr-40 -mt-40 transition-all hover:bg-cyan-500/20"></div>
 
-        <div className="flex items-center justify-between mb-8 relative z-10">
+        <div className="flex items-center justify-between mb-6 md:mb-8 relative z-10">
           <div>
-            <h3 className="text-2xl font-bold text-white mb-1 tracking-tight">Fluxo de Inteligência</h3>
-            <p className="text-xs text-cyan-500/60 font-mono tracking-widest uppercase">Lead_Stream_Realtime</p>
+            <h3 className="text-xl md:text-2xl font-bold text-white mb-1 tracking-tight">Fluxo de Inteligência</h3>
+            <p className="text-[9px] md:text-xs text-cyan-500/60 font-mono tracking-widest uppercase">Lead_Stream_Realtime</p>
           </div>
           <div className="flex items-center gap-3">
             <span className="flex h-3 w-3 relative">
@@ -83,22 +83,22 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich }) => {
       </div>
 
       {/* 2. Key Metrics - Estatísticas */}
-      <div className="col-span-1 md:col-span-2 lg:col-span-2 glass rounded-[2rem] p-8 flex flex-col premium-card overflow-hidden">
+      <div className="col-span-1 md:col-span-2 lg:col-span-2 glass rounded-[2rem] p-6 md:p-8 flex flex-col premium-card overflow-hidden">
         <div className="absolute bottom-0 right-0 w-64 h-64 bg-magenta-500/10 blur-[100px] -mr-32 -mb-32"></div>
 
-        <div className="flex justify-between items-start mb-8 relative z-10">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+        <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
+          <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
             <Activity className="text-magenta-400" size={18} /> Pulso Operacional
           </h3>
-          <div className="flex flex-col items-end">
+          <div className="flex flex-col items-end shrink-0">
             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Saldo Estimado</span>
             <span className="text-lg font-mono font-bold text-emerald-400">R$ 0,00</span>
           </div>
         </div>
 
-        <div className="space-y-6 relative z-10 flex-1">
-          <StatBox label="Leads Identificados" value={totalLeads.toString()} color="text-cyan-400" icon={<Users size={20} />} />
-          <StatBox label="Score de Qualidade" value={enrichedCount > 0 ? "84.2" : "0.0"} color="text-magenta-400" icon={<Sparkles size={20} />} />
+        <div className="space-y-4 md:space-y-6 relative z-10 flex-1">
+          <StatBox label="Leads Identificados" value={totalLeads.toString()} color="text-cyan-400" icon={<Users size={18} md:size={20} />} />
+          <StatBox label="Score de Qualidade" value={enrichedCount > 0 ? "84.2" : "0.0"} color="text-magenta-400" icon={<Sparkles size={18} md:size={20} />} />
 
           <div className="pt-4 border-t border-white/5">
             <div className="flex items-center justify-between mb-2">
@@ -110,34 +110,24 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich }) => {
             </div>
           </div>
         </div>
-
-        <div className="mt-8 pt-6 border-t border-white/5 relative z-10">
-          <div className="flex items-center justify-between mb-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-            <span>Conversão Estimada</span>
-            <span className="text-cyan-400">14.8%</span>
-          </div>
-          <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-cyan-500 to-magenta-500 w-[14.8%] rounded-full shadow-[0_0_10px_rgba(6,182,212,0.4)] transition-all duration-1000"></div>
-          </div>
-        </div>
       </div>
 
       {/* 3. AI Insights Feed */}
-      <div className="col-span-1 md:col-span-4 lg:col-span-4 glass rounded-[2rem] p-8 premium-card relative overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+      <div className="col-span-1 md:col-span-4 lg:col-span-4 glass rounded-[2rem] p-6 md:p-8 premium-card relative overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between mb-6 md:mb-8">
+          <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
             <Brain className="text-cyan-400" size={20} /> Sinais Gemini
           </h3>
           <span className="text-[10px] bg-white/5 px-3 py-1.5 rounded-full text-slate-400 font-mono uppercase tracking-widest border border-white/5">
-            Auto-Scan Ativo
+            Auto-Scan
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
-          <InsightLog status="SUCESSO" msg="Identificado cluster em SP / Tecnologia" time="há 2 min" />
-          <InsightLog status="PROGRESSO" msg="Enriquecendo dados de 'Green Power Co.'" time="há 5 min" color="cyan" />
-          <InsightLog status="ALERTA" msg="14 novos leads prontos para abordagem" time="há 12 min" type="alert" />
-          <InsightLog status="SYNC" msg="Leads sincronizados com CRM local" time="há 1h" color="slate" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
+          <InsightLog status="SUCESSO" msg="Identificado cluster em SP" time="há 2 min" />
+          <InsightLog status="PROGRESSO" msg="Enriquecendo dados..." time="há 5 min" color="cyan" />
+          <InsightLog status="ALERTA" msg="14 novos leads prontos" time="há 12 min" type="alert" />
+          <InsightLog status="SYNC" msg="Sincronizados" time="há 1h" color="slate" />
         </div>
       </div>
 
@@ -176,12 +166,12 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich }) => {
 
 const StatBox = ({ label, value, color, icon }: { label: string, value: string, color: string, icon: React.ReactNode }) => (
   <div className="flex items-center gap-5 group/stat">
-    <div className={`w-12 h-12 rounded-2xl bg-white/5 ${color} flex items-center justify-center transition-all group-hover/stat:bg-white/10 group-hover/stat:scale-105`}>
+    <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-white/5 ${color} flex items-center justify-center transition-all group-hover/stat:bg-white/10 group-hover/stat:scale-105 shrink-0`}>
       {icon}
     </div>
     <div>
-      <span className="text-xs font-medium text-slate-500 uppercase tracking-tighter">{label}</span>
-      <div className={`text-2xl font-bold font-mono ${color} leading-none mt-1`}>{value}</div>
+      <span className="text-[10px] md:text-xs font-medium text-slate-500 uppercase tracking-tighter">{label}</span>
+      <div className={`text-xl md:text-2xl font-bold font-mono ${color} leading-none mt-1`}>{value}</div>
     </div>
   </div>
 );

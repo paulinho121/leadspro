@@ -7,7 +7,7 @@ export class DiscoveryService {
     private static businessSuffixes = ['LTDA', 'SA', 'EIRELI', 'ME', 'Consultoria', 'Serviços', 'Tech', 'Hub'];
 
     /**
-     * Realiza uma varredura profunda focada no Google Maps e Redes Sociais
+     * Realiza uma varredura profunda focada em fontes geolocalizadas e Redes Sociais
      */
     static async performDeepScan(keyword: string, location: string, tenantId?: string, apiKeys?: any): Promise<Lead[]> {
         console.log(`[Neural Discovery] Calling Live Engine for: ${keyword} "${location}"`);
@@ -44,7 +44,7 @@ export class DiscoveryService {
                         reviews: place.ratingCount
                     },
                     socialLinks: {
-                        google: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.title + ' ' + place.address)}`,
+                        map_link: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.title + ' ' + place.address)}`,
                         cnpj: 'VERIFICAR',
                         whatsapp: whatsappLink
                     }
@@ -61,29 +61,91 @@ export class DiscoveryService {
     static async performCNPJScan(keyword: string, location: string, tenantId?: string): Promise<Lead[]> {
         console.log(`[CNPJ] Iniciando busca governamental para: ${keyword} em ${location}`);
 
-        // A PARTIR DAQUI: Em um cenário real, usaríamos uma API paga como CNPJ.ws ou ReceitaWS para busca por termo.
-        // Como o usuário relatou nomes genéricos, vamos melhorar a simulação para parecerem dados reais recuperados da base do governo,
-        // usando a BrasilAPI para validar CNPJs se necessário ou gerando dados plausíveis baseados no CNAE/Termo.
+        // Detectar se o keyword é um CNPJ individual (para o novo modo ENRICH)
+        const cleanCnpj = keyword.replace(/\D/g, '');
+        if (cleanCnpj.length === 14) {
+            console.log(`[CNPJ] Detetado CNPJ individual: ${cleanCnpj}. Buscando dados reais...`);
+            const realData = await this.fetchRealCNPJData(cleanCnpj);
+            if (realData && realData.nome) {
+                return [{
+                    id: `cnpj-${cleanCnpj}`,
+                    name: realData.nome,
+                    website: realData.site || '',
+                    phone: realData.telefone || '',
+                    industry: realData.atividade_principal?.[0]?.text || keyword,
+                    location: `${realData.municipio}, ${realData.uf}`,
+                    status: LeadStatus.NEW,
+                    lastUpdated: new Date().toISOString(),
+                    details: {
+                        tradeName: realData.fantasia || realData.nome,
+                        legalName: realData.nome,
+                        activity: realData.atividade_principal?.[0]?.text,
+                        foundedDate: realData.abertura,
+                        size: realData.porte,
+                        address: `${realData.logradouro}, ${realData.numero} - ${realData.bairro}, ${realData.municipio} - ${realData.uf}`,
+                        cnpj: cleanCnpj
+                    },
+                    socialLinks: {
+                        cnpj: cleanCnpj,
+                        whatsapp: realData.telefone ? `https://wa.me/55${realData.telefone.replace(/\D/g, '')}` : undefined
+                    }
+                }];
+            }
+        }
 
-        // Simulação avançada de busca na RFB
+        // Simulação avançada de busca na RFB para termos genéricos
         const results = await this.mockCNPJDiscovery(keyword, location);
-
         return results;
     }
 
     /**
-     * Busca dados reais de um CNPJ específico (Simulação de API Oficial)
+     * Busca dados reais de um CNPJ específico usando múltiplas APIs com fallback
      */
     static async fetchRealCNPJData(cnpj: string): Promise<any> {
-        // Em produção: fetch(`https://publica.cnpj.ws/cnpj/${cnpj.replace(/\D/g, '')}`)
-        await new Promise(resolve => setTimeout(resolve, 600));
+        const cleanCnpj = cnpj.replace(/\D/g, '');
 
-        return {
-            status: 'ATIVA',
-            capital_social: Math.floor(Math.random() * 500000),
-            foundedDate: '2015-01-01',
-            natureza_juridica: '206-2 - Sociedade Empresária Limitada'
-        };
+        // APIs Públicas sugeridas (Ordem de prioridade pelo tempo de resposta/estabilidade)
+        const endpoints = [
+            `https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`,
+            `https://receitaws.com.br/v1/cnpj/${cleanCnpj}`,
+            `https://minhareceita.org/${cleanCnpj}`,
+            `https://api.cnpja.com.br/companies/${cleanCnpj}`
+        ];
+
+        for (const url of endpoints) {
+            try {
+                console.log(`[CNPJ API] Consultando: ${url}`);
+                const response = await fetch(url, { signal: AbortSignal.timeout(5000) }); // Timeout de 5s por API
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Normalização Universal dos dados retornados
+                    return {
+                        nome: data.nome || data.razao_social || data.name || '',
+                        fantasia: data.fantasia || data.nome_fantasia || data.alias || data.razao_social || '',
+                        telefone: data.telefone || data.ddd_telefone_1 || (data.phone ? `${data.phone.area}-${data.phone.number}` : ''),
+                        email: data.email || '',
+                        municipio: data.municipio || data.cidade || data.address?.city || '',
+                        uf: data.uf || data.state || data.address?.state || '',
+                        abertura: data.abertura || data.data_inicio_atividade || data.founded || '',
+                        porte: data.porte || data.size || '',
+                        logradouro: data.logradouro || data.address?.street || '',
+                        numero: data.numero || data.address?.number || '',
+                        bairro: data.bairro || data.address?.district || '',
+                        atividade_principal: data.atividade_principal ||
+                            (data.cnae_fiscal_descricao ? [{ text: data.cnae_fiscal_descricao }] :
+                                data.main_activity ? [{ text: data.main_activity.text }] : []),
+                        site: data.site || data.website || ''
+                    };
+                }
+            } catch (err) {
+                console.warn(`[CNPJ API] Falha na rota ${url}:`, err);
+                continue; // Tenta a próxima API da lista
+            }
+        }
+
+        return null;
     }
 
     private static async mockCNPJDiscovery(keyword: string, location: string): Promise<Lead[]> {
@@ -159,7 +221,7 @@ export class DiscoveryService {
                     tradeName: `${nicho} ${adj} ${city}`
                 },
                 socialLinks: {
-                    google: `https://www.google.com/maps/search/${keywordStr}+${city}`,
+                    map_link: `https://www.google.com/maps/search/${keywordStr}+${city}`,
                     cnpj: generatedCnpj,
                     whatsapp: `https://wa.me/${waPhone}`
                 }

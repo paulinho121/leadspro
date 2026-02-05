@@ -34,7 +34,7 @@ export interface Lead {
   socialLinks?: {
     instagram?: string;
     facebook?: string;
-    google?: string;
+    map_link?: string;
     cnpj?: string;
     whatsapp?: string;
     linkedin?: string;

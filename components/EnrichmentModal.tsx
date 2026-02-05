@@ -104,7 +104,7 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
         <div className="px-10 pb-6 grid grid-cols-4 gap-4 relative z-10">
           <SourceButton
             icon={<Globe size={24} className="text-blue-400" />}
-            label="GOOGLE"
+            label="SITE"
             onClick={() => handleSocialClick(lead.website)}
             disabled={!lead.website}
           />
@@ -122,9 +122,9 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
           />
           <SourceButton
             icon={<Search size={24} className="text-primary" />}
-            label="MAPS"
-            onClick={() => handleSocialClick(lead.socialLinks?.google)}
-            disabled={!lead.socialLinks?.google}
+            label="LOCAL"
+            onClick={() => handleSocialClick(lead.socialLinks?.map_link)}
+            disabled={!lead.socialLinks?.map_link}
           />
         </div>
 

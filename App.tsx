@@ -170,7 +170,7 @@ const App: React.FC = () => {
         location: dbLead.location,
         status: dbLead.status as LeadStatus,
         details: dbLead.details,
-        aiInsights: dbLead.ai_insights,
+        ai_insights: dbLead.ai_insights,
         socialLinks: dbLead.social_links,
         lastUpdated: dbLead.updated_at
       }));
@@ -363,11 +363,22 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-background text-slate-200 flex font-sans selection:bg-primary/30 selection:text-primary overflow-hidden">
+    <div className="h-screen bg-background text-slate-200 flex font-sans selection:bg-primary/30 selection:text-primary overflow-hidden relative">
+      {/* Sidebar Mobile Overlay */}
+      {!isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[45] md:hidden animate-fade-in"
+          onClick={() => setSidebarOpen(true)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className={`glass border-r border-white/5 transition-all duration-500 ease-in-out z-50 flex flex-col ${isSidebarOpen ? 'w-80' : 'w-24'}`}>
-        <div className="p-8 flex items-center gap-4 group cursor-pointer overflow-hidden" onClick={() => setActiveTab('dashboard')}>
-          <div className={`bg-primary/20 p-2 rounded-2xl group-hover:scale-110 group-hover:bg-primary/30 transition-all duration-500 shadow-2xl shadow-primary/20 flex items-center justify-center ${config.logoUrl ? 'bg-white/5' : ''}`}>
+      <aside className={`glass border-r border-white/5 transition-all duration-500 ease-in-out z-50 flex flex-col 
+        fixed md:relative inset-y-0 left-0 
+        ${!isSidebarOpen ? 'translate-x-0 w-80' : '-translate-x-full md:translate-x-0 w-80 md:w-24'}`}>
+
+        <div className="p-6 md:p-8 flex items-center gap-4 group cursor-pointer overflow-hidden" onClick={() => setActiveTab('dashboard')}>
+          <div className={`bg-primary/20 p-2 rounded-2xl group-hover:scale-110 group-hover:bg-primary/30 transition-all duration-500 shadow-2xl shadow-primary/20 flex items-center justify-center shrink-0 ${config.logoUrl ? 'bg-white/5' : ''}`}>
             {config.logoUrl ? (
               <img
                 src={config.logoUrl}
@@ -378,123 +389,105 @@ const App: React.FC = () => {
               <BrainCircuit className="text-primary" size={32} />
             )}
           </div>
-          {isSidebarOpen && (
-            <div className="transition-all duration-500">
-              <h1 className="text-2xl font-black text-white tracking-tighter leading-none">{config.platformName.split(' ')[0]}<span className="text-primary italic">{config.platformName.split(' ')[1] || 'Pro'}</span></h1>
-              <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.3em] mt-1">Matrix v3.2</p>
-            </div>
-          )}
+          <div className={`transition-all duration-500 ${!isSidebarOpen || (isSidebarOpen && false) ? 'opacity-100' : 'md:opacity-0 md:hidden'}`}>
+            <h1 className="text-2xl font-black text-white tracking-tighter leading-none">{config.platformName.split(' ')[0]}<span className="text-primary italic">{config.platformName.split(' ')[1] || 'Pro'}</span></h1>
+            <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.3em] mt-1">Matrix v3.2</p>
+          </div>
         </div>
 
-        <nav className="flex-1 px-4 py-8 space-y-2">
-          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard Principal" active={activeTab === 'dashboard'} expanded={isSidebarOpen} onClick={() => setActiveTab('dashboard')} />
-          <NavItem icon={<Search size={20} />} label="Extração em Massa" active={activeTab === 'discovery'} expanded={isSidebarOpen} onClick={() => setActiveTab('discovery')} />
-          <NavItem icon={<Database size={20} />} label="Laboratório de Leads" active={activeTab === 'lab'} expanded={isSidebarOpen} onClick={() => setActiveTab('lab')} />
-          <NavItem icon={<Rocket size={20} />} label="Leads Enriquecidos" active={activeTab === 'enriched'} expanded={isSidebarOpen} onClick={() => setActiveTab('enriched')} />
+        <nav className="flex-1 px-4 py-4 md:py-8 space-y-2 overflow-y-auto custom-scrollbar">
+          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} expanded={!isSidebarOpen} onClick={() => { setActiveTab('dashboard'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<Search size={20} />} label="Extração" active={activeTab === 'discovery'} expanded={!isSidebarOpen} onClick={() => { setActiveTab('discovery'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<Database size={20} />} label="Laboratório" active={activeTab === 'lab'} expanded={!isSidebarOpen} onClick={() => { setActiveTab('lab'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<Rocket size={20} />} label="Enriquecidos" active={activeTab === 'enriched'} expanded={!isSidebarOpen} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
 
           <div className="pt-8 pb-4">
-            {isSidebarOpen && <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Sistemas e IA</p>}
+            {(!isSidebarOpen) && <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Sistemas</p>}
             <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mx-4 mb-4"></div>
           </div>
 
-          <NavItem icon={<Activity size={20} />} label="Histórico Neural" expanded={isSidebarOpen} onClick={() => { }} />
-          <NavItem icon={<ShieldCheck size={20} />} label="Painel do Parceiro" active={activeTab === 'partner'} expanded={isSidebarOpen} onClick={() => setActiveTab('partner')} />
+          <NavItem icon={<Activity size={20} />} label="Histórico" expanded={!isSidebarOpen} onClick={() => { }} />
+          <NavItem icon={<ShieldCheck size={20} />} label="Parceiro" active={activeTab === 'partner'} expanded={!isSidebarOpen} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
 
           {isMaster && (
-            <NavItem icon={<ShieldCheck className="text-primary" size={20} />} label="Painel Master" active={activeTab === 'master'} expanded={isSidebarOpen} onClick={() => setActiveTab('master')} />
+            <NavItem icon={<ShieldCheck className="text-primary" size={20} />} label="Master" active={activeTab === 'master'} expanded={!isSidebarOpen} onClick={() => { setActiveTab('master'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
           )}
         </nav>
 
         <div className="p-4 mt-auto">
-          <div className="glass border border-white/5 rounded-[2rem] p-5 premium-card group cursor-pointer relative overflow-hidden transition-all duration-300 hover:border-primary/30">
-            {/* Background Decor */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-[50px] -mr-10 -mt-10 rounded-full group-hover:bg-primary/10 transition-colors"></div>
-
-            <div className={`flex items-center gap-4 transition-all duration-500 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 scale-90'}`}>
-              <div className="relative">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-blue-600 p-[2px] shadow-[0_0_15px_rgba(6,182,212,0.3)]">
-                  <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center font-bold text-sm text-white">
+          <div className="glass border border-white/5 rounded-[2rem] p-4 md:p-5 premium-card group cursor-pointer relative overflow-hidden transition-all duration-300 hover:border-primary/30">
+            <div className={`flex items-center gap-4 transition-all duration-500 ${!isSidebarOpen ? 'opacity-100' : 'md:opacity-0'}`}>
+              <div className="relative shrink-0">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-primary to-blue-600 p-[2px] shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+                  <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center font-bold text-xs md:text-sm text-white">
                     {session?.user?.email?.slice(0, 2).toUpperCase() || 'AD'}
                   </div>
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-slate-900 shadow-sm flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
                 </div>
               </div>
 
               <div className="flex-1 overflow-hidden">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <p className="text-sm font-black text-white truncate drop-shadow-md">Admin {config.platformName.split(' ')[0]}</p>
-                  <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded border border-primary/20 font-bold uppercase">PRO</span>
-                </div>
-                <p className="text-[10px] text-slate-400 truncate font-mono flex items-center gap-1.5">
-                  <Activity size={10} className="text-emerald-500" />
-                  Sessão Segura
-                </p>
+                <p className="text-sm font-black text-white truncate">Admin</p>
+                <p className="text-[10px] text-slate-400 truncate font-mono">Sessão Segura</p>
               </div>
 
-              <LogOut size={16} className="text-slate-500 hover:text-red-400 cursor-pointer transition-all hover:scale-110" onClick={() => supabase.auth.signOut()} />
+              <LogOut size={16} className="text-slate-500 hover:text-red-400 shrink-0" onClick={() => supabase.auth.signOut()} />
             </div>
           </div>
         </div>
 
         <button
           onClick={() => setSidebarOpen(!isSidebarOpen)}
-          className="absolute -right-3 top-24 bg-primary text-slate-900 p-1.5 rounded-full shadow-2xl hover:scale-110 transition-all duration-500 z-[60]"
+          className="absolute -right-3 top-24 bg-primary text-slate-900 p-2 rounded-full shadow-2xl hover:scale-110 transition-all duration-500 z-[60] md:flex"
         >
-          {isSidebarOpen ? <X size={12} /> : <Menu size={12} />}
+          {!isSidebarOpen ? <X size={14} /> : <Menu size={14} />}
         </button>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[radial-gradient(circle_at_50%_0%,_rgba(6,182,212,0.05)_0%,_transparent_50%)]">
-        <header className="h-24 border-b border-white/5 flex items-center justify-between px-10 relative z-40 backdrop-blur-xl">
-          <div className="flex items-center gap-6">
-            <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-3">
-              {activeTab === 'dashboard' && 'Visão Operacional'}
-              {activeTab === 'discovery' && 'Extração Geolocalizada'}
-              {activeTab === 'lab' && 'Laboratório de Leads'}
-              {activeTab === 'enriched' && 'Gestão Comercial'}
-              {activeTab === 'partner' && 'Partner Admin Console'}
-              {activeTab === 'master' && 'Master Control Console'}
+      <main className="flex-1 flex flex-col min-w-0 bg-[radial-gradient(circle_at_50%_0%,_rgba(6,182,212,0.05)_0%,_transparent_50%)] overflow-hidden">
+        <header className="h-20 md:h-24 border-b border-white/5 flex items-center justify-between px-6 md:px-10 relative z-40 backdrop-blur-xl shrink-0">
+          <div className="flex items-center gap-4 md:gap-6 ml-8 md:ml-0">
+            <h2 className="text-lg md:text-xl font-bold text-white tracking-tight flex items-center gap-3">
+              {activeTab === 'dashboard' && 'Dashboard'}
+              {activeTab === 'discovery' && 'Extração'}
+              {activeTab === 'lab' && 'Laboratório'}
+              {activeTab === 'enriched' && 'Comercial'}
+              {activeTab === 'partner' && 'Branding'}
+              {activeTab === 'master' && 'Master'}
             </h2>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-white/5 rounded-2xl border border-white/5">
-              <Zap size={14} className="text-primary animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sync: <span className="text-emerald-500">Online</span></span>
+          <div className="flex items-center gap-3 md:gap-6">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-2xl border border-white/5">
+              <Zap size={12} className="text-primary animate-pulse" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Sync</span>
             </div>
-            <button className="relative group p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5">
-              <Bell size={20} className="text-slate-400 group-hover:text-white transition-colors" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full ring-2 ring-slate-900 group-hover:scale-150 transition-all"></span>
+            <button className="relative group p-2.5 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5">
+              <Bell size={18} className="text-slate-400 group-hover:text-white transition-colors" />
+              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-primary rounded-full ring-2 ring-slate-900"></span>
             </button>
           </div>
         </header>
 
         {/* ALERTA DE CONFIGURAÇÃO PENDENTE */}
         {missingKeys && activeTab !== 'partner' && (
-          <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-10 py-4 flex items-center justify-between animate-fade-in-down">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-yellow-500/20 rounded-lg">
-                <AlertTriangle className="text-yellow-500" size={20} />
-              </div>
-              <div>
-                <h4 className="font-bold text-white text-sm">Configuração de API Necessária</h4>
-                <p className="text-xs text-slate-400">Para utilizar a extração e IA, você precisa configurar suas chaves de API.</p>
-              </div>
+          <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-6 md:px-10 py-3 flex items-center justify-between animate-fade-in-down shrink-0">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="text-yellow-500 shrink-0" size={18} />
+              <p className="text-xs text-slate-400 hidden sm:block">Chaves de API pendentes. <span className="text-white font-bold">Configure para extrair.</span></p>
+              <p className="text-xs text-white font-bold sm:hidden">Configurar APIs</p>
             </div>
             <button
               onClick={() => setActiveTab('partner')}
-              className="bg-yellow-500 text-slate-900 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider hover:scale-105 transition-all flex items-center gap-2"
+              className="bg-yellow-500 text-slate-900 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider hover:scale-105 transition-all"
             >
-              Configurar Agora <ArrowRight size={14} />
+              Setup
             </button>
           </div>
         )}
 
-        <section className="flex-1 overflow-y-auto p-10 custom-scrollbar">
-          <div className="max-w-7xl mx-auto space-y-10">
+        <section className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
+          <div className="max-w-7xl mx-auto">
             {renderActiveSection()}
           </div>
         </section>

@@ -484,11 +484,11 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
 
                             <div className="grid grid-cols-1 gap-6">
                                 <ApiConfigItem
-                                    label="Serper.dev API (Google Maps)"
+                                    label="Serper.dev API (Search Engine)"
                                     placeholder="8c2a..."
                                     value={formData.apiKeys?.serper || ''}
                                     onChange={(val) => setFormData({ ...formData, apiKeys: { ...formData.apiKeys, serper: val } })}
-                                    description="Obrigatória para extração real do Google Maps (places, telefones, reviews)."
+                                    description="Obrigatória para extração real de geolocalização e busca visual (places, telefones, reviews)."
                                 />
                                 <ApiConfigItem
                                     label="Google Gemini API"

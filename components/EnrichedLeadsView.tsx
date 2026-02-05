@@ -31,7 +31,7 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
             lead.phone || '',
             lead.industry || '',
             lead.location || '',
-            `"${(lead.aiInsights || '').replace(/"/g, '""')}"`,
+            `"${(lead.ai_insights || '').replace(/"/g, '""')}"`,
             lead.socialLinks?.instagram || '',
             lead.socialLinks?.facebook || '',
             lead.socialLinks?.linkedin || ''
@@ -175,7 +175,7 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
                                 </div>
                             </div>
 
-                            {lead.aiInsights && (
+                            {lead.ai_insights && (
                                 <div className="mt-4 p-4 rounded-xl bg-black/20 border border-white/5">
                                     <div className="flex items-center gap-2 mb-2">
                                         <span className="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1">
@@ -184,7 +184,7 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
                                         </span>
                                     </div>
                                     <p className="text-sm text-slate-300 leading-relaxed">
-                                        {lead.aiInsights}
+                                        {lead.ai_insights}
                                     </p>
                                 </div>
                             )}
