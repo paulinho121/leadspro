@@ -32,35 +32,44 @@ const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      if (session?.user) {
-        // Verificação dupla: Perfil + E-mail Master Fixo (Case Insensitive)
-        const isMasterEmail = session.user.email?.toLowerCase() === 'paulofernandoautomacao@gmail.com';
+    const handleAuthCheck = async (currSession: any) => {
+      if (currSession?.user) {
+        const userEmail = currSession.user.email?.toLowerCase().trim() || '';
+        const isMasterByEmail = userEmail === 'paulofernandoautomacao@gmail.com';
 
-        const { data: profile } = await supabase.from('profiles').select('is_master_admin').eq('id', session.user.id).maybeSingle();
-        if (profile?.is_master_admin || isMasterEmail) setIsMaster(true);
-      }
-    };
-    checkSession();
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_master_admin')
+            .eq('id', currSession.user.id)
+            .maybeSingle();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        const isMasterEmail = session.user.email?.toLowerCase() === 'paulofernandoautomacao@gmail.com';
-
-        const { data } = await supabase.from('profiles').select('is_master_admin').eq('id', session.user.id).maybeSingle();
-        if (data?.is_master_admin || isMasterEmail) {
-          setIsMaster(true);
-        } else {
-          setIsMaster(false);
+          if (profile?.is_master_admin || isMasterByEmail) {
+            setIsMaster(true);
+            console.log('[Auth] Master Admin detectado:', userEmail);
+          } else {
+            setIsMaster(false);
+          }
+        } catch (err) {
+          console.error('[Auth] Erro ao verificar master:', err);
+          // Se falhar a DB, ainda confia no e-mail fixo
+          if (isMasterByEmail) setIsMaster(true);
         }
       } else {
         setIsMaster(false);
       }
+    };
+
+    // Check inicial
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s);
+      handleAuthCheck(s);
+    });
+
+    // Ouvinte de mudanças
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+      handleAuthCheck(s);
     });
 
     return () => subscription.unsubscribe();
@@ -138,7 +147,7 @@ const App: React.FC = () => {
 
     const { data: profile } = await supabase.from('profiles').select('tenant_id, is_master_admin').eq('id', session.user.id).single();
     const userTenantId = profile?.tenant_id;
-    const userIsMaster = profile?.is_master_admin || session.user.email?.toLowerCase() === 'paulofernandoautomacao@gmail.com';
+    const userIsMaster = profile?.is_master_admin || session.user.email?.toLowerCase().trim() === 'paulofernandoautomacao@gmail.com';
 
     if (!userTenantId || (userTenantId === '00000000-0000-0000-0000-000000000000' && !userIsMaster)) {
       console.warn('[Fetch] Acesso negado ao tenant ou tenant não configurado.');
