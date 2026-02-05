@@ -17,6 +17,7 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
         apiKeys: { gemini: '', openai: '', serper: '' }
     });
     const [saving, setSaving] = useState(false);
+    const [isUploading, setIsUploading] = useState<'logo' | 'favicon' | null>(null);
     const [verifyingDomain, setVerifyingDomain] = useState(false);
     const [domainVerificationStatus, setDomainVerificationStatus] = useState<'success' | 'error' | null>(null);
 
@@ -96,6 +97,40 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
             setDomainVerificationStatus('error');
         }
         setVerifyingDomain(false);
+    };
+
+    const handleFileUpload = async (type: 'logo' | 'favicon', file: File) => {
+        if (!config?.tenantId) return;
+        setIsUploading(type);
+
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${type}-${config.tenantId}-${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { data, error } = await supabase.storage
+                .from('branding')
+                .upload(filePath, file);
+
+            if (error) throw error;
+
+            if (data) {
+                const { data: { publicUrl } } = supabase.storage
+                    .from('branding')
+                    .getPublicUrl(filePath);
+
+                if (type === 'logo') {
+                    setFormData({ ...formData, logoUrl: publicUrl });
+                } else {
+                    setFormData({ ...formData, faviconUrl: publicUrl });
+                }
+            }
+        } catch (error: any) {
+            console.error('Upload error:', error);
+            alert('Erro ao fazer upload: ' + error.message);
+        } finally {
+            setIsUploading(null);
+        }
     };
 
     useEffect(() => {
@@ -254,12 +289,47 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                             <section className="pt-6 border-t border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6">Logo & Assets</h3>
                                 <div className="flex items-center gap-8">
-                                    <div className="w-24 h-24 bg-white/5 border-2 border-dashed border-white/20 rounded-2xl flex flex-col items-center justify-center text-slate-500 hover:border-primary hover:text-primary transition-all cursor-pointer">
-                                        <Save size={24} />
-                                        <span className="text-[10px] mt-2 font-bold uppercase">Upload Logo</span>
+                                    <input
+                                        type="file"
+                                        id="logo-upload"
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            if (e.target.files?.[0]) handleFileUpload('logo', e.target.files[0]);
+                                        }}
+                                    />
+                                    <div
+                                        onClick={() => document.getElementById('logo-upload')?.click()}
+                                        className="w-24 h-24 bg-white/5 border-2 border-dashed border-white/20 rounded-2xl flex flex-col items-center justify-center text-slate-500 hover:border-primary hover:text-primary transition-all cursor-pointer relative overflow-hidden"
+                                    >
+                                        {formData.logoUrl ? (
+                                            <img src={formData.logoUrl} alt="Logo Preview" className="w-full h-full object-contain p-2" />
+                                        ) : (
+                                            <>
+                                                {isUploading === 'logo' ? <Loader2 className="animate-spin" size={24} /> : <Save size={24} />}
+                                                <span className="text-[10px] mt-2 font-bold uppercase">{isUploading === 'logo' ? '...' : 'Upload Logo'}</span>
+                                            </>
+                                        )}
                                     </div>
-                                    <div className="w-16 h-16 bg-white/5 border-2 border-dashed border-white/20 rounded-2xl flex flex-col items-center justify-center text-slate-500 hover:border-primary hover:text-primary transition-all cursor-pointer">
-                                        <span className="text-[10px] font-bold uppercase">Favicon</span>
+
+                                    <input
+                                        type="file"
+                                        id="favicon-upload"
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            if (e.target.files?.[0]) handleFileUpload('favicon', e.target.files[0]);
+                                        }}
+                                    />
+                                    <div
+                                        onClick={() => document.getElementById('favicon-upload')?.click()}
+                                        className="w-16 h-16 bg-white/5 border-2 border-dashed border-white/20 rounded-2xl flex flex-col items-center justify-center text-slate-500 hover:border-primary hover:text-primary transition-all cursor-pointer relative overflow-hidden"
+                                    >
+                                        {formData.faviconUrl ? (
+                                            <img src={formData.faviconUrl} alt="Favicon" className="w-full h-full object-contain p-2" />
+                                        ) : (
+                                            <span className="text-[10px] font-bold uppercase">{isUploading === 'favicon' ? <Loader2 className="animate-spin" /> : 'Favicon'}</span>
+                                        )}
                                     </div>
                                 </div>
                             </section>
