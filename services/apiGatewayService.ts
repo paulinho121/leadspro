@@ -44,7 +44,8 @@ export class ApiGatewayService {
             }
 
             if (apiName === 'gemini' || apiName === 'gemini-1.5-flash') {
-                return await this.callGeminiReal(endpoint, payload, apiKeys?.gemini || import.meta.env.VITE_GEMINI_API_KEY);
+                const model = apiName === 'gemini' ? 'gemini-pro' : 'gemini-1.5-flash';
+                return await this.callGeminiReal(endpoint, payload, apiKeys?.gemini || import.meta.env.VITE_GEMINI_API_KEY, model);
             }
 
             return await this.mockRealApiCall(apiName, endpoint, payload);
@@ -93,12 +94,11 @@ export class ApiGatewayService {
         return await response.json();
     }
 
-    private static async callGeminiReal(endpoint: string, payload: any, apiKey: string) {
+    private static async callGeminiReal(endpoint: string, payload: any, apiKey: string, model: string = 'gemini-1.5-flash') {
         if (!apiKey) throw new Error("GEMINI_API_KEY_MISSING");
 
-        // Simulação de chamada real ao Gemini via REST para manter o app leve
-        // Em um app completo usaríamos @google/generative-ai
-        const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+        // Use o modelo passado (gemini-1.5-flash ou outro) para evitar 404
+        const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
         const prompt = endpoint === 'analyze-website'
             ? `Analise a empresa ${payload.leadName} no nicho ${payload.industry}. Site: ${payload.website}. Gere 3 insights de vendas curtos.`
@@ -112,7 +112,7 @@ export class ApiGatewayService {
             })
         });
 
-        if (!response.ok) throw new Error(`Gemini Error: ${response.statusText}`);
+        if (!response.ok) throw new Error(`Gemini Error: ${response.statusText} (${response.status})`);
         const data = await response.json();
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
