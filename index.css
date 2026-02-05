@@ -142,6 +142,60 @@ body {
   }
 }
 
+/* AI Specific Animations */
+@keyframes neural-pulse {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0px var(--color-primary));
+  }
+
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 15px var(--color-primary));
+  }
+
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0px var(--color-primary));
+  }
+}
+
+@keyframes cyber-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-neural {
+  animation: neural-pulse 3s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: cyber-spin 12s linear infinite;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
 .animate-wave {
   animation: wave 4s linear infinite;
 }

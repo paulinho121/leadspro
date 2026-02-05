@@ -4,7 +4,7 @@ import {
   X, Instagram, Facebook, Globe, Search,
   MessageCircle, Phone, MapPin,
   Building2, Hash, Calendar, Layers, Zap,
-  BrainCircuit, Sparkles
+  BrainCircuit, Sparkles, Cpu, Atom
 } from 'lucide-react';
 import { Lead } from '../types';
 
@@ -31,8 +31,9 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
         {/* Header */}
         <div className="px-10 pt-10 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${score > 0 ? 'bg-primary text-slate-950' : 'liquid-gradient text-white'}`}>
-              <Building2 size={24} />
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg relative overflow-hidden group/icon ${score > 0 ? 'bg-primary text-slate-950' : 'liquid-gradient text-white'}`}>
+              <div className="absolute inset-0 bg-white/20 animate-spin-slow opacity-0 group-hover/icon:opacity-100"></div>
+              <BrainCircuit size={28} className="relative z-10 animate-neural" />
             </div>
             <div>
               <h2 className="text-2xl font-black text-white tracking-tight leading-tight">Painel de Inteligência</h2>
@@ -73,7 +74,7 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
               <DetailCard icon={<Calendar size={14} />} label="Fundação" value={details.foundedDate || 'Desconhecido'} />
               <DetailCard icon={<Hash size={14} />} label="Porte" value={details.size || 'Não Inf.'} />
               <DetailCard
-                icon={<Zap size={14} />}
+                icon={<Zap size={14} className="animate-pulse text-primary" />}
                 label="Lead Score"
                 value={score > 0 ? `${(score / 10).toFixed(1)}/10` : 'Pendente'}
                 highlight={score > 70}
@@ -86,8 +87,8 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
         {lead.ai_insights && (
           <div className="px-10 pb-6 relative z-10">
             <div className="p-6 bg-primary/5 border border-primary/20 rounded-[2rem] relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <BrainCircuit size={40} className="text-primary" />
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-all duration-700 group-hover:scale-125">
+                <Atom size={60} className="text-primary animate-spin-slow" />
               </div>
               <div className="flex items-center gap-2 mb-3 text-primary">
                 <Sparkles size={16} />

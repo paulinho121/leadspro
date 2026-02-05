@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, MapPin, Building2, Filter, Loader2, Target, Globe, Crosshair, Sparkles, Zap, Square, ChevronDown } from 'lucide-react';
+import { Search, MapPin, Building2, Filter, Loader2, Target, Globe, Crosshair, Sparkles, Zap, Square, ChevronDown, Cpu, BrainCircuit, Atom } from 'lucide-react';
 import LiquidBattery from './LiquidBattery';
 import { CNAE_LIST } from '../constants';
 import { SearchFilters } from '../types';
@@ -170,8 +170,12 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
         {/* Left Side: Brand & Status Monitoring */}
         <div className="xl:w-[35%] space-y-8 flex flex-col">
           <div className="flex items-center gap-5">
-            <div className={`p-4 rounded-3xl transition-all shrink-0 ${isScanning ? 'bg-primary animate-pulse shadow-[0_0_20px_rgba(6,182,212,0.4)]' : 'bg-primary/10'} text-primary`}>
-              {mode === 'MAPS' ? <Target size={32} /> : mode === 'CNPJ' ? <Building2 size={32} /> : <Sparkles size={32} />}
+            <div className={`relative p-5 rounded-3xl transition-all shrink-0 ${isScanning ? 'bg-primary shadow-[0_0_30px_rgba(6,182,212,0.6)]' : 'bg-primary/10'} text-primary overflow-hidden group/neural`}>
+              {/* Animated Background for the icon */}
+              <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover/neural:opacity-100 transition-opacity ${isScanning ? 'opacity-100 animate-spin-slow' : ''}`}></div>
+              <div className="relative z-10 transition-transform duration-500 group-hover/neural:scale-110">
+                {mode === 'MAPS' ? <Cpu size={32} className={isScanning ? 'animate-neural' : ''} /> : mode === 'CNPJ' ? <Building2 size={32} /> : <BrainCircuit size={32} className={isScanning ? 'animate-neural' : ''} />}
+              </div>
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -194,8 +198,8 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           </p>
 
           <div className="grid grid-cols-2 gap-3">
-            <FeatureTag icon={<Globe size={12} />} label={mode === 'MAPS' ? 'Geospatial' : mode === 'CNPJ' ? 'Public Data' : 'Neural IA'} />
-            <FeatureTag icon={<Zap size={12} />} label={mode === 'ENRICH' ? 'Direct Hit' : 'Deep Scan'} />
+            <FeatureTag icon={<Atom size={12} className="animate-spin-slow" />} label={mode === 'MAPS' ? 'Geospatial' : mode === 'CNPJ' ? 'Public Data' : 'Neural IA'} />
+            <FeatureTag icon={<Zap size={12} className="animate-pulse" />} label={mode === 'ENRICH' ? 'Direct Hit' : 'Deep Scan'} />
           </div>
 
           <div className="flex-1 flex flex-col justify-end mt-4">
@@ -330,8 +334,11 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                 </>
               ) : (
                 <>
-                  <Zap size={28} fill="currentColor" className="group-hover/btn:rotate-12 transition-transform" />
-                  <span>{mode === 'ENRICH' ? 'ENRIQUECER CNPJ AGORA' : 'INICIAR NEURAL EXTRACTION'}</span>
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-white/40 blur-lg rounded-full animate-pulse group-hover/btn:blur-xl transition-all"></div>
+                    <Zap size={28} fill="currentColor" className="relative z-10 group-hover/btn:rotate-12 transition-transform" />
+                  </div>
+                  <span className="relative z-10">{mode === 'ENRICH' ? 'ENRIQUECER CNPJ AGORA' : 'INICIAR NEURAL EXTRACTION'}</span>
                 </>
               )}
             </button>

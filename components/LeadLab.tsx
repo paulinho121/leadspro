@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   FlaskConical, Search, Filter, Mail, Phone, ExternalLink,
   MoreHorizontal, ChevronDown, CheckCircle, Database, Sparkles,
-  Zap, Globe, Download, LayoutList, Trash2, MapPin, MessageCircle, Layers, Loader2, Square
+  Zap, Globe, Download, LayoutList, Trash2, MapPin, MessageCircle, Layers, Loader2, Square, BrainCircuit, Cpu, Atom
 } from 'lucide-react';
 import LiquidBattery from './LiquidBattery';
 import { Lead, LeadStatus } from '../types';
@@ -87,7 +87,7 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                   onClick={() => { setFilterStatus(LeadStatus.ENRICHED); if (window.innerWidth < 1024) setIsDrawerOpen(false); }}
                   label="Enriquecidos com IA"
                   count={leads.filter(l => l.status === LeadStatus.ENRICHED).length}
-                  icon={<Sparkles size={12} />}
+                  icon={<Sparkles size={12} className="animate-pulse text-magenta-500" />}
                   color="magenta"
                 />
               </div>
@@ -149,8 +149,8 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
           </div>
 
           <div className="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
-            <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Sparkles size={64} />
+            <div className={`absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-20 transition-all duration-700 ${isEnriching ? 'animate-neural opacity-20 scale-110' : 'group-hover:scale-110'}`}>
+              <BrainCircuit size={64} className="text-magenta-500" />
             </div>
             <p className="text-magenta-500/80 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Enriquecidos (IA)</p>
             <div className="text-3xl font-black text-white">{leads.filter(l => l.status === LeadStatus.ENRICHED).length}</div>
@@ -160,8 +160,8 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
           </div>
 
           <div className="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
-            <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Zap size={64} />
+            <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-20 transition-all duration-700 group-hover:scale-110">
+              <Cpu size={64} className="text-cyan-500" />
             </div>
             <p className="text-cyan-500/80 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Novos (Fila)</p>
             <div className="text-3xl font-black text-white">{leads.filter(l => l.status === LeadStatus.NEW).length}</div>
@@ -208,7 +208,14 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                       : 'bg-gradient-to-r from-pink-600 to-cyan-500 text-white shadow-2xl shadow-pink-500/20'
                       }`}
                   >
-                    {isEnriching ? <Square size={14} fill="currentColor" /> : <Sparkles size={14} />}
+                    {isEnriching ? (
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-white/40 blur-md rounded-full animate-pulse"></div>
+                        <Square size={14} fill="currentColor" className="relative z-10" />
+                      </div>
+                    ) : (
+                      <BrainCircuit size={14} className="animate-neural" />
+                    )}
                     {isEnriching ? 'PARAR' : 'IA ENRICH'}
                   </button>
                 </div>

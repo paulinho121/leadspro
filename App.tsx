@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Search, Database, Settings,
   HelpCircle, LogOut, Bell, Menu, X, Sparkles,
   ChevronRight, BrainCircuit, Activity, Globe, Map as MapIcon,
-  Zap, ShieldCheck, Rocket, AlertTriangle, ArrowRight
+  Zap, ShieldCheck, Rocket, AlertTriangle, ArrowRight, Cpu
 } from 'lucide-react';
 import LeadDiscovery from './components/LeadDiscovery';
 import BentoDashboard from './components/BentoDashboard';
@@ -37,6 +37,14 @@ const App: React.FC = () => {
         const userEmail = currSession.user.email?.toLowerCase().trim() || '';
         const isMasterByEmail = userEmail === 'paulofernandoautomacao@gmail.com';
 
+        // PRIORIDADE 1: E-mail Fixo (Acesso Imediato)
+        if (isMasterByEmail) {
+          setIsMaster(true);
+          console.log('[Auth] Master Admin detectado via E-MAIL:', userEmail);
+          return;
+        }
+
+        // PRIORIDADE 2: Banco de Dados (Fallback)
         try {
           const { data: profile } = await supabase
             .from('profiles')
@@ -44,16 +52,15 @@ const App: React.FC = () => {
             .eq('id', currSession.user.id)
             .maybeSingle();
 
-          if (profile?.is_master_admin || isMasterByEmail) {
+          if (profile?.is_master_admin) {
             setIsMaster(true);
-            console.log('[Auth] Master Admin detectado:', userEmail);
+            console.log('[Auth] Master Admin detectado via DB');
           } else {
             setIsMaster(false);
           }
         } catch (err) {
           console.error('[Auth] Erro ao verificar master:', err);
-          // Se falhar a DB, ainda confia no e-mail fixo
-          if (isMasterByEmail) setIsMaster(true);
+          setIsMaster(false);
         }
       } else {
         setIsMaster(false);
@@ -63,13 +70,14 @@ const App: React.FC = () => {
     // Check inicial
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
-      handleAuthCheck(s);
+      if (s) handleAuthCheck(s);
     });
 
     // Ouvinte de mudanças
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
-      handleAuthCheck(s);
+      if (s) handleAuthCheck(s);
+      else setIsMaster(false);
     });
 
     return () => subscription.unsubscribe();
@@ -359,9 +367,12 @@ const App: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <BrainCircuit className="text-primary animate-pulse" size={64} />
-          <h2 className="text-white font-bold tracking-widest animate-pulse">CARREGANDO MATRIZ NEURAL...</h2>
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 blur-3xl animate-pulse rounded-full"></div>
+            <Cpu className="text-primary animate-neural relative z-10" size={80} />
+          </div>
+          <h2 className="text-white font-black tracking-[0.3em] animate-pulse text-sm">INICIALIZANDO MATRIZ NEURAL</h2>
         </div>
       </div>
     );
