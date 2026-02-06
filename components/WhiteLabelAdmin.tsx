@@ -180,27 +180,23 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                 .eq('id', session.user.id)
                 .maybeSingle();
 
-            if (profileError) {
-                console.error('[WhiteLabelAdmin] Erro ao buscar perfil:', profileError);
-            }
+            const isMasterByEmail = session.user.email === 'paulofernandoautomacao@gmail.com';
+            const isMaster = profile?.is_master_admin || isMasterByEmail;
 
             if (profile?.tenant_id) {
                 activeTenantId = profile.tenant_id;
-                console.log('[WhiteLabelAdmin] ID Identificado via Perfil:', activeTenantId);
-            } else {
-                console.warn('[WhiteLabelAdmin] Perfil não encontrado ou sem Tenant ID. Usando config atual:', activeTenantId);
+                console.log('[WhiteLabelAdmin] ID Identificado:', activeTenantId, 'Master:', isMaster);
             }
 
             // 2. Normalizar o ID
             if (activeTenantId === 'default') {
-                activeTenantId = '00000000-0000-0000-0000-000000000000';
+                activeTenantId = isMaster ? '00000000-0000-0000-0000-000000000000' : null;
             }
 
-            // 3. Validação de segurança: Usuários não-master não podem salvar no tenant 0000...
-            const isMaster = profile?.is_master_admin || false;
-            if (activeTenantId === '00000000-0000-0000-0000-000000000000' && !isMaster) {
-                console.error('[WhiteLabelAdmin] Bloqueio: Usuário comum tentando salvar no tenant master.');
-                throw new Error('Você não tem permissão para salvar no tenant global. Sua conta pode estar em processo de configuração.');
+            // 3. Validação de segurança
+            if (!activeTenantId || (activeTenantId === '00000000-0000-0000-0000-000000000000' && !isMaster)) {
+                console.error('[WhiteLabelAdmin] Bloqueio de segurança acionado.');
+                throw new Error('Sua conta não possui uma empresa vinculada. Por favor, saia e entre novamente.');
             }
 
             console.log('[WhiteLabelAdmin] Executando UPSERT para:', activeTenantId);
