@@ -106,9 +106,38 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // SEGURANÇA: Inspeção liberada para consulta e debug remoto
+  // SEGURANÇA: Bloqueio de Inspeção e Proteção de Propriedade Intelectual
   useEffect(() => {
-    console.log('🔓 Modo Debug: DevTools liberados.');
+    const handleContextMenu = (e: MouseEvent) => e.preventDefault();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Bloquear F12
+      if (e.key === 'F12') {
+        e.preventDefault();
+      }
+      // Bloquear Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C (DevTools)
+      if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) {
+        e.preventDefault();
+      }
+      // Bloquear Ctrl+U (Ver código fonte)
+      if (e.ctrlKey && e.key === 'u') {
+        e.preventDefault();
+      }
+      // Bloquear Ctrl+S (Salvar página)
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeyDown);
+
+    console.log('🔒 Proteção de IP Ativada: Sistemas de inspeção desabilitados.');
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   // Sistema de Bootstrap para Provisionamento Automático de Tenant
