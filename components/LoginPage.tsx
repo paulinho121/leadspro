@@ -116,7 +116,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                                 .from('profiles')
                                 .update({
                                     tenant_id: tenantData.id,
-                                    role: 'admin' // Quem cria a empresa é Admin dela
+                                    role: 'admin', // Quem cria a empresa é Admin dela
+                                    full_name: fullName
                                 })
                                 .eq('id', authData.user.id);
 

@@ -44,8 +44,11 @@ const App: React.FC = () => {
         if (isMasterByEmail) {
           setIsMaster(true);
           console.log('[Auth] Master Admin detectado via E-MAIL:', userEmail);
-          return;
         }
+
+        // Carregar nome dos metadados de Auth primeiro (mais rápido)
+        const metaName = currSession.user.user_metadata?.full_name;
+        if (metaName) setUserName(metaName);
 
         // PRIORIDADE 2: Banco de Dados (Fallback + Carregar Dados)
         try {
@@ -56,19 +59,16 @@ const App: React.FC = () => {
             .maybeSingle();
 
           if (profile) {
-            setUserName(profile.full_name || 'Usuário');
+            if (profile.full_name) setUserName(profile.full_name);
             setUserTenantId(profile.tenant_id || '');
 
             if (profile.is_master_admin) {
               setIsMaster(true);
               console.log('[Auth] Master Admin detectado via DB');
-            } else {
-              setIsMaster(false);
             }
           }
         } catch (err) {
-          console.error('[Auth] Erro ao verificar master:', err);
-          setIsMaster(false);
+          console.error('[Auth] Erro ao verificar perfil:', err);
         }
       } else {
         setIsMaster(false);
