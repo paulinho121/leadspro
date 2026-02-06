@@ -60,18 +60,23 @@ const App: React.FC = () => {
 
           if (profile) {
             if (profile.full_name) setUserName(profile.full_name);
-            setUserTenantId(profile.tenant_id || '');
+            const tid = profile.tenant_id || '';
+            setUserTenantId(tid);
+            console.log('[Auth] Tenant ID carregado:', tid);
 
             if (profile.is_master_admin) {
               setIsMaster(true);
               console.log('[Auth] Master Admin detectado via DB');
             }
+          } else {
+            console.warn('[Auth] Perfil não encontrado no banco de dados.');
           }
         } catch (err) {
           console.error('[Auth] Erro ao verificar perfil:', err);
         }
       } else {
         setIsMaster(false);
+        setUserTenantId('');
       }
     };
 
