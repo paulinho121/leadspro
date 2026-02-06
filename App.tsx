@@ -96,32 +96,9 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // SEGURANÇA: Desabilitar Inspeção (F12, Clic Direito, Atalhos)
+  // SEGURANÇA: Inspeção liberada para consulta e debug remoto
   useEffect(() => {
-    const handleContextMenu = (e: MouseEvent) => e.preventDefault();
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // F12
-      if (e.key === 'F12') {
-        e.preventDefault();
-      }
-      // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
-      if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) {
-        e.preventDefault();
-      }
-      // Ctrl+U (Ver código fonte)
-      if (e.ctrlKey && e.key === 'u') {
-        e.preventDefault();
-      }
-    };
-
-    document.addEventListener('contextmenu', handleContextMenu);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('contextmenu', handleContextMenu);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
+    console.log('🔓 Modo Debug: DevTools liberados.');
   }, []);
 
   // Sistema de Bootstrap para Provisionamento Automático de Tenant

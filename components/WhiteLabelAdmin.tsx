@@ -173,28 +173,39 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
             // Identificar o tenant ID correto
             let activeTenantId = config.tenantId;
 
-            // Se for admin master ou estiver no modo default, buscamos do perfil para garantir precisão
-            const { data: profile } = await supabase
+            // 1. Prioridade: Buscar o tenant_id do perfil atual (Fonte da Verdade)
+            const { data: profile, error: profileError } = await supabase
                 .from('profiles')
                 .select('tenant_id, is_master_admin')
                 .eq('id', session.user.id)
-                .single();
+                .maybeSingle();
+
+            if (profileError) {
+                console.error('[WhiteLabelAdmin] Erro ao buscar perfil:', profileError);
+            }
 
             if (profile?.tenant_id) {
                 activeTenantId = profile.tenant_id;
-                console.log('[WhiteLabelAdmin] Usando Tenant ID do perfil:', activeTenantId);
+                console.log('[WhiteLabelAdmin] ID Identificado via Perfil:', activeTenantId);
+            } else {
+                console.warn('[WhiteLabelAdmin] Perfil não encontrado ou sem Tenant ID. Usando config atual:', activeTenantId);
             }
 
+            // 2. Normalizar o ID
             if (activeTenantId === 'default') {
                 activeTenantId = '00000000-0000-0000-0000-000000000000';
             }
 
-            console.log('[WhiteLabelAdmin] Salvando Configurações:', {
-                tenant: activeTenantId,
-                keys: Object.keys(formData.apiKeys).filter(k => !!formData.apiKeys[k])
-            });
+            // 3. Validação de segurança: Usuários não-master não podem salvar no tenant 0000...
+            const isMaster = profile?.is_master_admin || false;
+            if (activeTenantId === '00000000-0000-0000-0000-000000000000' && !isMaster) {
+                console.error('[WhiteLabelAdmin] Bloqueio: Usuário comum tentando salvar no tenant master.');
+                throw new Error('Você não tem permissão para salvar no tenant global. Sua conta pode estar em processo de configuração.');
+            }
 
-            // Garantir que apiKeys seja um objeto limpo antes de salvar
+            console.log('[WhiteLabelAdmin] Executando UPSERT para:', activeTenantId);
+
+            // 4. Garantir que apiKeys seja um objeto limpo antes de salvar
             const apiKeysToSave = {
                 gemini: formData.apiKeys?.gemini?.trim() || null,
                 serper: formData.apiKeys?.serper?.trim() || null,
@@ -218,7 +229,7 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                 }, { onConflict: 'tenant_id' });
 
             if (error) {
-                console.error('[WhiteLabelAdmin] Erro ao salvar:', error);
+                console.error('[WhiteLabelAdmin] Erro RLS/DB:', error);
                 throw error;
             }
 
