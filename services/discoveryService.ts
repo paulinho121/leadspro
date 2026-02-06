@@ -9,14 +9,14 @@ export class DiscoveryService {
     /**
      * Realiza uma varredura profunda focada em fontes geolocalizadas e Redes Sociais
      */
-    static async performDeepScan(keyword: string, location: string, tenantId?: string, apiKeys?: any): Promise<Lead[]> {
-        console.log(`[Neural Discovery] Calling Live Engine for: ${keyword} "${location}"`);
+    static async performDeepScan(keyword: string, location: string, tenantId?: string, apiKeys?: any, page: number = 1): Promise<Lead[]> {
+        console.log(`[Neural Discovery] Calling Live Engine for: ${keyword} "${location}" (Pág: ${page})`);
 
         try {
             const response: any = await ApiGatewayService.callApi(
                 'maps',
                 'search',
-                { q: `${keyword} "${location}"` },
+                { q: `${keyword} "${location}"`, page: page },
                 { ttl: 3600, tenantId, apiKeys }
             );
 

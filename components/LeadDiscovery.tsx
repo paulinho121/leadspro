@@ -101,26 +101,37 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
     setStopSignal(false);
 
     const runDiscoveryLoop = async () => {
-      // Loop infinito até o usuário parar
-      while (true) {
+      let currentPage = 1;
+      let cityIndex = 0;
+
+      // Loop de alta performance
+      while (currentPage <= 50) {
         if (isStoppingRef.current) break;
 
         setScanProgress(30);
         try {
           let currentSearchLocation = filters.location;
 
-          // LOGICA DE VARREDURA ESTADUAL
+          // LOGICA DE VARREDURA MASSIVA ESTADUAL
           if (selectedCity === 'TODO_ESTADO' && cities.length > 0) {
-            const randomCity = cities[Math.floor(Math.random() * cities.length)];
-            currentSearchLocation = `${randomCity}, ${selectedState}`;
+            // Se varrer estado, percorre cada cidade. 
+            // Incrementa a página apenas quando rodar todas as cidades do estado.
+            const targetCity = cities[cityIndex];
+            currentSearchLocation = `${targetCity}, ${selectedState}`;
+
+            cityIndex++;
+            if (cityIndex >= cities.length) {
+              cityIndex = 0;
+              currentPage++;
+            }
           }
 
           if (isStoppingRef.current) break;
 
           let results: any[] = [];
           if (mode === 'MAPS') {
-            results = await DiscoveryService.performDeepScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys);
-          } else { // mode === 'CNPJ'
+            results = await DiscoveryService.performDeepScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
+          } else {
             results = await DiscoveryService.performCNPJScan(filters.keyword, currentSearchLocation, config.tenantId);
           }
 
@@ -129,22 +140,29 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           if (results.length > 0) {
             setLeadsFound(prev => prev + results.length);
             onResultsFound(results);
+          } else if (mode === 'MAPS' && selectedCity !== 'TODO_ESTADO') {
+            // Se for cidade única e não veio nada, a busca naquela região acabou
+            break;
           }
 
           setScanProgress(100);
 
-          // Delay inteligente com verificação de parada
-          for (let i = 0; i < 30; i++) { // 3 segundos de delay
+          // Se for cidade única, incrementa página. No modo estado, o contador cityIndex manda.
+          if (selectedCity !== 'TODO_ESTADO') {
+            currentPage++;
+          }
+
+          // Delay de segurança (1.2s) para não ser bloqueado e permitir que o usuário veja
+          for (let i = 0; i < 12; i++) {
             await new Promise(resolve => setTimeout(resolve, 100));
             if (isStoppingRef.current) break;
           }
 
           if (isStoppingRef.current) break;
-          setScanProgress(10); // Reset for next loop
+          setScanProgress(10);
         } catch (err) {
           console.error(err);
-          // Se der erro, espera um pouco e tenta de novo (ou para)
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 3000));
           if (isStoppingRef.current) break;
         }
       }
@@ -319,18 +337,20 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           <div className="space-y-6 pt-4">
             <button
               onClick={handleSearch}
-              disabled={(!isScanning && (!filters.keyword || (mode !== 'ENRICH' && !filters.location))) || stopSignal}
-              className={`w-full py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 transition-all relative overflow-hidden group/btn disabled:opacity-50 disabled:cursor-not-allowed ${isScanning ? 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white' : 'bg-primary text-slate-900 shadow-2xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99]'
+              disabled={(!isScanning && (!filters.keyword || (mode !== 'ENRICH' && !filters.location))) || (isScanning && stopSignal)}
+              className={`w-full py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 transition-all relative overflow-hidden group/btn shadow-2xl ${isScanning
+                ? 'bg-red-600 text-white border-red-400 shadow-red-900/40 hover:bg-red-700 animate-pulse'
+                : 'bg-primary text-slate-900 shadow-primary/20 hover:scale-[1.01] active:scale-[0.99]'
                 }`}
             >
               {isScanning ? (
                 <>
+                  <div className="absolute inset-0 bg-black/20 animate-scan pointer-events-none"></div>
                   {stopSignal ? (
                     <><Loader2 size={28} className="animate-spin" /><span>FINALIZANDO CICLO...</span></>
                   ) : (
-                    <><Square size={28} fill="currentColor" /><span>INTERROMPER VARREDURA ({leadsFound})</span></>
+                    <><Square size={28} fill="currentColor" className="animate-pulse" /><span>PARAR VARREDURA AGORA ({leadsFound})</span></>
                   )}
-                  <div className="absolute bottom-0 left-0 h-1 bg-red-500 transition-all duration-500" style={{ width: `${scanProgress}%` }}></div>
                 </>
               ) : (
                 <>

@@ -72,7 +72,10 @@ export class ApiGatewayService {
                 'X-API-KEY': apiKey,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ q: payload.q })
+            body: JSON.stringify({
+                q: payload.q,
+                page: payload.page || 1
+            })
         });
 
         if (!response.ok) throw new Error(`Serper Error: ${response.statusText}`);

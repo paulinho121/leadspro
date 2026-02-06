@@ -226,22 +226,14 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                       }
                     }}
                     className={`flex items-center justify-center gap-3 w-full sm:w-auto px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border relative overflow-hidden group/enrich ${isEnriching
-                      ? 'bg-red-500/20 text-red-500 border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.2)]'
+                      ? 'bg-red-600 text-white border-red-400 shadow-[0_0_30px_rgba(220,38,38,0.4)] hover:bg-red-700 animate-pulse'
                       : 'bg-slate-900 text-white border-white/10 hover:border-primary/50 shadow-2xl'
                       }`}
                   >
                     {/* Background Progress / Animation */}
                     {isEnriching ? (
                       <>
-                        <div className="absolute inset-0 bg-red-500/5 animate-pulse" />
-                        <div className="absolute bottom-0 left-0 h-0.5 bg-red-500 animate-pulse w-full" />
-                        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden text-red-500/10 text-[6px] font-mono leading-none select-none">
-                          {Array.from({ length: 10 }).map((_, i) => (
-                            <div key={i} className="whitespace-nowrap animate-scan">
-                              {Math.random().toString(36).substring(2, 15)} {Math.random().toString(36).substring(2, 15)}
-                            </div>
-                          ))}
-                        </div>
+                        <div className="absolute inset-0 bg-black/20 animate-scan pointer-events-none" />
                       </>
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-cyan-500 opacity-90 group-hover/enrich:opacity-100 transition-opacity" />
@@ -250,8 +242,8 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                     <div className="relative z-10 flex items-center gap-3">
                       {isEnriching ? (
                         <>
-                          <Atom size={16} className="animate-spin text-red-500" />
-                          <span className="tracking-[0.2em]">PROCESSANDO LAB...</span>
+                          <Square size={16} fill="white" className="animate-pulse" />
+                          <span className="tracking-[0.2em] font-black">INTERROMPER LAB</span>
                         </>
                       ) : (
                         <>
