@@ -81,61 +81,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
                 if (authError) throw authError;
 
-                // 2. Se o registro funcionou e temos um usuário, vamos criar a EMPRESA (Tenant)
                 if (authData.user) {
-                    try {
-                        // A. Criar o Tenant
-                        const slug = companyName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Math.floor(Math.random() * 1000);
-                        const { data: tenantData, error: tenantError } = await supabase
-                            .from('tenants')
-                            .insert({
-                                name: companyName,
-                                slug: slug,
-                                plan: 'pro'
-                            })
-                            .select()
-                            .single();
-
-                        if (tenantError) throw tenantError;
-
-                        if (tenantData) {
-                            // B. Criar Configuração White Label Padrão para esse Tenant
-                            await supabase.from('white_label_configs').insert({
-                                tenant_id: tenantData.id,
-                                platform_name: companyName, // O nome da plataforma começa como o nome da empresa
-                                primary_color: '#06b6d4',
-                                secondary_color: '#3b82f6'
-                            });
-
-                            // C. MOVER o usuário para o novo Tenant (O trigger inicial jogou ele pro default '0000...')
-                            // Precisamos dar um pequeno delay para garantir que o trigger do banco já rodou
-                            // Mas como o trigger é AFTER INSERT, normalmente ele roda na mesma transação.
-                            // Porém, update via client side pode ter delay. Vamos tentar direto.
-
-                            const { error: profileError } = await supabase
-                                .from('profiles')
-                                .update({
-                                    tenant_id: tenantData.id,
-                                    role: 'admin', // Quem cria a empresa é Admin dela
-                                    full_name: fullName
-                                })
-                                .eq('id', authData.user.id);
-
-                            if (profileError) {
-                                console.warn('Erro ao mover perfil para novo tenant:', profileError);
-                                // Não vamos falhar o registro por isso, o usuário pode pedir suporte ou tentamos recuperar depois
-                            }
-                        }
-
-                        setSuccessMsg('Conta e Empresa criadas com sucesso! Faça login para começar.');
-                        setIsRegistering(false);
-
-                    } catch (setupError: any) {
-                        console.error('Erro no setup da empresa:', setupError);
-                        // Mesmo com erro no setup, o usuário foi criado. 
-                        setSuccessMsg('Usuário criado, mas houve um erro ao configurar a empresa: ' + setupError.message);
-                        setIsRegistering(false);
-                    }
+                    setSuccessMsg('Registro concluído! Sua empresa está sendo preparada. Faça login para acessar.');
+                    setIsRegistering(false);
                 }
 
             } else {
