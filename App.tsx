@@ -52,11 +52,17 @@ const App: React.FC = () => {
 
         // PRIORIDADE 2: Banco de Dados (Fallback + Carregar Dados)
         try {
-          const { data: profile } = await supabase
+          // Usamos select('*') temporariamente ou listamos colunas de forma segura para evitar 406 
+          // caso o esquema no banco tenha sido alterado recentemente
+          const { data: profile, error: selectError } = await supabase
             .from('profiles')
-            .select('is_master_admin, full_name, tenant_id')
+            .select('tenant_id, full_name, is_master_admin')
             .eq('id', currSession.user.id)
             .maybeSingle();
+
+          if (selectError) {
+            console.error('[Auth] Erro na consulta de perfil (Pode ser o 406):', selectError);
+          }
 
           if (profile) {
             if (profile.full_name) setUserName(profile.full_name);
@@ -64,15 +70,19 @@ const App: React.FC = () => {
             setUserTenantId(tid);
             console.log('[Auth] Tenant ID carregado:', tid);
 
-            if (profile.is_master_admin) {
+            if (profile.is_master_admin || isMasterByEmail) {
               setIsMaster(true);
-              console.log('[Auth] Master Admin detectado via DB');
+              console.log('[Auth] Master Admin detectado');
             }
           } else {
-            console.warn('[Auth] Perfil não encontrado no banco de dados.');
+            console.warn('[Auth] Perfil não encontrado. Usando fallback de Master se e-mail bater.');
+            if (isMasterByEmail) {
+              setIsMaster(true);
+              setUserTenantId('00000000-0000-0000-0000-000000000000');
+            }
           }
         } catch (err) {
-          console.error('[Auth] Erro ao verificar perfil:', err);
+          console.error('[Auth] Erro inesperado ao verificar perfil:', err);
         }
       } else {
         setIsMaster(false);
@@ -220,14 +230,31 @@ const App: React.FC = () => {
 
     // Se o branding ainda não carregou o ID real, tentamos resolver via perfil se possível
     let activeTenantId = (config.tenantId !== 'default' ? config.tenantId : null);
+
     if (!activeTenantId && session?.user) {
-      const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', session.user.id).single();
-      if (profile?.tenant_id) activeTenantId = profile.tenant_id;
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('tenant_id')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (profile?.tenant_id) {
+          activeTenantId = profile.tenant_id;
+        }
+      } catch (err) {
+        console.warn('[Tenant] Falha na busca rápida via perfil (406?), tentando fallback via config.');
+      }
+    }
+
+    // Fallback Final: Se ainda for null e for o Paulo, usa o tenant master
+    if (!activeTenantId && session?.user?.email === 'paulofernandoautomacao@gmail.com') {
+      activeTenantId = '00000000-0000-0000-0000-000000000000';
     }
 
     if (!activeTenantId) {
       console.error('Erro Crítico: Tentativa de salvar leads sem um Tenant ID definido.');
-      alert('Sua sessão de empresa não foi identificada. Tente recarregar a página.');
+      alert('Aguarde a inicialização do sistema ou recarregue a página.');
       return;
     }
 

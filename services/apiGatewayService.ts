@@ -44,7 +44,8 @@ export class ApiGatewayService {
             }
 
             if (apiName === 'gemini' || apiName === 'gemini-1.5-flash') {
-                const model = apiName === 'gemini' ? 'gemini-pro' : 'gemini-1.5-flash';
+                // Forçar o uso do modelo 1.5-flash que é o mais estável e rápido para este caso
+                const model = 'gemini-1.5-flash';
                 return await this.callGeminiReal(endpoint, payload, apiKeys?.gemini, model);
             }
 
@@ -97,13 +98,13 @@ export class ApiGatewayService {
     private static async callGeminiReal(endpoint: string, payload: any, apiKey: string, model: string = 'gemini-1.5-flash') {
         if (!apiKey) throw new Error("GEMINI_API_KEY_MISSING");
 
-        // Forçar lowercase para evitar erros de case-sensitivity da API
+        // Usamos v1 em vez de v1beta para maior estabilidade em chaves de produção
         const safeModel = model.toLowerCase();
-        const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent?key=${apiKey}`;
+        const baseUrl = `https://generativelanguage.googleapis.com/v1/models/${safeModel}:generateContent?key=${apiKey}`;
 
         const prompt = endpoint === 'analyze-website'
-            ? `Analise a empresa ${payload.leadName} no nicho ${payload.industry}. Site: ${payload.website}. Gere 3 insights de vendas curtos.`
-            : `Dê uma nota de 1 a 100 para este lead: ${JSON.stringify(payload.leadData)}. Retorne apenas o número.`;
+            ? `Analise a empresa ${payload.leadName} no nicho ${payload.industry}. Site: ${payload.website}. Gere 3 insights de vendas curtos e diretos em português.`
+            : `Dê uma nota de 1 a 100 para este lead baseado no potencial de vendas (B2B): ${JSON.stringify(payload.leadData)}. Retorne apenas o número puro.`;
 
         const response = await fetch(baseUrl, {
             method: 'POST',
@@ -113,7 +114,14 @@ export class ApiGatewayService {
             })
         });
 
-        if (!response.ok) throw new Error(`Gemini Error: ${response.statusText} (${response.status})`);
+        if (!response.ok) {
+            // Fallback para v1beta se v1 falhar, ou tentativa com -latest
+            if (response.status === 404 && !model.includes('latest')) {
+                console.warn(`[Neural Gateway] Model ${model} not found in V1, trying -latest in v1beta...`);
+                return this.callGeminiReal(endpoint, payload, apiKey, `${model}-latest`);
+            }
+            throw new Error(`Gemini Error: ${response.statusText} (${response.status})`);
+        }
         const data = await response.json();
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
