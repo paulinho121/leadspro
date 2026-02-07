@@ -128,12 +128,20 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
 
           if (isStoppingRef.current) break;
 
+          if (isStoppingRef.current) break;
+
           let results: any[] = [];
+
+          // Progresso gradual inicial
+          setScanProgress(25);
+
           if (mode === 'MAPS') {
             results = await DiscoveryService.performDeepScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
           } else {
             results = await DiscoveryService.performCNPJScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
           }
+
+          setScanProgress(60);
 
           if (isStoppingRef.current) break;
 
@@ -145,6 +153,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
             break;
           }
 
+          // Garantir que a bateria chegue em 100% de forma visível
           setScanProgress(100);
 
           // Se for cidade única, incrementa página. No modo estado, o contador cityIndex manda.
@@ -152,14 +161,17 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
             currentPage++;
           }
 
-          // Delay de segurança (1.2s) para não ser bloqueado e permitir que o usuário veja
-          for (let i = 0; i < 12; i++) {
+          // Delay de segurança (1.5s) para garantir o preenchimento visual e maturidade da busca
+          for (let i = 0; i < 15; i++) {
             await new Promise(resolve => setTimeout(resolve, 100));
             if (isStoppingRef.current) break;
+            // Mantém a barra cheia durante o cooldown
+            if (i > 10) setScanProgress(100);
           }
 
           if (isStoppingRef.current) break;
-          setScanProgress(10);
+          // Reseta para o próximo ciclo de forma suave
+          setScanProgress(5);
         } catch (err) {
           console.error(err);
           await new Promise(resolve => setTimeout(resolve, 3000));
