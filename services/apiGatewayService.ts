@@ -83,7 +83,10 @@ export class ApiGatewayService {
             body: JSON.stringify(body)
         });
 
-        if (!response.ok) throw new Error(`Serper Error: ${response.status} ${response.statusText}`);
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Serper Error: ${response.status} ${response.statusText} - ${errorBody}`);
+        }
         return await response.json();
     }
 
@@ -94,7 +97,9 @@ export class ApiGatewayService {
         const body = {
             q: payload.q,
             num: payload.num || 10,
-            page: payload.page || 1
+            page: payload.page || 1,
+            gl: 'br', // Forçar resultados do Brasil
+            hl: 'pt-br'
         };
 
         console.log(`[Neural Gateway] Payload SERPER SEARCH:`, JSON.stringify(body));
@@ -108,7 +113,10 @@ export class ApiGatewayService {
             body: JSON.stringify(body)
         });
 
-        if (!response.ok) throw new Error(`Serper Search Error: ${response.status} ${response.statusText}`);
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Serper Search Error: ${response.status} ${response.statusText} - ${errorBody}`);
+        }
         return await response.json();
     }
 
@@ -136,7 +144,8 @@ export class ApiGatewayService {
                 console.warn(`[Neural Gateway] Model ${model} not found in V1, trying -latest in v1beta...`);
                 return this.callGeminiReal(endpoint, payload, apiKey, `${model}-latest`);
             }
-            throw new Error(`Gemini Error: ${response.statusText} (${response.status})`);
+            const errorBody = await response.text(); // Capture response body for diagnosis
+            throw new Error(`Gemini Error: ${response.statusText} (${response.status}) - ${errorBody}`);
         }
         const data = await response.json();
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -158,6 +167,7 @@ export class ApiGatewayService {
                 const errorStr = String(error.message || '');
                 if (errorStr.includes('400')) {
                     console.error('[Neural Gateway] Erro Crítico 400 Detectado. Abortando retentativas.');
+                    console.error('[Neural Gateway] Detalhes do erro 400:', errorStr); // Log full error for diagnosis
                     throw error;
                 }
 

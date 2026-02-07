@@ -107,7 +107,7 @@ export class DiscoveryService {
             let searchResponse: any = await ApiGatewayService.callApi(
                 'google-search',
                 'search',
-                { q: query, page: page, num: 40 },
+                { q: query, page: page, num: 20 },
                 { tenantId, apiKeys }
             );
 
