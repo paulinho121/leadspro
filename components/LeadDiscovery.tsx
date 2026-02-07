@@ -104,9 +104,8 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
       let currentPage = 1;
       let cityIndex = 0;
 
-      // Loop de alta performance
-      while (currentPage <= 50) {
-        if (isStoppingRef.current) break;
+      // Loop infinito até comando de parada
+      while (!isStoppingRef.current) {
 
         setScanProgress(30);
         try {
@@ -158,22 +157,24 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
             break;
           }
 
-          // Salto final para 100% ao concluir ciclo
+          // Salto final para 100% ao concluir ciclo de página
           setScanProgress(100);
 
           if (selectedCity !== 'TODO_ESTADO') {
             currentPage++;
           }
 
-          // Delay de sustentação visual (Bateria cheia)
-          for (let i = 0; i < 20; i++) {
+          // Delay de sustentação visual (Bateria cheia) - Ciclo de 3 segundos
+          for (let i = 0; i < 30; i++) {
             await new Promise(resolve => setTimeout(resolve, 100));
             if (isStoppingRef.current) break;
+            // Mantém a bateria cheia enquanto prepara o próximo salto
             setScanProgress(100);
           }
 
           if (isStoppingRef.current) break;
-          setScanProgress(0);
+          // Não zera, apenas volta um pouco para sinalizar novo salto de busca
+          setScanProgress(10);
         } catch (err) {
           console.error(err);
           await new Promise(resolve => setTimeout(resolve, 3000));

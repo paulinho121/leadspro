@@ -175,7 +175,15 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 shrink-0 px-2 lg:px-0">
           <div className="flex items-center gap-5">
             <div>
-              <h3 className="text-xl lg:text-2xl font-black text-white tracking-tight">Laboratório</h3>
+              <div className="flex items-center gap-3">
+                <h3 className="text-xl lg:text-2xl font-black text-white tracking-tight">Laboratório</h3>
+                {isEnriching && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-full animate-pulse">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></div>
+                    <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Motor Ativo</span>
+                  </div>
+                )}
+              </div>
               <p className="text-[10px] font-mono text-primary uppercase tracking-[0.3em] font-bold mt-0.5">{filteredLeads.length} leads</p>
             </div>
           </div>
@@ -270,7 +278,10 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
         </div>
 
         {/* Experimental Data Grid */}
-        <div className="flex-1 glass rounded-[2rem] lg:rounded-[2.5rem] overflow-hidden border border-white/5 flex flex-col shadow-2xl min-h-0">
+        <div className={`flex-1 glass rounded-[2rem] lg:rounded-[2.5rem] overflow-hidden border transition-all duration-500 flex flex-col shadow-2xl min-h-0 ${isEnriching ? 'border-primary/50 shadow-primary/20' : 'border-white/5'}`}>
+          {isEnriching && (
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-scan z-30"></div>
+          )}
           <div className="overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
             <table className="w-full text-left border-separate border-spacing-0 min-w-[800px]">
               <thead className="sticky top-0 z-20 bg-[#0f172a]/95 backdrop-blur-md">
