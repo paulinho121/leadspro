@@ -5,7 +5,9 @@ import LiquidBattery from './LiquidBattery';
 import { CNAE_LIST } from '../constants';
 import { SearchFilters } from '../types';
 import { DiscoveryService } from '../services/discoveryService';
+import { ActivityService } from '../services/activityService';
 import { useBranding } from './BrandingProvider';
+import { supabase } from '../lib/supabase';
 
 interface LeadDiscoveryProps {
   onResultsFound: (results: any[]) => void;
@@ -111,6 +113,13 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
     setLeadsFound(0);
     isStoppingRef.current = false;
     setStopSignal(false);
+
+    // Registrar atividade
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        ActivityService.log(config.tenantId, session.user.id, 'LEAD_CAPTURE', `Iniciada varredura por "${filters.keyword}" em ${filters.location || 'Brasil'}.`);
+      }
+    });
 
     const runDiscoveryLoop = async () => {
       let currentPage = 1;

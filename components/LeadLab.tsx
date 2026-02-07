@@ -6,6 +6,9 @@ import {
 } from 'lucide-react';
 import LiquidBattery from './LiquidBattery';
 import { Lead, LeadStatus } from '../types';
+import { ActivityService } from '../services/activityService';
+import { supabase } from '../lib/supabase';
+import { useBranding } from './BrandingProvider';
 
 interface LeadLabProps {
   leads: Lead[];
@@ -16,6 +19,7 @@ interface LeadLabProps {
 }
 
 const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnriching = false, onStopEnrichment }) => {
+  const { config } = useBranding();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNiche, setSelectedNiche] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -213,13 +217,29 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                           );
                           onBulkEnrich(toEnrich);
                           setIsEnrichMenuOpen(false);
+
+                          supabase.auth.getSession().then(({ data: { session } }) => {
+                            if (session?.user) {
+                              ActivityService.log(config.tenantId, session.user.id, 'LEAD_ENRICH', `Iniciado enriquecimento em massa para o nicho "${selectedNiche}".`);
+                            }
+                          });
                         }}
                         className="w-full text-left px-4 py-3 hover:bg-white/5 rounded-xl text-[10px] font-black uppercase text-slate-300 hover:text-primary transition-all flex items-center gap-2"
                       >
                         <Zap size={14} /> Enriquecer Nicho Selecionado
                       </button>
                       <button
-                        onClick={() => { onBulkEnrich(leads.filter(l => l.status === LeadStatus.NEW)); setIsEnrichMenuOpen(false); }}
+                        onClick={() => {
+                          const toEnrich = leads.filter(l => l.status === LeadStatus.NEW);
+                          onBulkEnrich(toEnrich);
+                          setIsEnrichMenuOpen(false);
+
+                          supabase.auth.getSession().then(({ data: { session } }) => {
+                            if (session?.user) {
+                              ActivityService.log(config.tenantId, session.user.id, 'LEAD_ENRICH', `Iniciado enriquecimento completo para ${toEnrich.length} leads novos.`);
+                            }
+                          });
+                        }}
                         className="w-full text-left px-4 py-3 hover:bg-white/5 rounded-xl text-[10px] font-black uppercase text-slate-300 hover:text-primary transition-all flex items-center gap-2"
                       >
                         <Layers size={14} /> Todos os Novos

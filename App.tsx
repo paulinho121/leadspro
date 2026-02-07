@@ -14,8 +14,11 @@ import EnrichmentModal from './components/EnrichmentModal';
 import WhiteLabelAdmin from './components/WhiteLabelAdmin';
 import MasterConsole from './components/MasterConsole';
 import LoginPage from './components/LoginPage';
+import ActivityHistory from './components/ActivityHistory';
+import NotificationsList from './components/NotificationsList';
 import { DiscoveryService } from './services/discoveryService';
 import { EnrichmentService } from './services/enrichmentService';
+import { ActivityService } from './services/activityService';
 import { Lead, LeadStatus } from './types';
 import { useBranding } from './components/BrandingProvider';
 import { supabase } from './lib/supabase';
@@ -23,7 +26,7 @@ import { MOCK_LEADS } from './constants';
 
 const App: React.FC = () => {
   const { config, isLoading } = useBranding();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched' | 'master'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched' | 'master' | 'history'>('dashboard');
   const [isMaster, setIsMaster] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -33,6 +36,50 @@ const App: React.FC = () => {
   const [showAccountCard, setShowAccountCard] = useState(false);
   const [userName, setUserName] = useState('Administrador');
   const [userTenantId, setUserTenantId] = useState('');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Função auxiliar para logar atividades
+  const logActivity = async (action: string, details: string) => {
+    if (!userTenantId && !session?.user) return;
+
+    try {
+      await supabase.from('activity_logs').insert([{
+        tenant_id: userTenantId || '00000000-0000-0000-0000-000000000000',
+        user_id: session?.user?.id,
+        action,
+        details
+      }]);
+    } catch (err) {
+      console.error('Falha ao registrar log:', err);
+    }
+  };
+
+  // Buscar contagem de notificações não lidas
+  useEffect(() => {
+    if (!session?.user) return;
+
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_read', false);
+
+      setUnreadCount(count || 0);
+    };
+
+    fetchUnread();
+
+    // Inscrever para novas notificações
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => {
+        fetchUnread();
+      })
+      .subscribe();
+
+    return () => { channel.unsubscribe(); };
+  }, [session]);
 
   useEffect(() => {
     const handleAuthCheck = async (currSession: any) => {
@@ -97,10 +144,16 @@ const App: React.FC = () => {
     });
 
     // Ouvinte de mudanças
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
-      if (s) handleAuthCheck(s);
-      else setIsMaster(false);
+      if (s) {
+        handleAuthCheck(s);
+        if (event === 'SIGNED_IN') {
+          ActivityService.log(userTenantId, s.user.id, 'LOGIN', 'Usuário autenticado com sucesso.');
+        }
+      } else {
+        setIsMaster(false);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -398,6 +451,8 @@ const App: React.FC = () => {
         return <WhiteLabelAdmin initialTab="api" />;
       case 'master':
         return <MasterConsole />;
+      case 'history':
+        return <ActivityHistory />;
       default:
         return <BentoDashboard leads={leads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
     }
@@ -468,7 +523,7 @@ const App: React.FC = () => {
             <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mx-4 mb-4"></div>
           </div>
 
-          <NavItem icon={<Activity size={20} />} label="Histórico" expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { }} />
+          <NavItem icon={<Activity size={20} />} label="Histórico" active={activeTab === 'history'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('history'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
           <NavItem icon={<ShieldCheck size={20} />} label="Parceiro" active={activeTab === 'partner'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
 
           {isMaster && (
@@ -572,24 +627,46 @@ const App: React.FC = () => {
               {activeTab === 'enriched' && 'Comercial'}
               {activeTab === 'partner' && 'Branding'}
               {activeTab === 'master' && 'Master'}
+              {activeTab === 'history' && 'Logs de Auditoria'}
             </h2>
           </div>
 
           <div className="flex items-center gap-3 md:gap-6">
-            <button
+            <div
               onClick={() => {
-                console.log('[Global Sync] Recarregando leads...');
                 fetchLeads();
+                if (session?.user) {
+                  ActivityService.log(userTenantId, session.user.id, 'SYSTEM_SYNC', 'Sincronização manual de leads executada.');
+                }
               }}
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 active:scale-95 transition-all group"
+              className="hidden sm:flex items-center gap-3 px-4 py-2 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 transition-all hover:bg-emerald-500/20 active:scale-95 cursor-pointer group/sync"
+              title="Clique para Sincronizar Agora"
             >
-              <Zap size={12} className="text-primary group-hover:animate-pulse" />
-              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary transition-colors">Sync</span>
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-black text-white uppercase tracking-tighter leading-none group-hover/sync:text-primary transition-colors">{userName.split(' ')[0]}</span>
+                <span className="text-[9px] font-bold text-emerald-500/70 uppercase tracking-widest mt-1">Conectado</span>
+              </div>
+              <div className="relative">
+                <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+                <div className="absolute inset-0 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping opacity-20"></div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className={`relative group p-2.5 rounded-2xl transition-all border ${showNotifications ? 'bg-primary/10 border-primary/30' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
+            >
+              <Bell size={18} className={showNotifications ? 'text-primary' : 'text-slate-400 group-hover:text-white transition-colors'} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary text-slate-900 text-[10px] font-black flex items-center justify-center rounded-full ring-4 ring-slate-950 animate-in zoom-in duration-300">
+                  {unreadCount}
+                </span>
+              )}
             </button>
-            <button className="relative group p-2.5 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5">
-              <Bell size={18} className="text-slate-400 group-hover:text-white transition-colors" />
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-primary rounded-full ring-2 ring-slate-900"></span>
-            </button>
+
+            {showNotifications && (
+              <NotificationsList onClose={() => setShowNotifications(false)} />
+            )}
           </div>
         </header>
 
