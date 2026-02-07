@@ -102,7 +102,7 @@ export class DiscoveryService {
         try {
             // Ampliamos a busca para múltiplos diretórios grandes de CNPJ
             // Removendo aspas da keyword para permitir correspondências mais flexíveis (ex: CNAE parcial ou nome)
-            const query = `(site:cnpj.biz OR site:econodata.com.br OR site:casadosdados.com.br) ${keyword} ${location}`;
+            const query = `(site:cnpj.biz OR site:econodata.com.br OR site:casadosdados.com.br OR site:cnpj.rocks) "${keyword}" ${location}`;
 
             const searchResponse: any = await ApiGatewayService.callApi(
                 'google-search',

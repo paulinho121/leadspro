@@ -9,6 +9,7 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
   Tooltip, PieChart, Pie, Cell
 } from 'recharts';
+import { useBranding } from './BrandingProvider';
 import { Lead, LeadStatus } from '../types';
 
 interface BentoDashboardProps {
@@ -18,6 +19,9 @@ interface BentoDashboardProps {
 }
 
 const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavigate }) => {
+  const { config } = useBranding();
+  const primaryColor = config.colors.primary || '#06b6d4';
+
   // Gerar dados do gráfico baseados nos leads reais (últimos 7 dias)
   const chartData = React.useMemo(() => {
     const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -66,19 +70,28 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
 
       {/* 1. Main Performance - Fluxo de Leads */}
       <div className="col-span-1 md:col-span-4 lg:col-span-4 glass rounded-[2rem] p-6 md:p-8 premium-card relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 blur-[100px] -mr-40 -mt-40 transition-all hover:bg-cyan-500/20"></div>
+        <div
+          className="absolute top-0 right-0 w-80 h-80 blur-[100px] -mr-40 -mt-40 transition-all opacity-20"
+          style={{ backgroundColor: primaryColor }}
+        ></div>
 
         <div className="flex items-center justify-between mb-6 md:mb-8 relative z-10">
           <div>
             <h3 className="text-xl md:text-2xl font-bold text-white mb-1 tracking-tight">Fluxo de Inteligência</h3>
-            <p className="text-[9px] md:text-xs text-cyan-500/60 font-mono tracking-widest uppercase">Lead_Stream_Realtime</p>
+            <p className="text-[9px] md:text-xs font-mono tracking-widest uppercase" style={{ color: `${primaryColor}99` }}>Lead_Stream_Realtime</p>
           </div>
           <div className="flex items-center gap-3">
             <span className="flex h-3 w-3 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+              <span
+                className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                style={{ backgroundColor: primaryColor }}
+              ></span>
+              <span
+                className="relative inline-flex rounded-full h-3 w-3"
+                style={{ backgroundColor: primaryColor }}
+              ></span>
             </span>
-            <span className="text-xs font-bold text-cyan-400 uppercase tracking-tighter">Sistemas Ativos</span>
+            <span className="text-xs font-bold uppercase tracking-tighter" style={{ color: primaryColor }}>Sistemas Ativos</span>
           </div>
         </div>
 
@@ -87,8 +100,8 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                  <stop offset="5%" stopColor={primaryColor} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={primaryColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <Tooltip
@@ -98,12 +111,12 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
                   borderRadius: '16px',
                   backdropFilter: 'blur(10px)'
                 }}
-                itemStyle={{ color: '#06b6d4' }}
+                itemStyle={{ color: primaryColor }}
               />
               <Area
                 type="monotone"
                 dataKey="leads"
-                stroke="#06b6d4"
+                stroke={primaryColor}
                 strokeWidth={4}
                 fillOpacity={1}
                 fill="url(#colorLeads)"
@@ -128,7 +141,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
         </div>
 
         <div className="space-y-4 md:space-y-6 relative z-10 flex-1">
-          <StatBox label="Leads Identificados" value={totalLeads.toString()} color="text-cyan-400" icon={<Users size={18} md:size={20} />} />
+          <StatBox label="Leads Identificados" value={totalLeads.toString()} color="text-primary" icon={<Users size={18} />} />
           <StatBox label="Enriquecidos e prontos" value={enrichedCount.toString()} color="text-emerald-400" icon={<CheckCircle size={18} md:size={20} />} />
           <StatBox label="Score de Qualidade" value={qualityScore} color="text-magenta-400" icon={<Sparkles size={18} md:size={20} />} />
 
@@ -151,7 +164,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
       <div className="col-span-1 md:col-span-4 lg:col-span-4 glass rounded-[2rem] p-6 md:p-8 premium-card relative overflow-hidden flex flex-col">
         <div className="flex items-center justify-between mb-6 md:mb-8">
           <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
-            <Brain className="text-cyan-400" size={20} /> Sinais Gemini
+            <Brain className="text-primary" size={20} /> Sinais Gemini
           </h3>
           <span className="text-[10px] bg-white/5 px-3 py-1.5 rounded-full text-slate-400 font-mono uppercase tracking-widest border border-white/5">
             Auto-Scan
@@ -168,7 +181,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
             status="PROGRESSO"
             msg={enrichingCount > 0 ? `Enriquecendo ${enrichingCount} leads...` : "Aguardando novos leads"}
             time="tempo real"
-            color={enrichingCount > 0 ? "cyan" : "slate"}
+            color={enrichingCount > 0 ? "primary" : "slate"}
           />
           <InsightLog
             status="READY"
@@ -191,9 +204,9 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
           {/* Geographic Pulse */}
           <div
             onClick={() => onNavigate('discovery')}
-            className="flex-1 glass rounded-[2rem] p-8 flex flex-col premium-card group cursor-pointer border-white/5 hover:border-cyan-500/30"
+            className="flex-1 glass rounded-[2rem] p-8 flex flex-col premium-card group cursor-pointer border-white/5 hover:border-primary/30"
           >
-            <div className="bg-cyan-500/10 w-12 h-12 rounded-2xl flex items-center justify-center text-cyan-400 mb-6 group-hover:scale-110 transition-transform mx-auto">
+            <div className="bg-primary/10 w-12 h-12 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform mx-auto">
               <MapIcon size={24} />
             </div>
             <div className="mt-auto text-center">
@@ -236,9 +249,9 @@ const StatBox = ({ label, value, color, icon }: { label: string, value: string, 
   </div>
 );
 
-const InsightLog = ({ status, msg, time, type = 'normal', color = 'cyan' }: { status: string, msg: string, time: string, type?: 'normal' | 'alert', color?: string }) => (
+const InsightLog = ({ status, msg, time, type = 'normal', color = 'primary' }: { status: string, msg: string, time: string, type?: 'normal' | 'alert', color?: string }) => (
   <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center gap-4 hover:bg-white/[0.06] transition-all group cursor-default">
-    <div className={`w-2 h-2 rounded-full ${type === 'alert' ? 'bg-magenta-500 animate-pulse ring-4 ring-magenta-500/20' : 'bg-cyan-500'} `}></div>
+    <div className={`w-2 h-2 rounded-full ${type === 'alert' ? 'bg-magenta-500 animate-pulse ring-4 ring-magenta-500/20' : `bg-${color}`} `}></div>
     <div className="flex-1 min-w-0">
       <div className="flex items-center justify-between mb-1">
         <span className={`text-[10px] font-black uppercase tracking-widest ${type === 'alert' ? 'text-magenta-400' : 'text-slate-400'}`}>{status}</span>

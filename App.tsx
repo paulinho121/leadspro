@@ -457,21 +457,21 @@ const App: React.FC = () => {
         </div>
 
         <nav className="flex-1 px-4 py-4 md:py-8 space-y-2 overflow-y-auto custom-scrollbar">
-          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} expanded={!isSidebarOpen} onClick={() => { setActiveTab('dashboard'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-          <NavItem icon={<Search size={20} />} label="Extração" active={activeTab === 'discovery'} expanded={!isSidebarOpen} onClick={() => { setActiveTab('discovery'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-          <NavItem icon={<Database size={20} />} label="Laboratório" active={activeTab === 'lab'} expanded={!isSidebarOpen} onClick={() => { setActiveTab('lab'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-          <NavItem icon={<Rocket size={20} />} label="Enriquecidos" active={activeTab === 'enriched'} expanded={!isSidebarOpen} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('dashboard'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<Search size={20} />} label="Extração" active={activeTab === 'discovery'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('discovery'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<Database size={20} />} label="Laboratório" active={activeTab === 'lab'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('lab'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<Rocket size={20} />} label="Enriquecidos" active={activeTab === 'enriched'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
 
           <div className="pt-8 pb-4">
             {(!isSidebarOpen) && <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Sistemas</p>}
             <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mx-4 mb-4"></div>
           </div>
 
-          <NavItem icon={<Activity size={20} />} label="Histórico" expanded={!isSidebarOpen} onClick={() => { }} />
-          <NavItem icon={<ShieldCheck size={20} />} label="Parceiro" active={activeTab === 'partner'} expanded={!isSidebarOpen} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<Activity size={20} />} label="Histórico" expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { }} />
+          <NavItem icon={<ShieldCheck size={20} />} label="Parceiro" active={activeTab === 'partner'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
 
           {isMaster && (
-            <NavItem icon={<ShieldCheck className="text-primary" size={20} />} label="Master" active={activeTab === 'master'} expanded={!isSidebarOpen} onClick={() => { setActiveTab('master'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+            <NavItem icon={<ShieldCheck className="text-primary" size={20} />} label="Master" active={activeTab === 'master'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('master'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
           )}
         </nav>
 
@@ -521,7 +521,10 @@ const App: React.FC = () => {
           >
             <div className={`flex items-center gap-4 transition-all duration-500 ${!isSidebarOpen ? 'opacity-100' : 'md:opacity-0'}`}>
               <div className="relative shrink-0">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-primary to-blue-600 p-[2px] shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+                <div
+                  className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-primary p-[2px]"
+                  style={{ boxShadow: `0 0 15px ${config.colors.primary}4d` }} // 30% opacity
+                >
                   <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center font-bold text-xs md:text-sm text-white uppercase tracking-tighter">
                     {userName.slice(0, 2)}
                   </div>
@@ -630,10 +633,11 @@ interface NavItemProps {
   label: string;
   active?: boolean;
   expanded: boolean;
+  primaryColor: string;
   onClick: () => void;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ icon, label, active, expanded, onClick }) => (
+const NavItem: React.FC<NavItemProps> = ({ icon, label, active, expanded, primaryColor, onClick }) => (
   <button
     onClick={onClick}
     className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-500 relative group ${active
@@ -641,7 +645,10 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active, expanded, onClic
       : 'text-slate-500 hover:text-white hover:bg-white/5'
       }`}
   >
-    <div className={`transition-all duration-500 ${active ? 'scale-110 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]' : 'group-hover:scale-110'}`}>
+    <div
+      className="transition-all duration-500 group-hover:scale-110"
+      style={{ filter: active ? `drop-shadow(0 0 8px ${primaryColor}80)` : 'none' }}
+    >
       {icon}
     </div>
     {expanded && (
@@ -650,10 +657,16 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active, expanded, onClic
       </span>
     )}
     {active && (
-      <div className="absolute left-0 w-1 h-8 bg-primary rounded-r-full shadow-[0_0_15px_rgba(6,182,212,0.8)]"></div>
+      <div
+        className="absolute left-0 w-1 h-8 bg-primary rounded-r-full"
+        style={{ boxShadow: `0 0 15px ${primaryColor}` }}
+      ></div>
     )}
     {!expanded && active && (
-      <div className="absolute right-2 w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_10px_rgba(6,182,212,0.8)]"></div>
+      <div
+        className="absolute right-2 w-1.5 h-1.5 bg-primary rounded-full"
+        style={{ boxShadow: `0 0 10px ${primaryColor}` }}
+      ></div>
     )}
   </button>
 );

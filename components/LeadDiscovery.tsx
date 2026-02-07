@@ -143,7 +143,9 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
             if (mode === 'MAPS') {
               results = await DiscoveryService.performDeepScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
             } else {
-              results = await DiscoveryService.performCNPJScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
+              // No modo CNPJ, se for um código CNAE, garantimos aspas para busca exata de padrão
+              const searchQuery = /^\d{4}-\d\/\d{2}$/.test(filters.keyword) ? `"${filters.keyword}"` : filters.keyword;
+              results = await DiscoveryService.performCNPJScan(searchQuery, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
             }
           } finally {
             clearInterval(progressInterval);
