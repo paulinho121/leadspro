@@ -76,12 +76,23 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
       return;
     }
 
-    if (mode === 'ENRICH') {
+    let searchMode = mode;
+    const cleanKeyword = filters.keyword.trim();
+
+    // INTELIGÊNCIA ARTIFICIAL: Se detectar padrão de CNAE no modo MAPS, redireciona para modo CNPJ automaticamente
+    // Usamos uma regex mais flexível para capturar o padrão mesmo com espaços ou variações sutis
+    if (searchMode === 'MAPS' && /\d{4}-\d\/\d{2}/.test(cleanKeyword)) {
+      console.log('%c[Neural IA] Padrão CNAE detectado no modo MAPS. Redirecionando para motor de Varredura Governamental.', 'color: #06b6d4; font-weight: bold;');
+      setMode('CNPJ');
+      searchMode = 'CNPJ';
+    }
+
+    if (searchMode === 'ENRICH') {
       // Logica de enriquecimento individual
       setIsScanning(true);
       setScanProgress(50);
       try {
-        const results = await DiscoveryService.performCNPJScan(filters.keyword, 'Busca Individual', config.tenantId);
+        const results = await DiscoveryService.performCNPJScan(cleanKeyword, 'Busca Individual', config.tenantId);
         onResultsFound(results);
         setLeadsFound(1);
         setIsScanning(false);
@@ -140,12 +151,12 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           }, 400);
 
           try {
-            console.log(`[Neural Discovery] Loop de varredura executando com modo: ${mode}, keyword: ${filters.keyword}, local: ${currentSearchLocation}`);
-            if (mode === 'MAPS') {
-              results = await DiscoveryService.performDeepScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
+            console.log(`[Neural Discovery] Loop de varredura executando com modo: ${searchMode}, keyword: ${cleanKeyword}, local: ${currentSearchLocation}`);
+            if (searchMode === 'MAPS') {
+              results = await DiscoveryService.performDeepScan(cleanKeyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
             } else {
               // No modo CNPJ, se for um código CNAE, garantimos aspas para busca exata de padrão
-              const searchQuery = /^\d{4}-\d\/\d{2}$/.test(filters.keyword) ? `"${filters.keyword}"` : filters.keyword;
+              const searchQuery = /\d{4}\s*-\s*\d\s*\/\s*\d{2}/.test(cleanKeyword) ? `"${cleanKeyword}"` : cleanKeyword;
               console.log(`[CNPJ] Chamando performCNPJScan com Q: ${searchQuery}`);
               results = await DiscoveryService.performCNPJScan(searchQuery, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
             }
@@ -165,7 +176,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
               return nextCount;
             });
             onResultsFound(results);
-          } else if (mode === 'MAPS' && selectedCity !== 'TODO_ESTADO') {
+          } else if (searchMode === 'MAPS' && selectedCity !== 'TODO_ESTADO') {
             break;
           }
 

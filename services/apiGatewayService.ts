@@ -64,41 +64,51 @@ export class ApiGatewayService {
     }
 
     private static async callSerperMaps(payload: any, apiKey: string) {
-        if (!apiKey) throw new Error("SERPER_API_KEY_MISSING");
+        const key = apiKey?.trim();
+        if (!key) throw new Error("SERPER_API_KEY_MISSING");
+
+        const body = {
+            q: payload.q,
+            page: payload.page || 1
+        };
+
+        console.log(`[Neural Gateway] Payload SERPER MAPS:`, JSON.stringify(body));
 
         const response = await fetch('https://google.serper.dev/maps', {
             method: 'POST',
             headers: {
-                'X-API-KEY': apiKey,
+                'X-API-KEY': key,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                q: payload.q,
-                page: payload.page || 1
-            })
+            body: JSON.stringify(body)
         });
 
-        if (!response.ok) throw new Error(`Serper Error: ${response.statusText}`);
+        if (!response.ok) throw new Error(`Serper Error: ${response.status} ${response.statusText}`);
         return await response.json();
     }
 
     private static async callSerperSearch(payload: any, apiKey: string) {
-        if (!apiKey) throw new Error("SERPER_API_KEY_MISSING");
+        const key = apiKey?.trim();
+        if (!key) throw new Error("SERPER_API_KEY_MISSING");
+
+        const body = {
+            q: payload.q,
+            num: payload.num || 10,
+            page: payload.page || 1
+        };
+
+        console.log(`[Neural Gateway] Payload SERPER SEARCH:`, JSON.stringify(body));
 
         const response = await fetch('https://google.serper.dev/search', {
             method: 'POST',
             headers: {
-                'X-API-KEY': apiKey,
+                'X-API-KEY': key,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                q: payload.q,
-                num: payload.num || 10,
-                page: payload.page || 1
-            })
+            body: JSON.stringify(body)
         });
 
-        if (!response.ok) throw new Error(`Serper Search Error: ${response.statusText}`);
+        if (!response.ok) throw new Error(`Serper Search Error: ${response.status} ${response.statusText}`);
         return await response.json();
     }
 
@@ -142,6 +152,15 @@ export class ApiGatewayService {
                 return await fn();
             } catch (error: any) {
                 lastError = error;
+
+                // Se for erro 400 (Bad Request), o Serper está rejeitando o payload. 
+                // Não repetimos para evitar queimar créditos ou saturar logs com erro de configuração.
+                const errorStr = String(error.message || '');
+                if (errorStr.includes('400')) {
+                    console.error('[Neural Gateway] Erro Crítico 400 Detectado. Abortando retentativas.');
+                    throw error;
+                }
+
                 if (i < maxRetries) {
                     const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
                     console.warn(`[Neural Gateway] Retry ${i + 1}/${maxRetries} after ${delay}ms`);
