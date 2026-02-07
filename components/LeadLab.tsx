@@ -198,10 +198,17 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                   {isEnrichMenuOpen && !isEnriching && (
                     <div className="absolute bottom-full left-0 mb-2 w-48 glass border border-white/10 rounded-2xl p-2 z-[60] animate-in slide-in-from-bottom-2 duration-300">
                       <button
-                        onClick={() => { onBulkEnrich(leads.filter(l => l.status === LeadStatus.NEW).slice(0, 5)); setIsEnrichMenuOpen(false); }}
+                        onClick={() => {
+                          const toEnrich = leads.filter(l =>
+                            l.status === LeadStatus.NEW &&
+                            (!selectedNiche || l.industry === selectedNiche)
+                          );
+                          onBulkEnrich(toEnrich);
+                          setIsEnrichMenuOpen(false);
+                        }}
                         className="w-full text-left px-4 py-3 hover:bg-white/5 rounded-xl text-[10px] font-black uppercase text-slate-300 hover:text-primary transition-all flex items-center gap-2"
                       >
-                        <Zap size={14} /> Amostra (5 leads)
+                        <Zap size={14} /> Enriquecer Nicho Selecionado
                       </button>
                       <button
                         onClick={() => { onBulkEnrich(leads.filter(l => l.status === LeadStatus.NEW)); setIsEnrichMenuOpen(false); }}

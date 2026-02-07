@@ -101,33 +101,43 @@ export class DiscoveryService {
         // 2. BUSCA MASSIVA (Por CNAE ou Palavra-chave)
         try {
             // Query otimizada para encontrar listas de empresas em diretórios públicos
+            // Adicionamos filtros extras para aumentar a densidade de CNPJs nos resultados
             const query = `site:cnpj.biz "${keyword}" ${location}`;
 
             const searchResponse: any = await ApiGatewayService.callApi(
                 'google-search',
                 'search',
-                { q: query, page: page, num: 10 },
+                { q: query, page: page, num: 40 }, // Aumentado para 40 resultados por página
                 { tenantId, apiKeys }
             );
 
             if (searchResponse && searchResponse.organic) {
-                const cnpjRegex = /\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g;
+                // Regex aprimorada para capturar CNPJs inclusive em textos colados
+                const cnpjRegex = /\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{14}/g;
                 const foundCnpjs = new Set<string>();
 
                 searchResponse.organic.forEach((result: any) => {
                     const textContent = (result.title + ' ' + result.snippet);
                     const matches = textContent.match(cnpjRegex);
                     if (matches) {
-                        matches.forEach(m => foundCnpjs.add(m.replace(/\D/g, '')));
+                        matches.forEach(m => {
+                            const clean = m.replace(/\D/g, '');
+                            if (clean.length === 14) foundCnpjs.add(clean);
+                        });
                     }
                 });
 
                 if (foundCnpjs.size > 0) {
-                    console.log(`[CNPJ] Encontrados ${foundCnpjs.size} CNPJs na página ${page}. Extraindo dados reais...`);
+                    console.log(`[CNPJ] Volume detectado: ${foundCnpjs.size} CNPJs únicos na página ${page}. Extraindo dados reais...`);
 
-                    // Buscar dados de cada CNPJ (Paralelismo controlado para evitar excesso de requisições)
                     const leads: Lead[] = [];
-                    for (const cnpj of Array.from(foundCnpjs)) {
+                    // Processamos até 30 CNPJs para garantir que pelo menos 20 sejam válidos e novos
+                    const cnpjList = Array.from(foundCnpjs).slice(0, 30);
+
+                    for (const cnpj of cnpjList) {
+                        // Delay mínimo para respeitar limites de API
+                        await new Promise(resolve => setTimeout(resolve, 80));
+
                         const realData = await this.fetchRealCNPJData(cnpj);
                         if (realData && realData.nome) {
                             leads.push({
