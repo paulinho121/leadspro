@@ -105,7 +105,6 @@ export class ApiGatewayService {
     private static async callGeminiReal(endpoint: string, payload: any, apiKey: string, model: string = 'gemini-1.5-flash') {
         if (!apiKey) throw new Error("GEMINI_API_KEY_MISSING");
 
-        // Usamos v1 em vez de v1beta para maior estabilidade em chaves de produção
         const safeModel = model.toLowerCase();
         const baseUrl = `https://generativelanguage.googleapis.com/v1/models/${safeModel}:generateContent?key=${apiKey}`;
 

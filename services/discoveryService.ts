@@ -104,41 +104,63 @@ export class DiscoveryService {
             // Removendo aspas da keyword para permitir correspondências mais flexíveis (ex: CNAE parcial ou nome)
             const query = `(site:cnpj.biz OR site:econodata.com.br OR site:casadosdados.com.br OR site:cnpj.rocks) ${keyword} ${location} CNPJ`;
 
-            const searchResponse: any = await ApiGatewayService.callApi(
+            let searchResponse: any = await ApiGatewayService.callApi(
                 'google-search',
                 'search',
                 { q: query, page: page, num: 40 },
                 { tenantId, apiKeys }
             );
 
+            // Fallback: Se não encontrar nada nos diretórios específicos, tentamos uma busca aberta
+            if (!searchResponse || !searchResponse.organic || searchResponse.organic.length === 0) {
+                console.log(`[CNPJ] Nenhum resultado nos diretórios. Tentando busca aberta...`);
+                const fallbackQuery = `${keyword} ${location} "CNPJ" empresas governamentais`;
+                searchResponse = await ApiGatewayService.callApi(
+                    'google-search',
+                    'search',
+                    { q: fallbackQuery, page: page, num: 40 },
+                    { tenantId, apiKeys }
+                );
+            }
+
             if (searchResponse && searchResponse.organic) {
                 const foundCnpjs = new Set<string>();
 
                 searchResponse.organic.forEach((result: any) => {
+                    // Texto completo para busca (Título + Snippet + URL)
                     const textContent = (result.title + ' ' + result.snippet + ' ' + result.link);
+
+                    // Regex hyper-agressiva para capturar CNPJs em qualquer formato
                     const matches = textContent.match(/(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})|(\d{14})/g);
+
                     if (matches) {
                         matches.forEach(m => {
                             const clean = m.replace(/\D/g, '');
                             if (clean.length === 14) foundCnpjs.add(clean);
                         });
                     }
+
+                    // Tentativa extra: extrair da URL se contiver padrão de CNPJ
+                    const urlSegments = result.link.split(/[-/_]/);
+                    urlSegments.forEach((seg: string) => {
+                        const cleanSeg = seg.replace(/\D/g, '');
+                        if (cleanSeg.length === 14) foundCnpjs.add(cleanSeg);
+                    });
                 });
 
                 if (foundCnpjs.size > 0) {
-                    console.log(`[CNPJ] Detectados ${foundCnpjs.size} códigos potenciais:`, Array.from(foundCnpjs));
-                    console.log(`[CNPJ] Extraindo dados reais...`);
+                    console.log(`%c[Neural Discovery] Encontrados ${foundCnpjs.size} CNPJs potenciais para processamento.`, 'color: #06b6d4; font-weight: bold;');
 
                     const leads: Lead[] = [];
-                    // Processamos até 30 CNPJs para garantir que pelo menos 20 sejam válidos e novos
                     const cnpjList: string[] = Array.from(foundCnpjs).slice(0, 30);
 
                     for (const cnpj of cnpjList) {
-                        // Delay mínimo para respeitar limites de API
-                        await new Promise(resolve => setTimeout(resolve, 80));
+                        // Respeito à cadência para não ser bloqueado nas APIs de consulta
+                        await new Promise(resolve => setTimeout(resolve, 150));
 
                         const realData = await this.fetchRealCNPJData(cnpj);
                         if (realData && realData.nome) {
+                            console.log(`%c[Neural Discovery] Lead Extraído: ${realData.nome}`, 'color: #10b981');
                             leads.push({
                                 id: `cnpj-${cnpj}`,
                                 name: String(realData.nome),
@@ -163,7 +185,11 @@ export class DiscoveryService {
                         }
                     }
                     return leads;
+                } else {
+                    console.warn(`[Neural Discovery] A busca retornou resultados do Google, mas nenhum CNPJ válido foi extraído dos snippets ou links na página ${page}.`);
                 }
+            } else {
+                console.error(`[Neural Discovery] Falha na resposta do motor de busca Serper. Verifique se a API Key é válida.`);
             }
         } catch (error) {
             console.error('[CNPJ Mass Scan] Erro durante a varredura:', error);

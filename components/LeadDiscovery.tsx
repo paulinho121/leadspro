@@ -185,8 +185,13 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           if (isStoppingRef.current) break;
           // Não zera, apenas volta um pouco para sinalizar novo salto de busca
           setScanProgress(10);
-        } catch (err) {
+        } catch (err: any) {
           console.error(err);
+          if (err.message === 'SERPER_API_KEY_MISSING') {
+            alert('Erro: Chave do Serper (Google Search) não configurada. Configure no menu Parceiro ou no arquivo .env.local.');
+            isStoppingRef.current = true;
+            break;
+          }
           await new Promise(resolve => setTimeout(resolve, 3000));
           if (isStoppingRef.current) break;
         }
