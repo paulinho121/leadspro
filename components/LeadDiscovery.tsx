@@ -128,20 +128,26 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
 
           if (isStoppingRef.current) break;
 
-          if (isStoppingRef.current) break;
-
           let results: any[] = [];
 
-          // Progresso gradual inicial
-          setScanProgress(25);
+          // Iniciar progresso suave (Neural Simulation)
+          setScanProgress(10);
+          const progressInterval = setInterval(() => {
+            setScanProgress(prev => {
+              if (prev < 85) return prev + Math.random() * 5;
+              return prev;
+            });
+          }, 400);
 
-          if (mode === 'MAPS') {
-            results = await DiscoveryService.performDeepScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
-          } else {
-            results = await DiscoveryService.performCNPJScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
+          try {
+            if (mode === 'MAPS') {
+              results = await DiscoveryService.performDeepScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
+            } else {
+              results = await DiscoveryService.performCNPJScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
+            }
+          } finally {
+            clearInterval(progressInterval);
           }
-
-          setScanProgress(60);
 
           if (isStoppingRef.current) break;
 
@@ -149,29 +155,25 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
             setLeadsFound(prev => prev + results.length);
             onResultsFound(results);
           } else if (mode === 'MAPS' && selectedCity !== 'TODO_ESTADO') {
-            // Se for cidade única e não veio nada, a busca naquela região acabou
             break;
           }
 
-          // Garantir que a bateria chegue em 100% de forma visível
+          // Salto final para 100% ao concluir ciclo
           setScanProgress(100);
 
-          // Se for cidade única, incrementa página. No modo estado, o contador cityIndex manda.
           if (selectedCity !== 'TODO_ESTADO') {
             currentPage++;
           }
 
-          // Delay de segurança (1.5s) para garantir o preenchimento visual e maturidade da busca
-          for (let i = 0; i < 15; i++) {
+          // Delay de sustentação visual (Bateria cheia)
+          for (let i = 0; i < 20; i++) {
             await new Promise(resolve => setTimeout(resolve, 100));
             if (isStoppingRef.current) break;
-            // Mantém a barra cheia durante o cooldown
-            if (i > 10) setScanProgress(100);
+            setScanProgress(100);
           }
 
           if (isStoppingRef.current) break;
-          // Reseta para o próximo ciclo de forma suave
-          setScanProgress(5);
+          setScanProgress(0);
         } catch (err) {
           console.error(err);
           await new Promise(resolve => setTimeout(resolve, 3000));
@@ -235,7 +237,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           <div className="flex-1 flex flex-col justify-end mt-4">
             <div className="glass rounded-[2rem] p-2 border border-white/5 bg-white/[0.02]">
               <LiquidBattery
-                percentage={leadsFound > 0 ? (Math.min(leadsFound, 100) / 100) * 100 : 0}
+                percentage={scanProgress}
                 isScanning={isScanning}
                 label={isScanning ? "VARRENDO..." : "DETECTADOS"}
                 subLabel={`${leadsFound} LEADS`}

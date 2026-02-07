@@ -100,14 +100,14 @@ export class DiscoveryService {
 
         // 2. BUSCA MASSIVA (Por CNAE ou Palavra-chave)
         try {
-            // Query otimizada para encontrar listas de empresas em diretórios públicos
-            // Adicionamos filtros extras para aumentar a densidade de CNPJs nos resultados
-            const query = `site:cnpj.biz "${keyword}" ${location}`;
+            // Ampliamos a busca para múltiplos diretórios grandes de CNPJ
+            // Removendo aspas da keyword para permitir correspondências mais flexíveis (ex: CNAE parcial ou nome)
+            const query = `(site:cnpj.biz OR site:econodata.com.br OR site:casadosdados.com.br) ${keyword} ${location}`;
 
             const searchResponse: any = await ApiGatewayService.callApi(
                 'google-search',
                 'search',
-                { q: query, page: page, num: 40 }, // Aumentado para 40 resultados por página
+                { q: query, page: page, num: 40 },
                 { tenantId, apiKeys }
             );
 
