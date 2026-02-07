@@ -102,7 +102,7 @@ export class DiscoveryService {
         try {
             // Ampliamos a busca para múltiplos diretórios grandes de CNPJ
             // Removendo aspas da keyword para permitir correspondências mais flexíveis (ex: CNAE parcial ou nome)
-            const query = `(site:cnpj.biz OR site:econodata.com.br OR site:casadosdados.com.br OR site:cnpj.rocks) "${keyword}" ${location}`;
+            const query = `(site:cnpj.biz OR site:econodata.com.br OR site:casadosdados.com.br OR site:cnpj.rocks) ${keyword} ${location} CNPJ`;
 
             const searchResponse: any = await ApiGatewayService.callApi(
                 'google-search',
@@ -112,13 +112,11 @@ export class DiscoveryService {
             );
 
             if (searchResponse && searchResponse.organic) {
-                // Regex aprimorada para capturar CNPJs inclusive em textos colados
-                const cnpjRegex = /\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{14}/g;
                 const foundCnpjs = new Set<string>();
 
                 searchResponse.organic.forEach((result: any) => {
-                    const textContent = (result.title + ' ' + result.snippet);
-                    const matches = textContent.match(cnpjRegex);
+                    const textContent = (result.title + ' ' + result.snippet + ' ' + result.link);
+                    const matches = textContent.match(/(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})|(\d{14})/g);
                     if (matches) {
                         matches.forEach(m => {
                             const clean = m.replace(/\D/g, '');
@@ -128,11 +126,12 @@ export class DiscoveryService {
                 });
 
                 if (foundCnpjs.size > 0) {
-                    console.log(`[CNPJ] Volume detectado: ${foundCnpjs.size} CNPJs únicos na página ${page}. Extraindo dados reais...`);
+                    console.log(`[CNPJ] Detectados ${foundCnpjs.size} códigos potenciais:`, Array.from(foundCnpjs));
+                    console.log(`[CNPJ] Extraindo dados reais...`);
 
                     const leads: Lead[] = [];
                     // Processamos até 30 CNPJs para garantir que pelo menos 20 sejam válidos e novos
-                    const cnpjList = Array.from(foundCnpjs).slice(0, 30);
+                    const cnpjList: string[] = Array.from(foundCnpjs).slice(0, 30);
 
                     for (const cnpj of cnpjList) {
                         // Delay mínimo para respeitar limites de API
@@ -142,9 +141,9 @@ export class DiscoveryService {
                         if (realData && realData.nome) {
                             leads.push({
                                 id: `cnpj-${cnpj}`,
-                                name: realData.nome,
-                                website: realData.site || '',
-                                phone: realData.telefone || '',
+                                name: String(realData.nome),
+                                website: String(realData.site || ''),
+                                phone: String(realData.telefone || ''),
                                 industry: keyword,
                                 location: location,
                                 status: LeadStatus.NEW,
@@ -154,7 +153,7 @@ export class DiscoveryService {
                                     legalName: realData.nome,
                                     activity: realData.atividade_principal?.[0]?.text,
                                     cnpj: cnpj,
-                                    address: `${realData.logradouro}, ${realData.numero} - ${realData.municipio}, ${realData.uf}`
+                                    address: String(`${realData.logradouro}, ${realData.numero} - ${realData.municipio}, ${realData.uf}`)
                                 },
                                 socialLinks: {
                                     cnpj: cnpj,
