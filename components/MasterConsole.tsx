@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import {
     Users, Building2, ShieldCheck, Zap, TrendingUp,
     Search, Filter, MoreHorizontal, UserCheck, UserX,
-    CreditCard, LayoutDashboard, Globe, Mail, Phone
+    CreditCard, LayoutDashboard, Globe, Mail, Phone, Bell, Send, AlertTriangle, Info, DollarSign, X, CheckCircle,
+    Terminal, Lock, ShieldAlert, History
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -34,6 +35,15 @@ const MasterConsole: React.FC = () => {
         totalUsers: 0
     });
 
+    // Ferramentas de Gestão
+    const [isSendingNotification, setIsSendingNotification] = useState(false);
+    const [selectedTenantForNote, setSelectedTenantForNote] = useState<Tenant | null>(null);
+    const [notificationForm, setNotificationForm] = useState({
+        title: '',
+        message: '',
+        type: 'info'
+    });
+
     const fetchData = async () => {
         console.log('[Master Console] Iniciando sincronização de dados...');
         setIsLoading(true);
@@ -46,7 +56,6 @@ const MasterConsole: React.FC = () => {
 
             if (tenantsError) throw tenantsError;
             if (tenantsData) {
-                console.log(`[Master Console] ${tenantsData.length} tenants carregados.`);
                 setTenants(tenantsData);
             }
 
@@ -57,7 +66,6 @@ const MasterConsole: React.FC = () => {
 
             if (profilesError) throw profilesError;
             if (profilesData) {
-                console.log(`[Master Console] ${profilesData.length} perfis carregados.`);
                 setProfiles(profilesData);
             }
 
@@ -68,15 +76,11 @@ const MasterConsole: React.FC = () => {
 
             if (leadsError) throw leadsError;
 
-            console.log(`[Master Console] ${leadsCount} leads totais encontrados.`);
-
             setStats({
                 totalLeads: leadsCount || 0,
                 activeTenants: tenantsData?.filter(t => t.is_active).length || 0,
                 totalUsers: profilesData?.length || 0
             });
-
-            console.log('[Master Console] Sincronização concluída com sucesso.');
         } catch (err: any) {
             console.error('Master Console Error:', err.message || err);
             alert('Erro ao sincronizar dados: ' + (err.message || 'Verifique o console.'));
@@ -96,11 +100,39 @@ const MasterConsole: React.FC = () => {
             .eq('id', tenantId);
 
         if (error) {
-            console.error('Erro ao alterar status do tenant:', error);
-            alert('Não foi possível alterar o status. Verifique suas permissões.');
+            alert('Erro ao alterar status.');
         } else {
-            console.log(`Tenant ${tenantId} ${!currentStatus ? 'ativado' : 'suspenso'} com sucesso.`);
             fetchData();
+        }
+    };
+
+    const sendNotification = async (targetTenantId?: string) => {
+        if (!notificationForm.title || !notificationForm.message) {
+            alert('Preencha título e mensagem.');
+            return;
+        }
+
+        setIsSendingNotification(true);
+        try {
+            const tenantsToNotify = targetTenantId ? [{ id: targetTenantId }] : tenants.filter(t => t.is_active);
+
+            const inserts = tenantsToNotify.map(t => ({
+                tenant_id: t.id,
+                title: notificationForm.title,
+                message: notificationForm.message,
+                type: notificationForm.type
+            }));
+
+            const { error } = await supabase.from('notifications').insert(inserts);
+            if (error) throw error;
+
+            alert(`Sucesso! ${inserts.length} notificação(ões) enviada(s).`);
+            setNotificationForm({ title: '', message: '', type: 'info' });
+            setSelectedTenantForNote(null);
+        } catch (err: any) {
+            alert('Falha ao enviar: ' + err.message);
+        } finally {
+            setIsSendingNotification(false);
         }
     };
 
@@ -110,7 +142,7 @@ const MasterConsole: React.FC = () => {
             <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
                 <div>
                     <h2 className="text-xl lg:text-3xl font-black text-white tracking-tighter flex items-center gap-3">
-                        <ShieldCheck className="text-primary" size={24} md:size={32} />
+                        <ShieldCheck className="text-primary" size={24} />
                         MASTER CONSOLE <span className="text-primary/50 text-[9px] lg:text-sm font-mono tracking-widest bg-primary/10 px-3 py-1 rounded-full">V1.0</span>
                     </h2>
                     <p className="text-slate-500 mt-1 lg:mt-2 font-medium text-xs lg:text-base">Controle central de licenciamento e usuários.</p>
@@ -119,7 +151,7 @@ const MasterConsole: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-3 lg:gap-4">
                     <div className="flex-1 min-w-[140px] glass p-3 lg:p-4 rounded-2xl border border-white/5 flex items-center gap-3 lg:gap-4">
                         <div className="p-2 lg:p-3 bg-primary/10 rounded-xl shrink-0">
-                            <Building2 className="text-primary" size={18} lg:size={20} />
+                            <Building2 className="text-primary" size={18} />
                         </div>
                         <div>
                             <p className="text-[9px] text-slate-500 font-black uppercase">Empresas</p>
@@ -128,7 +160,7 @@ const MasterConsole: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-[140px] glass p-3 lg:p-4 rounded-2xl border border-white/5 flex items-center gap-3 lg:gap-4">
                         <div className="p-2 lg:p-3 bg-emerald-500/10 rounded-xl shrink-0">
-                            <Users className="text-emerald-500" size={18} lg:size={20} />
+                            <Users className="text-emerald-500" size={18} />
                         </div>
                         <div>
                             <p className="text-[9px] text-slate-500 font-black uppercase">Usuários</p>
@@ -144,7 +176,7 @@ const MasterConsole: React.FC = () => {
                 <div className="lg:col-span-2 space-y-6">
                     <div className="flex items-center justify-between">
                         <h3 className="text-base lg:text-lg font-black text-white flex items-center gap-2">
-                            <LayoutDashboard size={16} lg:size={18} className="text-primary" />
+                            <LayoutDashboard size={18} className="text-primary" />
                             LICENCIAMENTOS
                         </h3>
                         <button
@@ -152,30 +184,21 @@ const MasterConsole: React.FC = () => {
                             disabled={isLoading}
                             className="flex items-center gap-2 text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 transition-all disabled:opacity-50"
                         >
-                            {isLoading ? (
-                                <>
-                                    <Zap size={12} className="animate-spin" />
-                                    Sincronizando...
-                                </>
-                            ) : (
-                                <>
-                                    <TrendingUp size={12} />
-                                    Sincronizar
-                                </>
-                            )}
+                            {isLoading ? <Zap size={12} className="animate-spin" /> : <TrendingUp size={12} />}
+                            {isLoading ? 'Sincronizando...' : 'Sincronizar'}
                         </button>
                     </div>
 
                     <div className="glass rounded-3xl border border-white/5 overflow-hidden">
                         <div className="overflow-x-auto custom-scrollbar">
-                            <table className="w-full text-left border-collapse min-w-[600px]">
+                            <table className="w-full text-left border-separate border-spacing-0 min-w-[600px]">
                                 <thead>
-                                    <tr className="border-b border-white/5 bg-white/5">
-                                        <th className="p-4 lg:p-5 text-[10px] font-black text-slate-500 uppercase">Empresa / Slug</th>
-                                        <th className="p-4 lg:p-5 text-[10px] font-black text-slate-500 uppercase text-center">Plano</th>
-                                        <th className="p-4 lg:p-5 text-[10px] font-black text-slate-500 uppercase text-center">Usuários</th>
-                                        <th className="p-4 lg:p-5 text-[10px] font-black text-slate-500 uppercase text-center border-l border-white/5">Status</th>
-                                        <th className="p-4 lg:p-5 text-[10px] font-black text-slate-500 uppercase text-right">Ações</th>
+                                    <tr className="bg-white/5">
+                                        <th className="p-5 text-[10px] font-black text-slate-500 uppercase border-b border-white/5">Empresa / Slug</th>
+                                        <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/5">Plano</th>
+                                        <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/5">Usuários</th>
+                                        <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/10 border-l">Status</th>
+                                        <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-right border-b border-white/5">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
@@ -195,8 +218,7 @@ const MasterConsole: React.FC = () => {
                                                     </div>
                                                 </td>
                                                 <td className="p-5 text-center">
-                                                    <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-widest ${tenant.plan === 'pro' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/20' : 'bg-slate-500/10 text-slate-500 border border-white/5'
-                                                        }`}>
+                                                    <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-widest ${tenant.plan === 'pro' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/20' : 'bg-slate-500/10 text-slate-500 border border-white/5'}`}>
                                                         {tenant.plan}
                                                     </span>
                                                 </td>
@@ -205,21 +227,28 @@ const MasterConsole: React.FC = () => {
                                                 </td>
                                                 <td className="p-5">
                                                     <div className="flex justify-center">
-                                                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${tenant.is_active ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
-                                                            }`}>
+                                                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${tenant.is_active ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
                                                             <span className={`w-1.5 h-1.5 rounded-full ${tenant.is_active ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
                                                             {tenant.is_active ? 'Ativo' : 'Suspenso'}
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="p-5 text-right">
-                                                    <button
-                                                        onClick={() => toggleTenantStatus(tenant.id, tenant.is_active)}
-                                                        className={`p-2 rounded-xl transition-all ${tenant.is_active ? 'hover:bg-red-500/20 text-slate-500 hover:text-red-400' : 'hover:bg-emerald-500/20 text-slate-500 hover:text-emerald-400'
-                                                            }`}
-                                                    >
-                                                        {tenant.is_active ? <UserX size={18} /> : <UserCheck size={18} />}
-                                                    </button>
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            onClick={() => setSelectedTenantForNote(tenant)}
+                                                            className="p-2 rounded-xl text-slate-500 hover:text-primary hover:bg-primary/10 transition-all"
+                                                            title="Enviar Notificação Direta"
+                                                        >
+                                                            <Bell size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => toggleTenantStatus(tenant.id, tenant.is_active)}
+                                                            className={`p-2 rounded-xl transition-all ${tenant.is_active ? 'hover:bg-red-500/20 text-slate-500 hover:text-red-400' : 'hover:bg-emerald-500/20 text-slate-500 hover:text-emerald-400'}`}
+                                                        >
+                                                            {tenant.is_active ? <UserX size={18} /> : <UserCheck size={18} />}
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );
@@ -228,49 +257,165 @@ const MasterConsole: React.FC = () => {
                             </table>
                         </div>
                     </div>
+                </div>
 
-                    {/* Sidebar Mini Dashboard */}
-                    <div className="space-y-6">
-                        <div className="glass p-6 rounded-3xl border border-white/5 bg-gradient-to-br from-primary/10 via-transparent to-transparent">
-                            <h4 className="text-white font-black text-sm uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <Zap size={16} className="text-primary animate-pulse" />
-                                Volume de Dados
-                            </h4>
-                            <div className="space-y-6">
-                                <div>
-                                    <div className="flex justify-between items-end mb-2">
-                                        <p className="text-[10px] text-slate-500 font-black uppercase">Leads Capturados (Total)</p>
-                                        <p className="text-2xl font-black text-white leading-none">{stats.totalLeads}</p>
-                                    </div>
-                                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                        <div className="h-full bg-primary w-[75%]" />
-                                    </div>
-                                </div>
+                {/* Sidebar Column */}
+                <div className="space-y-6">
+                    {/* Broadcast Terminal */}
+                    <div className="glass p-6 rounded-3xl border border-primary/20 bg-primary/5 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-all">
+                            <Terminal size={80} className="text-primary" />
+                        </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                                        <p className="text-[9px] text-slate-500 font-bold uppercase mb-1">Média/Tenant</p>
-                                        <p className="text-lg font-black text-white">{(tenants.length > 0 ? stats.totalLeads / tenants.length : 0).toFixed(0)}</p>
-                                    </div>
-                                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-right">
-                                        <p className="text-[9px] text-slate-500 font-bold uppercase mb-1">Crescimento</p>
-                                        <p className="text-lg font-black text-emerald-500">+12%</p>
-                                    </div>
+                        <h4 className="text-white font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Bell size={16} className="text-primary" />
+                            BROADCAST GLOBAL
+                        </h4>
+
+                        <div className="space-y-4 relative z-10">
+                            <p className="text-[10px] text-slate-400 uppercase font-bold leading-tight">Envie alertas para TODOS os licenciados ativos simultaneamente.</p>
+
+                            <div className="space-y-3">
+                                <input
+                                    type="text"
+                                    placeholder="Título do Alerta..."
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-primary/50 transition-all"
+                                    value={selectedTenantForNote ? '' : notificationForm.title}
+                                    onChange={(e) => setNotificationForm({ ...notificationForm, title: e.target.value })}
+                                    disabled={!!selectedTenantForNote}
+                                />
+                                <textarea
+                                    placeholder="Mensagem para o ecossistema..."
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-primary/50 transition-all min-h-[80px] resize-none"
+                                    value={selectedTenantForNote ? '' : notificationForm.message}
+                                    onChange={(e) => setNotificationForm({ ...notificationForm, message: e.target.value })}
+                                    disabled={!!selectedTenantForNote}
+                                />
+
+                                <div className="flex items-center gap-2">
+                                    <select
+                                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[10px] font-black text-slate-400 outline-none uppercase tracking-widest bg-slate-900"
+                                        value={notificationForm.type}
+                                        onChange={(e) => setNotificationForm({ ...notificationForm, type: e.target.value })}
+                                    >
+                                        <option value="info">INFO</option>
+                                        <option value="warning">AVISO</option>
+                                        <option value="billing">COBRANÇA</option>
+                                        <option value="success">NOVIDADE</option>
+                                    </select>
+                                    <button
+                                        onClick={() => sendNotification()}
+                                        disabled={isSendingNotification || !!selectedTenantForNote}
+                                        className="bg-primary text-slate-900 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all disabled:opacity-50"
+                                    >
+                                        {isSendingNotification ? '...' : 'ENVIAR'}
+                                    </button>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="glass p-6 rounded-3xl border border-white/5">
-                            <h4 className="text-white font-black text-sm uppercase tracking-widest mb-6">Segurança e Logs</h4>
-                            <div className="space-y-4">
-                                <p className="text-xs text-slate-400 font-medium">Você está autenticado como Administrador Master. Todas as ações nesta área são registradas para auditoria de segurança.</p>
-                                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
-                                    <p className="text-[10px] text-amber-500 font-black uppercase flex items-center gap-2">
-                                        <ShieldCheck size={12} /> ALERTA DE SISTEMA
-                                    </p>
-                                    <p className="text-[11px] text-amber-200/70 mt-1">Nenhum backup pendente encontrado. Próxima rotina: Hoje, 23:59.</p>
+                    {/* Direct Notification Modal (Overlay-like within column) */}
+                    {selectedTenantForNote && (
+                        <div className="glass p-6 rounded-3xl border border-amber-500/30 bg-amber-500/5 animate-in fade-in zoom-in-95 duration-300">
+                            <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-amber-500 font-black text-sm uppercase tracking-widest flex items-center gap-2">
+                                    <Mail size={16} />
+                                    MENSAGEM DIRETA
+                                </h4>
+                                <button onClick={() => setSelectedTenantForNote(null)} className="text-slate-500 hover:text-white">
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            <p className="text-[10px] text-amber-200/50 uppercase font-bold mb-3">Para: {selectedTenantForNote.name}</p>
+
+                            <div className="space-y-3">
+                                <input
+                                    type="text"
+                                    placeholder="Assunto específico..."
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-amber-500/50 transition-all"
+                                    value={notificationForm.title}
+                                    onChange={(e) => setNotificationForm({ ...notificationForm, title: e.target.value })}
+                                />
+                                <textarea
+                                    placeholder="Escreva a mensagem..."
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-amber-500/50 transition-all min-h-[100px] resize-none"
+                                    value={notificationForm.message}
+                                    onChange={(e) => setNotificationForm({ ...notificationForm, message: e.target.value })}
+                                />
+                                <div className="flex gap-2">
+                                    <select
+                                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[10px] font-black text-slate-400 outline-none uppercase tracking-widest bg-slate-900"
+                                        value={notificationForm.type}
+                                        onChange={(e) => setNotificationForm({ ...notificationForm, type: e.target.value })}
+                                    >
+                                        <option value="info">INFO</option>
+                                        <option value="billing">FINANCEIRO</option>
+                                        <option value="warning">ALERTA</option>
+                                    </select>
+                                    <button
+                                        onClick={() => sendNotification(selectedTenantForNote.id)}
+                                        disabled={isSendingNotification}
+                                        className="bg-amber-500 text-slate-900 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all"
+                                    >
+                                        {isSendingNotification ? '...' : 'ENVIAR'}
+                                    </button>
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Stats Card */}
+                    <div className="glass p-6 rounded-3xl border border-white/5">
+                        <h4 className="text-white font-black text-sm uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <Zap size={16} className="text-primary animate-pulse" />
+                            Volume de Dados
+                        </h4>
+                        <div className="space-y-6">
+                            <div>
+                                <div className="flex justify-between items-end mb-2">
+                                    <p className="text-[10px] text-slate-500 font-black uppercase">Leads Capturados (Total)</p>
+                                    <p className="text-2xl font-black text-white leading-none">{stats.totalLeads}</p>
+                                </div>
+                                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                    <div className="h-full bg-primary w-[75%]" />
+                                </div>
+                            </div>
+
+                            <div className="pt-2">
+                                <p className="text-[10px] text-slate-500 font-bold uppercase mb-2">Monitoramento Ativo</p>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-1 bg-emerald-500/20 rounded-full overflow-hidden">
+                                        <div className="h-full bg-emerald-500 w-[95%]" />
+                                    </div>
+                                    <span className="text-[10px] font-mono text-emerald-500 font-bold tracking-tighter">95% Uptime</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Security & Ops */}
+                    <div className="glass p-6 rounded-3xl border border-white/5 bg-gradient-to-br from-red-500/5 to-transparent">
+                        <h4 className="text-white font-black text-sm uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <Lock size={16} className="text-red-500" />
+                            Segurança & Auditoria
+                        </h4>
+                        <div className="space-y-4">
+                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex items-start gap-3">
+                                <ShieldAlert size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-[10px] text-slate-300 font-bold uppercase tracking-tight">Logs de Ação Master</p>
+                                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Todas as alterações de status e envios de notificações são auditados com IP e Timestamp.</p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => alert('Em breve: Relatório completo de auditoria.')}
+                                className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-white border border-white/5 transition-all flex items-center justify-center gap-2"
+                            >
+                                <History size={14} /> Ver Logs do Sistema
+                            </button>
                         </div>
                     </div>
                 </div>
