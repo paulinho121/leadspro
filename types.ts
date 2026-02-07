@@ -44,6 +44,8 @@ export interface Lead {
 export interface SearchFilters {
   keyword: string;
   location: string;
-  cnae: string;
-  radius: number;
+  industry?: string;
+  cnae?: string;
+  radius?: number;
+  limit?: number;
 }

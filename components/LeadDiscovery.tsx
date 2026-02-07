@@ -18,7 +18,8 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
   const [filters, setFilters] = useState<SearchFilters>({
     keyword: '',
     location: '',
-    industry: ''
+    industry: '',
+    limit: 50
   });
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
@@ -151,7 +152,14 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           if (isStoppingRef.current) break;
 
           if (results.length > 0) {
-            setLeadsFound(prev => prev + results.length);
+            setLeadsFound(prev => {
+              const nextCount = prev + results.length;
+              if (filters.limit && filters.limit > 0 && nextCount >= filters.limit) {
+                isStoppingRef.current = true;
+                setStopSignal(true);
+              }
+              return nextCount;
+            });
             onResultsFound(results);
           } else if (mode === 'MAPS' && selectedCity !== 'TODO_ESTADO') {
             break;
@@ -342,6 +350,23 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                         ))}
                       </select>
                       <ChevronDown className="absolute right-5 top-5.5 w-5 h-5 text-slate-500 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Qtd. Leads Almejada</label>
+                    <div className="relative group/input">
+                      <Target className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
+                      <input
+                        type="number"
+                        disabled={isScanning}
+                        min="1"
+                        placeholder="Ex: 30"
+                        className="w-full bg-white/5 border border-white/5 rounded-2xl py-5 pl-14 pr-6 text-white text-lg focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        value={filters.limit || ''}
+                        onChange={(e) => setFilters({ ...filters, limit: parseInt(e.target.value) || 0 })}
+                      />
+                      <span className="absolute right-5 top-5 text-[10px] font-black text-slate-600 uppercase">LEADS</span>
                     </div>
                   </div>
                 </>
