@@ -380,7 +380,7 @@ const App: React.FC = () => {
   const renderActiveSection = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <BentoDashboard leads={leads} onEnrich={() => setActiveTab('lab')} />;
+        return <BentoDashboard leads={leads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
       case 'discovery':
         return <LeadDiscovery onResultsFound={handleAddLeads} onStartEnrichment={handleBulkEnrich} />;
       case 'lab':
@@ -398,7 +398,7 @@ const App: React.FC = () => {
       case 'master':
         return <MasterConsole />;
       default:
-        return <BentoDashboard leads={leads} onEnrich={() => setActiveTab('lab')} />;
+        return <BentoDashboard leads={leads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
     }
   };
 
