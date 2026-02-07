@@ -12,6 +12,8 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
         faviconUrl: '',
         primaryColor: '',
         secondaryColor: '',
+        backgroundColor: '',
+        sidebarColor: '',
         customDomain: '',
         subdomain: '',
         apiKeys: { gemini: '', openai: '', serper: '' }
@@ -141,6 +143,8 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                 faviconUrl: config.faviconUrl || '',
                 primaryColor: config.colors?.primary || '#06b6d4',
                 secondaryColor: config.colors?.secondary || '#3b82f6',
+                backgroundColor: config.colors?.background || '#0f172a',
+                sidebarColor: config.colors?.sidebar || 'rgba(30, 41, 59, 0.7)',
                 customDomain: config.domain || '',
                 subdomain: config.subdomain || '',
                 apiKeys: config.apiKeys || { gemini: '', openai: '', serper: '' }
@@ -157,7 +161,13 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
         if (formData.secondaryColor) {
             root.style.setProperty('--color-secondary', formData.secondaryColor);
         }
-    }, [formData.primaryColor, formData.secondaryColor]);
+        if (formData.backgroundColor) {
+            root.style.setProperty('--color-background', formData.backgroundColor);
+        }
+        if (formData.sidebarColor) {
+            root.style.setProperty('--color-sidebar', formData.sidebarColor);
+        }
+    }, [formData.primaryColor, formData.secondaryColor, formData.backgroundColor, formData.sidebarColor]);
 
     const handleSave = async () => {
         console.log('[WhiteLabelAdmin] Iniciando salvamento...');
@@ -218,6 +228,8 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                     favicon_url: formData.faviconUrl,
                     primary_color: formData.primaryColor,
                     secondary_color: formData.secondaryColor,
+                    background_color: formData.backgroundColor,
+                    sidebar_color: formData.sidebarColor,
                     custom_domain: formData.customDomain || null,
                     subdomain: formData.subdomain || null,
                     api_keys: apiKeysToSave,
@@ -329,6 +341,16 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                                         label="Cor Secundária"
                                         value={formData.secondaryColor}
                                         onChange={(val) => setFormData({ ...formData, secondaryColor: val })}
+                                    />
+                                    <ColorPicker
+                                        label="Cor de Fundo (App)"
+                                        value={formData.backgroundColor}
+                                        onChange={(val) => setFormData({ ...formData, backgroundColor: val })}
+                                    />
+                                    <ColorPicker
+                                        label="Barra Lateral"
+                                        value={formData.sidebarColor}
+                                        onChange={(val) => setFormData({ ...formData, sidebarColor: val })}
                                     />
                                 </div>
                             </section>

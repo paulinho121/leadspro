@@ -534,7 +534,7 @@ const App: React.FC = () => {
         <div className="p-4 mt-auto">
           {showAccountCard && (
             <div className="absolute bottom-28 left-4 right-4 animate-fade-in-up z-[70]">
-              <div className="glass border border-primary/20 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
+              <div className="glass-strong border border-primary/20 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
                 {/* Background Decor */}
                 <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-500"></div>
 
@@ -617,7 +617,7 @@ const App: React.FC = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[radial-gradient(circle_at_50%_0%,_rgba(6,182,212,0.05)_0%,_transparent_50%)] overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 bg-[radial-gradient(circle_at_50%_0%,var(--color-primary),transparent_50%)] bg-opacity-5 overflow-hidden">
         <header className="h-20 md:h-24 border-b border-white/5 flex items-center justify-between px-6 md:px-10 relative z-40 backdrop-blur-xl shrink-0">
           <div className="flex items-center gap-4 md:gap-6 ml-8 md:ml-0">
             <h2 className="text-lg md:text-xl font-bold text-white tracking-tight flex items-center gap-3">

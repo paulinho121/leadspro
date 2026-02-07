@@ -107,9 +107,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0f172a] relative overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)] relative overflow-hidden">
             {/* Ambient Background */}
-            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,_rgba(6,182,212,0.15)_0%,_transparent_70%)] animate-pulse-slow"></div>
+            <div className={`absolute top-0 left-0 w-full h-full opacity-20 bg-[radial-gradient(circle_at_50%_0%,var(--color-primary)_0%,transparent_70%)] animate-pulse-slow`}></div>
 
             {/* Card */}
             <div className="w-full max-w-md p-8 rounded-3xl glass border border-white/10 relative z-10 shadow-2xl backdrop-blur-xl animate-fade-in-up">
