@@ -140,11 +140,13 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           }, 400);
 
           try {
+            console.log(`[Neural Discovery] Loop de varredura executando com modo: ${mode}, keyword: ${filters.keyword}, local: ${currentSearchLocation}`);
             if (mode === 'MAPS') {
               results = await DiscoveryService.performDeepScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
             } else {
               // No modo CNPJ, se for um código CNAE, garantimos aspas para busca exata de padrão
               const searchQuery = /^\d{4}-\d\/\d{2}$/.test(filters.keyword) ? `"${filters.keyword}"` : filters.keyword;
+              console.log(`[CNPJ] Chamando performCNPJScan com Q: ${searchQuery}`);
               results = await DiscoveryService.performCNPJScan(searchQuery, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
             }
           } finally {
@@ -271,19 +273,19 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
               <div className="flex flex-wrap bg-white/5 rounded-2xl p-1.5 border border-white/5 w-fit">
                 <ModeButton
                   active={mode === 'MAPS'}
-                  onClick={() => setMode('MAPS')}
+                  onClick={() => { setMode('MAPS'); console.log('[LeadDiscovery] Mode changed to MAPS'); }}
                   disabled={isScanning}
                   label="Neural Discovery"
                 />
                 <ModeButton
                   active={mode === 'CNPJ'}
-                  onClick={() => setMode('CNPJ')}
+                  onClick={() => { setMode('CNPJ'); console.log('[LeadDiscovery] Mode changed to CNPJ'); }}
                   disabled={isScanning}
                   label="CNPJ em Massa"
                 />
                 <ModeButton
                   active={mode === 'ENRICH'}
-                  onClick={() => setMode('ENRICH')}
+                  onClick={() => { setMode('ENRICH'); console.log('[LeadDiscovery] Mode changed to ENRICH'); }}
                   disabled={isScanning}
                   label="Enriquecer Individual"
                 />

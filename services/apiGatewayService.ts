@@ -173,9 +173,9 @@ export class ApiGatewayService {
                 created_at: new Date().toISOString()
             }]);
 
-            console.log(`[Usage Log] API: ${apiName}, Status: ${status} [REGISTRO OK]`);
+            console.log(`[Usage Log] API: ${apiName}, Status: ${status}`);
         } catch (err) {
-            console.error('[Usage Log] Falha ao registrar:', err);
+            // Silenciar erros de log para não poluir o console principal
         }
     }
 }
