@@ -63,17 +63,17 @@ export class DiscoveryService {
     /**
      * Realiza uma busca por CNPJ baseada em filtros de Localidade e Atividade
      */
-    static async performCNPJScan(keyword: string, location: string, tenantId?: string): Promise<Lead[]> {
-        console.log(`[CNPJ] Iniciando busca governamental para: ${keyword} em ${location}`);
+    static async performCNPJScan(keyword: string, location: string, tenantId?: string, apiKeys?: any, page: number = 1): Promise<Lead[]> {
+        console.log(`[CNPJ] Iniciando busca governamental para: ${keyword} em ${location} (Pág: ${page})`);
 
-        // Detectar se o keyword é um CNPJ individual (para o novo modo ENRICH)
-        const cleanCnpj = keyword.replace(/\D/g, '');
-        if (cleanCnpj.length === 14) {
-            console.log(`[CNPJ] Detetado CNPJ individual: ${cleanCnpj}. Buscando dados reais...`);
-            const realData = await this.fetchRealCNPJData(cleanCnpj);
+        // 1. Detectar se o keyword é um CNPJ individual (para o modo ENRICH)
+        const cleanCnpjInput = keyword.replace(/\D/g, '');
+        if (cleanCnpjInput.length === 14) {
+            console.log(`[CNPJ] Detetado CNPJ individual: ${cleanCnpjInput}. Buscando dados reais...`);
+            const realData = await this.fetchRealCNPJData(cleanCnpjInput);
             if (realData && realData.nome) {
                 return [{
-                    id: `cnpj-${cleanCnpj}`,
+                    id: `cnpj-${cleanCnpjInput}`,
                     name: realData.nome,
                     website: realData.site || '',
                     phone: realData.telefone || '',
@@ -88,17 +88,78 @@ export class DiscoveryService {
                         foundedDate: realData.abertura,
                         size: realData.porte,
                         address: `${realData.logradouro}, ${realData.numero} - ${realData.bairro}, ${realData.municipio} - ${realData.uf}`,
-                        cnpj: cleanCnpj
+                        cnpj: cleanCnpjInput
                     },
                     socialLinks: {
-                        cnpj: cleanCnpj,
+                        cnpj: cleanCnpjInput,
                         whatsapp: realData.telefone ? `https://wa.me/55${realData.telefone.replace(/\D/g, '')}` : undefined
                     }
                 }];
             }
         }
 
-        // Simulação avançada de busca desativada
+        // 2. BUSCA MASSIVA (Por CNAE ou Palavra-chave)
+        try {
+            // Query otimizada para encontrar listas de empresas em diretórios públicos
+            const query = `site:cnpj.biz "${keyword}" ${location}`;
+
+            const searchResponse: any = await ApiGatewayService.callApi(
+                'google-search',
+                'search',
+                { q: query, page: page, num: 10 },
+                { tenantId, apiKeys }
+            );
+
+            if (searchResponse && searchResponse.organic) {
+                const cnpjRegex = /\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g;
+                const foundCnpjs = new Set<string>();
+
+                searchResponse.organic.forEach((result: any) => {
+                    const textContent = (result.title + ' ' + result.snippet);
+                    const matches = textContent.match(cnpjRegex);
+                    if (matches) {
+                        matches.forEach(m => foundCnpjs.add(m.replace(/\D/g, '')));
+                    }
+                });
+
+                if (foundCnpjs.size > 0) {
+                    console.log(`[CNPJ] Encontrados ${foundCnpjs.size} CNPJs na página ${page}. Extraindo dados reais...`);
+
+                    // Buscar dados de cada CNPJ (Paralelismo controlado para evitar excesso de requisições)
+                    const leads: Lead[] = [];
+                    for (const cnpj of Array.from(foundCnpjs)) {
+                        const realData = await this.fetchRealCNPJData(cnpj);
+                        if (realData && realData.nome) {
+                            leads.push({
+                                id: `cnpj-${cnpj}`,
+                                name: realData.nome,
+                                website: realData.site || '',
+                                phone: realData.telefone || '',
+                                industry: keyword,
+                                location: location,
+                                status: LeadStatus.NEW,
+                                lastUpdated: new Date().toISOString(),
+                                details: {
+                                    tradeName: realData.fantasia || realData.nome,
+                                    legalName: realData.nome,
+                                    activity: realData.atividade_principal?.[0]?.text,
+                                    cnpj: cnpj,
+                                    address: `${realData.logradouro}, ${realData.numero} - ${realData.municipio}, ${realData.uf}`
+                                },
+                                socialLinks: {
+                                    cnpj: cnpj,
+                                    whatsapp: realData.telefone ? `https://wa.me/55${realData.telefone.replace(/\D/g, '')}` : undefined
+                                }
+                            });
+                        }
+                    }
+                    return leads;
+                }
+            }
+        } catch (error) {
+            console.error('[CNPJ Mass Scan] Erro durante a varredura:', error);
+        }
+
         return [];
     }
 

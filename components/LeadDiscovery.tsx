@@ -132,7 +132,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           if (mode === 'MAPS') {
             results = await DiscoveryService.performDeepScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
           } else {
-            results = await DiscoveryService.performCNPJScan(filters.keyword, currentSearchLocation, config.tenantId);
+            results = await DiscoveryService.performCNPJScan(filters.keyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
           }
 
           if (isStoppingRef.current) break;
