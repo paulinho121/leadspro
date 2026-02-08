@@ -252,8 +252,8 @@ export class DiscoveryService {
      * MODO SHERLOCK: Prospecção de Clientes de Concorrentes
      * Busca por interações públicas, reclamações e ex-clientes em redes sociais e portais.
      */
-    static async performCompetitorScan(competitorInput: string, location: string, tenantId?: string, apiKeys?: any, page: number = 1): Promise<Lead[]> {
-        console.log(`[Sherlock Scan] Iniciando espionagem de: ${competitorInput} (Pág: ${page})`);
+    static async performCompetitorScan(competitorInput: string, location: string, tenantId?: string, apiKeys?: any, page: number = 1, contextKeywords?: string): Promise<Lead[]> {
+        console.log(`[Sherlock Scan] Iniciando espionagem de: ${competitorInput} (Pág: ${page}, Contexto: ${contextKeywords || 'Nenhum'})`);
 
         // 1. Tentar extrair nome limpo do concorrente a partir da URL ou Input
         let competitorName = competitorInput;
@@ -277,15 +277,29 @@ export class DiscoveryService {
         console.log(`[Sherlock Scan] Alvo Identificado: ${competitorName}`);
 
         try {
-            // Estratégia de Dorks para encontrar Pessoas/Leads interagindo com a marca
-            // Focamos em: Reclamações (ReclameAqui), Dúvidas em Fóruns, Comentários Indexados
-            const dorks = [
-                `site:reclameaqui.com.br "${competitorName}"`,
-                `site:facebook.com "${competitorName}" "comentou"`,
-                `site:instagram.com "${competitorName}"`, // Indexação geral
-                `"${competitorName}" "insatisfeito" OR "recomendaçao" OR "indicação" -site:${competitorInput}`,
-                `related:${competitorInput}` // Encontrar empresas similares que podem ser leads B2B
-            ];
+            let dorks = [];
+
+            // Se o usuário forneceu palavras-chave específicas (ex: "caro", "reclamação", "preço")
+            // A busca foca exatamente nessas combinações
+            if (contextKeywords && contextKeywords.trim().length > 0) {
+                const keywords = contextKeywords.split(',').map(k => `"${k.trim()}"`).join(' OR ');
+                dorks = [
+                    `site:reclameaqui.com.br "${competitorName}" (${keywords})`,
+                    `site:instagram.com "${competitorName}" (${keywords})`,
+                    `site:facebook.com "${competitorName}" (${keywords})`,
+                    `"${competitorName}" "(${keywords})" -site:${competitorInput}`,
+                    `"${competitorName}" (${keywords}) ${location}`
+                ];
+            } else {
+                // Estratégia Padrão (Sem keywords específicas)
+                dorks = [
+                    `site:reclameaqui.com.br "${competitorName}"`,
+                    `site:facebook.com "${competitorName}" "comentou"`,
+                    `site:instagram.com "${competitorName}"`,
+                    `"${competitorName}" "insatisfeito" OR "recomendaçao" OR "indicação" -site:${competitorInput}`,
+                    `related:${competitorInput}`
+                ];
+            }
 
             // Seleciona query baseada na paginação para variar a fonte
             const queryTemplate = dorks[(page - 1) % dorks.length] || dorks[0];

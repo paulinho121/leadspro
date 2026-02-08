@@ -165,8 +165,10 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
             if (searchMode === 'MAPS') {
               results = await DiscoveryService.performDeepScan(cleanKeyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
             } else if (searchMode === 'SHERLOCK') {
-              console.log(`[Sherlock] Chamando performCompetitorScan com Alvo: ${cleanKeyword}`);
-              results = await DiscoveryService.performCompetitorScan(cleanKeyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
+              // No modo SHERLOCK, usamos o campo "industry" para passar as palavras-chave de contexto
+              const contextKeywords = filters.industry;
+              console.log(`[Sherlock] Chamando performCompetitorScan com Alvo: ${cleanKeyword} e Contexto: ${contextKeywords}`);
+              results = await DiscoveryService.performCompetitorScan(cleanKeyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage, contextKeywords);
             } else {
               console.log(`[CNPJ] Chamando performCNPJScan com Q: ${cleanKeyword}`);
               results = await DiscoveryService.performCNPJScan(cleanKeyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
@@ -330,7 +332,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
 
           {/* 2. Inputs Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-1">
-            <div className={`${mode === 'ENRICH' || mode === 'SHERLOCK' ? 'md:col-span-2' : ''} space-y-3`}>
+            <div className={`${mode === 'ENRICH' ? 'md:col-span-2' : ''} space-y-3`}>
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">
                 {mode === 'MAPS' ? 'Nicho ou Atividade' :
                   mode === 'CNPJ' ? 'CNAE ou Palavra-chave' :
@@ -349,6 +351,23 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                 />
               </div>
             </div>
+
+            {mode === 'SHERLOCK' && (
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Filtro de Contexto (Opcional)</label>
+                <div className="relative group/input">
+                  <Filter className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
+                  <input
+                    type="text"
+                    disabled={isScanning}
+                    placeholder="Ex: insatisfeito, reclamação, preço, defeito..."
+                    className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white text-lg focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
+                    value={filters.industry}
+                    onChange={(e) => setFilters({ ...filters, industry: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
 
             {mode !== 'ENRICH' && mode !== 'SHERLOCK' && (
               <>
