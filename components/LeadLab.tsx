@@ -91,8 +91,8 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                   onClick={() => { setFilterStatus(LeadStatus.ENRICHED); if (window.innerWidth < 1024) setIsDrawerOpen(false); }}
                   label="Enriquecidos com IA"
                   count={leads.filter(l => l.status === LeadStatus.ENRICHED).length}
-                  icon={<Sparkles size={12} className="animate-pulse text-magenta-500" />}
-                  color="magenta"
+                  icon={<Sparkles size={12} className="animate-pulse" />}
+                  color="primary"
                 />
               </div>
             </div>
@@ -154,23 +154,23 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
 
           <div className="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
             <div className={`absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-20 transition-all duration-700 ${isEnriching ? 'animate-neural opacity-20 scale-110' : 'group-hover:scale-110'}`}>
-              <BrainCircuit size={64} className="text-magenta-500" />
+              <BrainCircuit size={64} style={{ color: 'var(--color-primary)' }} />
             </div>
-            <p className="text-magenta-500/80 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Enriquecidos (IA)</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-70" style={{ color: 'var(--color-primary)' }}>Enriquecidos (IA)</p>
             <div className="text-3xl font-black text-white">{leads.filter(l => l.status === LeadStatus.ENRICHED).length}</div>
-            <div className="text-[10px] text-magenta-500/60 mt-2 font-mono flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-magenta-500 animate-pulse"></span> Dados Completos
+            <div className="text-[10px] mt-2 font-mono flex items-center gap-1 opacity-60" style={{ color: 'var(--color-primary)' }}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-primary)' }}></span> Dados Completos
             </div>
           </div>
 
           <div className="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
             <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-20 transition-all duration-700 group-hover:scale-110">
-              <Cpu size={64} className="text-cyan-500" />
+              <Cpu size={64} style={{ color: 'var(--color-secondary)' }} />
             </div>
-            <p className="text-cyan-500/80 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Novos (Fila)</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-70" style={{ color: 'var(--color-secondary)' }}>Novos (Fila)</p>
             <div className="text-3xl font-black text-white">{leads.filter(l => l.status === LeadStatus.NEW).length}</div>
-            <div className="text-[10px] text-cyan-500/60 mt-2 font-mono flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span> Aguardando Processamento
+            <div className="text-[10px] mt-2 font-mono flex items-center gap-1 opacity-60" style={{ color: 'var(--color-secondary)' }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-secondary)' }}></span> Aguardando Processamento
             </div>
           </div>
         </div>
@@ -318,7 +318,14 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                   <tr key={lead.id} className="group hover:bg-white/[0.02] transition-all relative">
                     <td className="px-6 lg:px-10 py-5">
                       <div className="flex items-center gap-4">
-                        <div className={`w-2.5 h-2.5 rounded-full ${lead.status === LeadStatus.ENRICHED ? 'bg-magenta-500 shadow-[0_0_10px_#d946ef]' : 'bg-cyan-500 shadow-[0_0_10px_#06b6d4]'}`}></div>
+                        <div
+                          className={`w-2.5 h-2.5 rounded-full shadow-lg ${lead.status === LeadStatus.ENRICHED ? 'animate-pulse' : ''}`}
+                          style={{
+                            backgroundColor: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
+                            boxShadow: lead.status === LeadStatus.ENRICHED ? '0 0 10px var(--color-primary)' : '0 0 10px var(--color-secondary)',
+                            opacity: lead.status === LeadStatus.ENRICHED ? 1 : 0.6
+                          }}
+                        ></div>
                         <div>
                           <div className="font-bold text-white text-sm lg:text-base group-hover:text-primary transition-colors leading-tight">
                             {lead.details?.tradeName || lead.name}
@@ -334,10 +341,15 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                       </div>
                     </td>
                     <td className="px-6 lg:px-10 py-5 text-center">
-                      <span className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all ${lead.status === LeadStatus.ENRICHED
-                        ? 'border-magenta-500/30 text-magenta-400 bg-magenta-500/5'
-                        : 'border-cyan-500/30 text-cyan-400 bg-cyan-500/5'
-                        }`}>
+                      <span
+                        className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all`}
+                        style={{
+                          borderColor: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
+                          backgroundColor: lead.status === LeadStatus.ENRICHED ? 'rgba(var(--color-primary-rgb), 0.1)' : 'rgba(var(--color-secondary-rgb), 0.1)',
+                          color: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
+                          opacity: 0.8
+                        }}
+                      >
                         {lead.status === LeadStatus.ENRICHED ? 'COMPLETO' : 'NOVO'}
                       </span>
                     </td>
@@ -397,7 +409,10 @@ const FilterOption = ({ active, onClick, label, count, icon, color = 'cyan' }: a
   >
     <div className="flex items-center gap-3">
       {icon ? (
-        <div className={`p-1.5 rounded-lg ${active ? color === 'magenta' ? 'bg-magenta-500 text-white' : 'bg-primary text-slate-900' : 'bg-white/5 text-slate-500'}`}>
+        <div
+          className={`p-1.5 rounded-lg ${active ? 'bg-white/10 text-white' : 'bg-white/5 text-slate-500'}`}
+          style={{ color: active ? 'var(--color-primary)' : undefined }}
+        >
           {icon}
         </div>
       ) : (

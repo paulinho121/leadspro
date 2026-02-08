@@ -232,7 +232,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
     <div className="glass rounded-[2.5rem] p-8 lg:p-12 border-white/5 shadow-2xl relative overflow-hidden group">
       {/* Background Glows */}
       <div className="absolute -top-24 -left-24 w-64 h-64 bg-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
-      <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-magenta-500/10 blur-[100px] rounded-full pointer-events-none"></div>
+      <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-primary/5 blur-[100px] rounded-full pointer-events-none"></div>
 
       <div className="flex flex-col xl:flex-row gap-12 relative z-10">
         {/* Left Side: Brand & Status Monitoring */}

@@ -85,9 +85,16 @@ export class BrandingService {
     static applyBranding(config: BrandingConfig) {
         const root = document.documentElement;
 
+        const hexToRgb = (hex: string) => {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '0,0,0';
+        };
+
         // Set CSS Variables
         root.style.setProperty('--color-primary', config.colors.primary);
+        root.style.setProperty('--color-primary-rgb', hexToRgb(config.colors.primary));
         root.style.setProperty('--color-secondary', config.colors.secondary);
+        root.style.setProperty('--color-secondary-rgb', hexToRgb(config.colors.secondary));
         root.style.setProperty('--color-accent', config.colors.accent);
         root.style.setProperty('--color-background', config.colors.background);
         root.style.setProperty('--color-sidebar', config.colors.sidebar);

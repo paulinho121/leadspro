@@ -18,8 +18,11 @@ const LiquidBattery: React.FC<LiquidBatteryProps> = ({ percentage, isScanning = 
             <div className="absolute inset-x-0 bottom-0 top-0 overflow-hidden rounded-[2rem]">
                 {/* Liquid Wave Background */}
                 <div
-                    className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-primary/80 to-cyan-400/60 transition-all duration-700 ease-out"
-                    style={{ height: `${fillLevel}%` }}
+                    className="absolute bottom-0 left-0 w-full transition-all duration-700 ease-out"
+                    style={{
+                        height: `${fillLevel}%`,
+                        background: `linear-gradient(to top, var(--color-primary), var(--color-secondary))`
+                    }}
                 >
                     {/* Wave Animation */}
                     <div className="absolute top-[-10px] left-0 w-[200%] h-6 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAwIDEyMCIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+PHBhdGggZD0iTTAgMGw0OCAzMGM0OCAzMCA5NiAzMCAxNDQgMHMxNDQtMzAgMTkyIDAgMTkyIDMwIDI0MCAwIDI0MC0zMCAyODgtMzAgbDQ4IDMwVjE1MEgwVjB6IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNCkiLz48L3N2Zz4=')] bg-repeat-x bg-[length:50%_100%] animate-wave opacity-70"></div>

@@ -71,7 +71,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
       {/* 1. Main Performance - Fluxo de Leads */}
       <div className="col-span-1 md:col-span-4 lg:col-span-4 glass rounded-[2rem] p-6 md:p-8 premium-card relative overflow-hidden">
         <div
-          className="absolute top-0 right-0 w-80 h-80 blur-[100px] -mr-40 -mt-40 transition-all opacity-20"
+          className="absolute top-0 right-0 w-80 h-80 blur-[100px] -mr-40 -mt-40 transition-all opacity-[0.12]"
           style={{ backgroundColor: primaryColor }}
         ></div>
 
@@ -128,11 +128,11 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
 
       {/* 2. Key Metrics - Estatísticas */}
       <div className="col-span-1 md:col-span-2 lg:col-span-2 glass rounded-[2rem] p-6 md:p-8 flex flex-col premium-card overflow-hidden">
-        <div className="absolute bottom-0 right-0 w-64 h-64 bg-magenta-500/10 blur-[100px] -mr-32 -mb-32"></div>
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-slate-500/5 blur-[100px] -mr-32 -mb-32"></div>
 
         <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
           <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
-            <Activity className="text-magenta-400" size={18} /> Pulso Operacional
+            <Activity className="text-slate-400" size={18} /> Pulso Operacional
           </h3>
           <div className="flex flex-col items-end shrink-0">
             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Saldo Estimado</span>
@@ -141,9 +141,9 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
         </div>
 
         <div className="space-y-4 md:space-y-6 relative z-10 flex-1">
-          <StatBox label="Leads Identificados" value={totalLeads.toString()} color="text-primary" icon={<Users size={18} />} />
-          <StatBox label="Enriquecidos e prontos" value={enrichedCount.toString()} color="text-emerald-400" icon={<CheckCircle size={18} md:size={20} />} />
-          <StatBox label="Score de Qualidade" value={qualityScore} color="text-magenta-400" icon={<Sparkles size={18} md:size={20} />} />
+          <StatBox label="Leads Identificados" value={totalLeads.toString()} color="primary" icon={<Users size={18} />} />
+          <StatBox label="Enriquecidos e prontos" value={enrichedCount.toString()} color="emerald-400" icon={<CheckCircle size={18} md:size={20} />} />
+          <StatBox label="Score de Qualidade" value={qualityScore} color="primary" icon={<Sparkles size={18} md:size={20} />} />
 
           <div className="pt-4 border-t border-white/5">
             <div className="flex items-center justify-between mb-2">
@@ -239,22 +239,34 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
 
 const StatBox = ({ label, value, color, icon }: { label: string, value: string, color: string, icon: React.ReactNode }) => (
   <div className="flex items-center gap-5 group/stat">
-    <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-white/5 ${color} flex items-center justify-center transition-all group-hover/stat:bg-white/10 group-hover/stat:scale-105 shrink-0`}>
+    <div
+      className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-white/5 flex items-center justify-center transition-all group-hover/stat:bg-white/10 group-hover/stat:scale-105 shrink-0`}
+      style={{ color: color === 'primary' ? 'var(--color-primary)' : color }}
+    >
       {icon}
     </div>
     <div>
       <span className="text-[10px] md:text-xs font-medium text-slate-500 uppercase tracking-tighter">{label}</span>
-      <div className={`text-xl md:text-2xl font-bold font-mono ${color} leading-none mt-1`}>{value}</div>
+      <div
+        className={`text-xl md:text-2xl font-bold font-mono leading-none mt-1`}
+        style={{ color: color === 'primary' ? 'var(--color-primary)' : color }}
+      >{value}</div>
     </div>
   </div>
 );
 
 const InsightLog = ({ status, msg, time, type = 'normal', color = 'primary' }: { status: string, msg: string, time: string, type?: 'normal' | 'alert', color?: string }) => (
   <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center gap-4 hover:bg-white/[0.06] transition-all group cursor-default">
-    <div className={`w-2 h-2 rounded-full ${type === 'alert' ? 'bg-magenta-500 animate-pulse ring-4 ring-magenta-500/20' : `bg-${color}`} `}></div>
+    <div
+      className={`w-2 h-2 rounded-full ${type === 'alert' ? 'bg-red-500 animate-pulse ring-4 ring-red-500/20' : ''} `}
+      style={{ backgroundColor: (type !== 'alert') ? (color === 'primary' ? 'var(--color-primary)' : color) : undefined }}
+    ></div>
     <div className="flex-1 min-w-0">
       <div className="flex items-center justify-between mb-1">
-        <span className={`text-[10px] font-black uppercase tracking-widest ${type === 'alert' ? 'text-magenta-400' : 'text-slate-400'}`}>{status}</span>
+        <span
+          className={`text-[10px] font-black uppercase tracking-widest`}
+          style={{ color: type === 'alert' ? '#ef4444' : (color === 'primary' ? 'var(--color-primary)' : 'rgba(148, 163, 184, 0.7)') }}
+        >{status}</span>
         <span className="text-[9px] text-slate-600 font-mono">{time}</span>
       </div>
       <p className="text-slate-300 text-sm truncate group-hover:text-white transition-colors">{msg}</p>

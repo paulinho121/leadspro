@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, Globe, Palette, Layout, Link2, ShieldCheck, Mail, Database, Loader2, Cpu, Eye, EyeOff, X } from 'lucide-react';
 import { useBranding } from './BrandingProvider';
 import { supabase } from '../lib/supabase';
+import { DEFAULT_BRANDING } from '../types/branding';
 
 const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' | 'api' }> = ({ initialTab = 'branding' }) => {
     const { config, refreshBranding } = useBranding();
@@ -155,11 +156,19 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
     // Live Preview: Atualiza as cores em tempo real enquanto o usuário edita
     useEffect(() => {
         const root = document.documentElement;
+
+        const hexToRgb = (hex: string) => {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '0,0,0';
+        };
+
         if (formData.primaryColor) {
             root.style.setProperty('--color-primary', formData.primaryColor);
+            root.style.setProperty('--color-primary-rgb', hexToRgb(formData.primaryColor));
         }
         if (formData.secondaryColor) {
             root.style.setProperty('--color-secondary', formData.secondaryColor);
+            root.style.setProperty('--color-secondary-rgb', hexToRgb(formData.secondaryColor));
         }
         if (formData.backgroundColor) {
             root.style.setProperty('--color-background', formData.backgroundColor);
@@ -168,6 +177,21 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
             root.style.setProperty('--color-sidebar', formData.sidebarColor);
         }
     }, [formData.primaryColor, formData.secondaryColor, formData.backgroundColor, formData.sidebarColor]);
+
+    const handleResetColors = () => {
+        if (!window.confirm('Deseja realmente restaurar as cores originais do sistema?')) return;
+
+        setFormData({
+            ...formData,
+            primaryColor: DEFAULT_BRANDING.colors.primary,
+            secondaryColor: DEFAULT_BRANDING.colors.secondary,
+            backgroundColor: DEFAULT_BRANDING.colors.background,
+            sidebarColor: DEFAULT_BRANDING.colors.sidebar
+        });
+
+        // O useEffect do Live Preview cuidará de atualizar as variáveis CSS automaticamente
+        console.log('[WhiteLabelAdmin] Cores restauradas para o padrão.');
+    };
 
     const handleSave = async () => {
         console.log('[WhiteLabelAdmin] Iniciando salvamento...');
@@ -330,7 +354,17 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                             </section>
 
                             <section>
-                                <h3 className="text-xl font-bold text-white mb-6">Cores & Estilização</h3>
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                        <Palette className="text-primary" /> Cores & Estilização
+                                    </h3>
+                                    <button
+                                        onClick={handleResetColors}
+                                        className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors"
+                                    >
+                                        Restaurar Padrão
+                                    </button>
+                                </div>
                                 <div className="grid grid-cols-2 gap-6">
                                     <ColorPicker
                                         label="Cor Primária"

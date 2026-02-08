@@ -617,7 +617,12 @@ const App: React.FC = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[radial-gradient(circle_at_50%_0%,var(--color-primary),transparent_50%)] bg-opacity-5 overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 relative overflow-hidden bg-slate-950">
+        {/* Subtle Ambient Glow */}
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] opacity-[0.07] pointer-events-none blur-[120px] rounded-full"
+          style={{ background: `radial-gradient(circle, var(--color-primary) 0%, transparent 70%)` }}
+        ></div>
         <header className="h-20 md:h-24 border-b border-white/5 flex items-center justify-between px-6 md:px-10 relative z-40 backdrop-blur-xl shrink-0">
           <div className="flex items-center gap-4 md:gap-6 ml-8 md:ml-0">
             <h2 className="text-lg md:text-xl font-bold text-white tracking-tight flex items-center gap-3">
@@ -680,9 +685,9 @@ const App: React.FC = () => {
             </div>
             <button
               onClick={() => setActiveTab('partner')}
-              className="bg-yellow-500 text-slate-900 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider hover:scale-105 transition-all"
+              className="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border border-white/10"
             >
-              Setup
+              Configure Setup
             </button>
           </div>
         )}
