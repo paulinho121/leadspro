@@ -16,9 +16,11 @@ interface LeadLabProps {
   onBulkEnrich: (leadsToEnrich: Lead[]) => void;
   isEnriching?: boolean;
   onStopEnrichment?: () => void;
+  onDelete?: (id: string) => void;
+  onBulkDelete?: (ids: string[]) => void;
 }
 
-const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnriching = false, onStopEnrichment }) => {
+const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnriching = false, onStopEnrichment, onDelete, onBulkDelete }) => {
   const { config } = useBranding();
   const [selectedNiche, setSelectedNiche] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -275,7 +277,22 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                   </button>
                 </div>
               )}
-              <button className="p-3.5 glass rounded-2xl text-slate-400 hover:text-white transition-all shadow-xl shrink-0">
+
+              {onBulkDelete && filteredLeads.length > 0 && (
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Tem certeza que deseja excluir TODOS OS ${filteredLeads.length} leads listados? Esta ação é irreversível.`)) {
+                      onBulkDelete(filteredLeads.map(l => l.id));
+                    }
+                  }}
+                  className="p-3.5 glass rounded-2xl text-slate-400 hover:text-red-500 transition-all shadow-xl shrink-0 border border-white/5 hover:border-red-500/30"
+                  title="Limpar Lista"
+                >
+                  <Trash2 size={18} />
+                </button>
+              )}
+
+              <button className="p-3.5 glass rounded-2xl text-slate-400 hover:text-white transition-all shadow-xl shrink-0 border border-white/5 disabled:opacity-50">
                 <Download size={18} />
               </button>
             </div>
@@ -363,6 +380,18 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                         >
                           <FlaskConical size={14} />
                         </button>
+                        {onDelete && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Tem certeza que deseja excluir este lead?')) {
+                                onDelete(lead.id);
+                              }
+                            }}
+                            className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -383,6 +412,7 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
     </div>
   );
 };
+
 
 const FilterOption = ({ active, onClick, label, count, icon, color = 'cyan' }: any) => (
   <button

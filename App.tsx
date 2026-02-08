@@ -489,6 +489,53 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDeleteLead = async (leadId: string) => {
+    // Optimistic Update
+    setLeads(prev => prev.filter(l => l.id !== leadId));
+
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', leadId);
+
+      if (error) throw error;
+
+      const sessionUser = (await supabase.auth.getSession()).data.session?.user;
+      if (sessionUser) {
+        ActivityService.log(config.tenantId, sessionUser.id, 'LEAD_DELETE', `Lead ${leadId} excluído.`);
+      }
+
+    } catch (err) {
+      console.error('Erro ao excluir lead:', err);
+      fetchLeads(); // Revert on error
+      alert('Erro ao excluir lead. Tente novamente.');
+    }
+  };
+
+  const handleBulkDelete = async (leadIds: string[]) => {
+    // Optimistic Update
+    setLeads(prev => prev.filter(l => !leadIds.includes(l.id)));
+
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .in('id', leadIds);
+
+      if (error) throw error;
+
+      const sessionUser = (await supabase.auth.getSession()).data.session?.user;
+      if (sessionUser) {
+        ActivityService.log(config.tenantId, sessionUser.id, 'LEAD_BULK_DELETE', `${leadIds.length} leads excluídos.`);
+      }
+    } catch (err) {
+      console.error('Erro na exclusão em massa:', err);
+      fetchLeads(); // Revert
+      alert('Erro ao excluir leads.');
+    }
+  };
+
   const renderActiveSection = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -502,6 +549,8 @@ const App: React.FC = () => {
           onBulkEnrich={handleBulkEnrich}
           isEnriching={isEnriching}
           onStopEnrichment={() => stopEnrichmentSignal.current = true}
+          onDelete={handleDeleteLead}
+          onBulkDelete={handleBulkDelete}
         />;
       case 'enriched':
         return <EnrichedLeadsView leads={filteredLeads} />;

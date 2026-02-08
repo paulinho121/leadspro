@@ -8,7 +8,9 @@ export type ActivityAction =
     | 'LOGOUT'
     | 'EXPORT'
     | 'SETTINGS_UPDATE'
-    | 'SYSTEM_SYNC';
+    | 'SYSTEM_SYNC'
+    | 'LEAD_DELETE'
+    | 'LEAD_BULK_DELETE';
 
 export class ActivityService {
     static async log(tenantId: string, userId: string, action: ActivityAction, details: string) {
