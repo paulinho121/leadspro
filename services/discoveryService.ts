@@ -260,7 +260,6 @@ export class DiscoveryService {
         try {
             if (competitorInput.includes('http') || competitorInput.includes('www')) {
                 const urlObj = new URL(competitorInput.startsWith('http') ? competitorInput : `https://${competitorInput}`);
-                // Tenta pegar o handle do instagram/facebook ou o dominio
                 if (urlObj.hostname.includes('instagram') || urlObj.hostname.includes('facebook') || urlObj.hostname.includes('linkedin')) {
                     const pathParts = urlObj.pathname.split('/').filter(p => p);
                     if (pathParts.length > 0) competitorName = pathParts[0];
@@ -269,7 +268,6 @@ export class DiscoveryService {
                 }
             }
         } catch (e) {
-            // Falha silenciosa no parse, usa o input original
             competitorName = competitorInput;
         }
 
@@ -279,29 +277,31 @@ export class DiscoveryService {
         try {
             let dorks = [];
 
-            // Se o usuário forneceu palavras-chave específicas (ex: "caro", "reclamação", "preço")
-            // A busca foca exatamente nessas combinações
+            // Se o usuário forneceu palavras-chave específicas
             if (contextKeywords && contextKeywords.trim().length > 0) {
                 const keywords = contextKeywords.split(',').map(k => `"${k.trim()}"`).join(' OR ');
                 dorks = [
+                    // Foca em ReclameAqui (consumidores reais)
                     `site:reclameaqui.com.br "${competitorName}" (${keywords})`,
-                    `site:instagram.com "${competitorName}" (${keywords})`,
-                    `site:facebook.com "${competitorName}" (${keywords})`,
-                    `"${competitorName}" "(${keywords})" -site:${competitorInput}`,
-                    `"${competitorName}" (${keywords}) ${location}`
+                    // Foca em comentários e não em posts da marca
+                    `site:instagram.com "comentários" "${competitorName}" (${keywords})`,
+                    `site:facebook.com "comentários" "${competitorName}" (${keywords})`,
+                    // Foca em pessoas pedindo indicação ou reclamando em fóruns/blogs
+                    `"${competitorName}" (${keywords}) -site:instagram.com -site:facebook.com -site:${competitorInput}`,
+                    `related:${competitorInput}`
                 ];
             } else {
                 // Estratégia Padrão (Sem keywords específicas)
                 dorks = [
                     `site:reclameaqui.com.br "${competitorName}"`,
-                    `site:facebook.com "${competitorName}" "comentou"`,
-                    `site:instagram.com "${competitorName}"`,
-                    `"${competitorName}" "insatisfeito" OR "recomendaçao" OR "indicação" -site:${competitorInput}`,
+                    `site:facebook.com "${competitorName}" "não recomendo"`,
+                    `site:instagram.com "${competitorName}" "reclamação"`,
+                    `"${competitorName}" "estou insatisfeito" -site:${competitorInput}`,
+                    `"${competitorName}" "alternativa para" OR "parecido com"`,
                     `related:${competitorInput}`
                 ];
             }
 
-            // Seleciona query baseada na paginação para variar a fonte
             const queryTemplate = dorks[(page - 1) % dorks.length] || dorks[0];
             const finalQuery = `${queryTemplate} ${location}`;
 
@@ -315,27 +315,59 @@ export class DiscoveryService {
             );
 
             if (searchResponse && searchResponse.organic) {
-                return searchResponse.organic.map((result: any): Lead => {
+                return searchResponse.organic.map((result: any): Lead | null => {
+                    let extractedName = result.title;
+                    let leadType = 'Interesse';
+
+                    // Lógica de Extração Inteligente de Nome de Perfil
+                    if (result.link.includes('instagram.com')) {
+                        // Tenta pegar "Nome (@handle)"
+                        const instaMatch = result.title.match(/^(.+?) \(@/);
+                        if (instaMatch) {
+                            extractedName = instaMatch[1];
+                        } else if (result.title.includes(' on Instagram:')) {
+                            // "User Name on Instagram: 'Caption...'"
+                            extractedName = result.title.split(' on Instagram:')[0];
+                        }
+                    } else if (result.link.includes('facebook.com')) {
+                        if (result.title.includes('| Facebook')) {
+                            extractedName = result.title.split('| Facebook')[0].trim();
+                        }
+                    } else if (result.link.includes('reclameaqui.com.br')) {
+                        leadType = 'Cliente Insatisfeito';
+                        // ReclameAqui titles usually are "Title of complaint - Company Name"
+                        // We can't easily get the person's name from title, so we use a placeholder or the complaint title as context
+                        extractedName = "Cliente ReclameAqui (" + result.title.split('-')[0].substring(0, 20) + "...)";
+                    }
+
+                    // Limpeza final
+                    extractedName = extractedName.substring(0, 50).trim();
+
+                    // Ignorar se o nome extraído for o próprio concorrente (falso positivo)
+                    if (extractedName.toLowerCase().includes(competitorName.toLowerCase())) {
+                        return null;
+                    }
+
                     return {
                         id: `sherlock-${Math.random().toString(36).substr(2, 9)}`,
-                        name: result.title.split('|')[0].substring(0, 50).trim(), // Tenta limpar o título
+                        name: extractedName,
                         website: result.link,
-                        phone: '', // Difícil pegar telefone direto, user terá que usar Enrichment depois
-                        industry: `Interesse em: ${competitorName}`,
+                        phone: '',
+                        industry: `${leadType} em: ${competitorName}`,
                         location: location || 'Brasil',
                         status: LeadStatus.NEW,
                         lastUpdated: new Date().toISOString(),
                         details: {
                             tradeName: result.title,
                             // @ts-ignore
-                            notes: `Fonte Detectada: ${result.source || 'Busca Orgânica'}. Snippet: ${result.snippet}`
+                            notes: `Fonte: ${result.source || 'Web'}. Snippet: ${result.snippet}`
                         },
                         socialLinks: {
                             map_link: result.link,
                             whatsapp: null
                         }
                     };
-                });
+                }).filter((l: Lead | null) => l !== null); // Remove nulls
             }
 
         } catch (error) {
@@ -345,6 +377,7 @@ export class DiscoveryService {
 
         return [];
     }
+
 
     private static async mockCNPJDiscovery(keyword: string, location: string): Promise<Lead[]> {
         // DESATIVADO: Geração de leads demo removida para produção estrita.
