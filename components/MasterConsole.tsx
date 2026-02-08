@@ -216,6 +216,14 @@ const MasterConsole: React.FC = () => {
         }
     };
 
+    const [isTenantsExpanded, setIsTenantsExpanded] = useState(false);
+    const [tenantSearchTerm, setTenantSearchTerm] = useState('');
+
+    const filteredTenants = tenants.filter(t =>
+        t.name.toLowerCase().includes(tenantSearchTerm.toLowerCase()) ||
+        t.slug.toLowerCase().includes(tenantSearchTerm.toLowerCase())
+    );
+
     return (
         <div className="flex-1 overflow-y-auto p-4 lg:p-10 space-y-6 lg:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 lg:pb-10">
             {/* Header & Stats */}
@@ -255,88 +263,136 @@ const MasterConsole: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
                 {/* Tenants List */}
                 <div className="lg:col-span-2 space-y-6">
-                    {/* ... (Tenants list content remains unchanged) ... */}
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-base lg:text-lg font-black text-white flex items-center gap-2">
-                            <LayoutDashboard size={18} className="text-primary" />
-                            LICENCIAMENTOS
-                        </h3>
-                        <button
-                            onClick={fetchData}
-                            disabled={isLoading}
-                            className="flex items-center gap-2 text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 transition-all disabled:opacity-50"
+                    <div className="glass rounded-3xl border border-white/5 overflow-hidden transition-all duration-500">
+                        <div
+                            className="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors"
+                            onClick={() => setIsTenantsExpanded(!isTenantsExpanded)}
                         >
-                            {isLoading ? <Zap size={12} className="animate-spin" /> : <TrendingUp size={12} />}
-                            {isLoading ? 'Sincronizando...' : 'Sincronizar'}
-                        </button>
-                    </div>
+                            <div className="flex items-center gap-4">
+                                <div className={`p-2 rounded-xl transition-all ${isTenantsExpanded ? 'bg-primary text-slate-900' : 'bg-primary/10 text-primary'}`}>
+                                    <LayoutDashboard size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="text-base lg:text-lg font-black text-white flex items-center gap-2">
+                                        LICENCIAMENTOS
+                                    </h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                                        {tenants.length} Empresas Registradas
+                                    </p>
+                                </div>
+                            </div>
 
-                    <div className="glass rounded-3xl border border-white/5 overflow-hidden">
-                        <div className="overflow-x-auto custom-scrollbar">
-                            <table className="w-full text-left border-separate border-spacing-0 min-w-[600px]">
-                                <thead>
-                                    <tr className="bg-white/5">
-                                        <th className="p-5 text-[10px] font-black text-slate-500 uppercase border-b border-white/5">Empresa / Slug</th>
-                                        <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/5">Plano</th>
-                                        <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/5">Usuários</th>
-                                        <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/10 border-l">Status</th>
-                                        <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-right border-b border-white/5">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {tenants.map(tenant => {
-                                        const tenantUsers = profiles.filter(p => p.tenant_id === tenant.id);
-                                        return (
-                                            <tr key={tenant.id} className="hover:bg-white/5 transition-colors group">
-                                                <td className="p-5">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-blue-500/20 flex items-center justify-center font-black text-primary border border-white/5">
-                                                            {tenant.name[0]}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-bold text-white text-sm">{tenant.name}</p>
-                                                            <p className="text-[10px] text-slate-500 font-mono tracking-wider">{tenant.slug}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="p-5 text-center">
-                                                    <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-widest ${tenant.plan === 'pro' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/20' : 'bg-slate-500/10 text-slate-500 border border-white/5'}`}>
-                                                        {tenant.plan}
-                                                    </span>
-                                                </td>
-                                                <td className="p-5 text-center font-bold text-white text-sm">
-                                                    {tenantUsers.length}
-                                                </td>
-                                                <td className="p-5">
-                                                    <div className="flex justify-center">
-                                                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${tenant.is_active ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
-                                                            <span className={`w-1.5 h-1.5 rounded-full ${tenant.is_active ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
-                                                            {tenant.is_active ? 'Ativo' : 'Suspenso'}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="p-5 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={() => setSelectedTenantForNote(tenant)}
-                                                            className="p-2 rounded-xl text-slate-500 hover:text-primary hover:bg-primary/10 transition-all"
-                                                            title="Enviar Notificação Direta"
-                                                        >
-                                                            <Bell size={18} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => toggleTenantStatus(tenant.id, tenant.is_active)}
-                                                            className={`p-2 rounded-xl transition-all ${tenant.is_active ? 'hover:bg-red-500/20 text-slate-500 hover:text-red-400' : 'hover:bg-emerald-500/20 text-slate-500 hover:text-emerald-400'}`}
-                                                        >
-                                                            {tenant.is_active ? <UserX size={18} /> : <UserCheck size={18} />}
-                                                        </button>
-                                                    </div>
+                            <div className="flex items-center gap-3">
+                                {isTenantsExpanded && (
+                                    <div className="relative animate-in fade-in slide-in-from-right-4" onClick={(e) => e.stopPropagation()}>
+                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar empresa..."
+                                            className="bg-slate-900/50 border border-white/10 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white outline-none focus:border-primary/50 transition-all w-48"
+                                            value={tenantSearchTerm}
+                                            onChange={(e) => setTenantSearchTerm(e.target.value)}
+                                        />
+                                    </div>
+                                )}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        fetchData();
+                                    }}
+                                    disabled={isLoading}
+                                    className="p-2 hover:bg-white/10 rounded-lg text-primary transition-all disabled:opacity-50"
+                                    title="Sincronizar"
+                                >
+                                    {isLoading ? <Zap size={16} className="animate-spin" /> : <TrendingUp size={16} />}
+                                </button>
+                                <div className={`transform transition-transform duration-300 ${isTenantsExpanded ? 'rotate-180' : ''}`}>
+                                    <MoreHorizontal size={20} className="text-slate-500" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isTenantsExpanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                            <div className="overflow-x-auto custom-scrollbar">
+                                <table className="w-full text-left border-separate border-spacing-0 min-w-[600px]">
+                                    <thead>
+                                        <tr className="bg-white/5">
+                                            <th className="p-5 text-[10px] font-black text-slate-500 uppercase border-b border-white/5">Empresa / Slug</th>
+                                            <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/5">Plano</th>
+                                            <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/5">Usuários</th>
+                                            <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/10 border-l">Status</th>
+                                            <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-right border-b border-white/5">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {filteredTenants.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} className="p-10 text-center text-slate-500 text-sm">
+                                                    Nenhuma empresa encontrada para "{tenantSearchTerm}".
                                                 </td>
                                             </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                                        ) : (
+                                            filteredTenants.map(tenant => {
+                                                const tenantUsers = profiles.filter(p => p.tenant_id === tenant.id);
+                                                return (
+                                                    <tr key={tenant.id} className="hover:bg-white/5 transition-colors group">
+                                                        <td className="p-5">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-blue-500/20 flex items-center justify-center font-black text-primary border border-white/5">
+                                                                    {tenant.name[0]}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-bold text-white text-sm">{tenant.name}</p>
+                                                                    <p className="text-[10px] text-slate-500 font-mono tracking-wider">{tenant.slug}</p>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-5 text-center">
+                                                            <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-widest ${tenant.plan === 'pro' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/20' : 'bg-slate-500/10 text-slate-500 border border-white/5'}`}>
+                                                                {tenant.plan}
+                                                            </span>
+                                                        </td>
+                                                        <td className="p-5 text-center font-bold text-white text-sm">
+                                                            {tenantUsers.length}
+                                                        </td>
+                                                        <td className="p-5">
+                                                            <div className="flex justify-center">
+                                                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${tenant.is_active ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+                                                                    <span className={`w-1.5 h-1.5 rounded-full ${tenant.is_active ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                                                                    {tenant.is_active ? 'Ativo' : 'Suspenso'}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-5 text-right">
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setSelectedTenantForNote(tenant);
+                                                                    }}
+                                                                    className="p-2 rounded-xl text-slate-500 hover:text-primary hover:bg-primary/10 transition-all"
+                                                                    title="Enviar Notificação Direta"
+                                                                >
+                                                                    <Bell size={18} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        toggleTenantStatus(tenant.id, tenant.is_active);
+                                                                    }}
+                                                                    className={`p-2 rounded-xl transition-all ${tenant.is_active ? 'hover:bg-red-500/20 text-slate-500 hover:text-red-400' : 'hover:bg-emerald-500/20 text-slate-500 hover:text-emerald-400'}`}
+                                                                >
+                                                                    {tenant.is_active ? <UserX size={18} /> : <UserCheck size={18} />}
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
