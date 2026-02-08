@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Search, Database, Settings,
   HelpCircle, LogOut, Bell, Menu, X, Sparkles,
   ChevronRight, BrainCircuit, Activity, Globe, Map as MapIcon,
-  Zap, ShieldCheck, Rocket, AlertTriangle, ArrowRight, Cpu
+  Zap, ShieldCheck, Rocket, AlertTriangle, ArrowRight, Cpu, LifeBuoy, MessageSquare
 } from 'lucide-react';
 import LeadDiscovery from './components/LeadDiscovery';
 import BentoDashboard from './components/BentoDashboard';
@@ -19,10 +19,12 @@ import NotificationsList from './components/NotificationsList';
 import { DiscoveryService } from './services/discoveryService';
 import { EnrichmentService } from './services/enrichmentService';
 import { ActivityService } from './services/activityService';
+import { IntegrationService } from './services/IntegrationService';
 import { Lead, LeadStatus } from './types';
 import { useBranding } from './components/BrandingProvider';
 import { supabase } from './lib/supabase';
 import { MOCK_LEADS } from './constants';
+import { Megaphone, Send as SendIcon, CheckCircle, Info, AlertTriangle as AlertIcon, DollarSign as MoneyIcon } from 'lucide-react';
 
 const App: React.FC = () => {
   const { config, isLoading } = useBranding();
@@ -38,6 +40,23 @@ const App: React.FC = () => {
   const [userTenantId, setUserTenantId] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showSupport, setShowSupport] = useState(false);
+  const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
+  const [supportForm, setSupportForm] = useState({ subject: '', message: '', category: 'technical' });
+
+  // Leads filtrados pela busca
+  const filteredLeads = React.useMemo(() => {
+    if (!searchTerm) return leads;
+    const s = searchTerm.toLowerCase();
+    return leads.filter(l => {
+      const name = (l.name || '').toLowerCase();
+      const industry = (l.industry || '').toLowerCase();
+      const location = (l.location || '').toLowerCase();
+      const website = (l.website || '').toLowerCase();
+      return name.includes(s) || industry.includes(s) || location.includes(s) || website.includes(s);
+    });
+  }, [leads, searchTerm]);
 
   // Função auxiliar para logar atividades
   const logActivity = async (action: string, details: string) => {
@@ -427,26 +446,65 @@ const App: React.FC = () => {
     if (error) {
       console.error('Erro ao atualizar enriquecimento:', error);
     } else {
+      // 🚀 Disparar integrações externas (Webhooks/CRMs)
+      if (userTenantId) {
+        IntegrationService.triggerWebhooks(userTenantId, 'lead.enriched', {
+          id,
+          ...updatePayload,
+          lead_name: leads.find(l => l.id === id)?.name
+        });
+      }
       fetchLeads();
+    }
+  };
+
+  const handleSendTicket = async () => {
+    if (!supportForm.subject || !supportForm.message) {
+      alert('Por favor, preencha o assunto e a mensagem.');
+      return;
+    }
+
+    setIsSubmittingTicket(true);
+    try {
+      // Todos os envios viram tickets de suporte direcionados ao Master
+      const { error } = await supabase.from('support_tickets').insert([{
+        tenant_id: userTenantId,
+        user_id: session.user.id,
+        subject: supportForm.subject,
+        message: supportForm.message,
+        category: supportForm.category
+      }]);
+
+      if (error) throw error;
+
+      alert('Seu relato foi enviado com sucesso para nossa equipe técnica!');
+      setSupportForm({ subject: '', message: '', category: 'technical' });
+      setShowSupport(false);
+      logActivity('TICKET_CREATED', `Assunto: ${supportForm.subject}`);
+    } catch (err: any) {
+      console.error('Erro ao processar suporte:', err);
+      alert('Falha ao processar: ' + err.message);
+    } finally {
+      setIsSubmittingTicket(false);
     }
   };
 
   const renderActiveSection = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <BentoDashboard leads={leads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
+        return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
       case 'discovery':
         return <LeadDiscovery onResultsFound={handleAddLeads} onStartEnrichment={handleBulkEnrich} />;
       case 'lab':
         return <LeadLab
-          leads={leads}
+          leads={filteredLeads}
           onEnrich={setSelectedLead}
           onBulkEnrich={handleBulkEnrich}
           isEnriching={isEnriching}
           onStopEnrichment={() => stopEnrichmentSignal.current = true}
         />;
       case 'enriched':
-        return <EnrichedLeadsView leads={leads} />;
+        return <EnrichedLeadsView leads={filteredLeads} />;
       case 'partner':
         return <WhiteLabelAdmin initialTab="api" />;
       case 'master':
@@ -454,7 +512,7 @@ const App: React.FC = () => {
       case 'history':
         return <ActivityHistory />;
       default:
-        return <BentoDashboard leads={leads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
+        return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
     }
   };
 
@@ -636,6 +694,30 @@ const App: React.FC = () => {
             </h2>
           </div>
 
+          {/* Search Bar */}
+          <div className="hidden lg:flex items-center flex-1 max-w-md mx-6">
+            <div className="relative w-full group">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                <Search size={16} className={`${searchTerm ? 'text-primary' : 'text-slate-500'} group-focus-within:text-primary transition-colors`} />
+              </div>
+              <input
+                type="text"
+                placeholder="Pesquisar leads, setores ou locais..."
+                className="w-full bg-white/5 border border-white/5 focus:border-primary/30 rounded-2xl py-2.5 pl-12 pr-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all focus:bg-white/10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute inset-y-0 right-4 flex items-center text-slate-500 hover:text-white transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="flex items-center gap-3 md:gap-6">
             <div
               onClick={() => {
@@ -668,6 +750,75 @@ const App: React.FC = () => {
                 </span>
               )}
             </button>
+
+            {/* Support / Contact Button (LifeBuoy) */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSupport(!showSupport)}
+                className={`group p-2.5 rounded-2xl transition-all border ${showSupport ? 'bg-primary/10 border-primary/30' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
+                title="Relatar Problema Técnico"
+              >
+                <LifeBuoy size={18} className={showSupport ? 'text-primary' : 'text-slate-400 group-hover:text-white transition-colors'} />
+              </button>
+
+              {showSupport && (
+                <div className="absolute top-14 right-0 w-80 md:w-96 glass-strong rounded-3xl border border-white/10 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-300 p-6 overflow-hidden">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/20 rounded-xl">
+                        <LifeBuoy className="text-primary" size={18} />
+                      </div>
+                      <h3 className="text-xs font-black text-white tracking-widest uppercase">Relatar Problema</h3>
+                    </div>
+                    <button onClick={() => setShowSupport(false)} className="text-slate-500 hover:text-white">
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                      Descreva qualquer falha técnica ou dúvida para que nossa equipe Master possa te auxiliar.
+                    </p>
+
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        placeholder="O que está acontecendo?"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-primary/50 transition-all font-bold"
+                        value={supportForm.subject}
+                        onChange={(e) => setSupportForm({ ...supportForm, subject: e.target.value })}
+                      />
+
+                      <select
+                        className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-xs text-slate-400 outline-none focus:border-primary/50 transition-all font-bold"
+                        value={supportForm.category}
+                        onChange={(e) => setSupportForm({ ...supportForm, category: e.target.value })}
+                      >
+                        <option value="technical">🔧 Falha Técnica / Bug</option>
+                        <option value="billing">💰 Assinatura / Pagamentos</option>
+                        <option value="feature_request">💡 Sugestão de Melhoria</option>
+                        <option value="other">❓ Outros Assuntos</option>
+                      </select>
+
+                      <textarea
+                        placeholder="Descreva detalhadamente o ocorrido..."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-primary/50 transition-all min-h-[120px] resize-none"
+                        value={supportForm.message}
+                        onChange={(e) => setSupportForm({ ...supportForm, message: e.target.value })}
+                      />
+
+                      <button
+                        onClick={handleSendTicket}
+                        disabled={isSubmittingTicket}
+                        className="w-full bg-primary text-slate-900 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                      >
+                        {isSubmittingTicket ? 'ENVIANDO RELATO...' : <><MessageSquare size={14} /> ENVIAR CHAMADO TÉCNICO</>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {showNotifications && (
               <NotificationsList onClose={() => setShowNotifications(false)} />

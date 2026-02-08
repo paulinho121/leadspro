@@ -8,15 +8,9 @@ interface EnrichedLeadsViewProps {
 }
 
 const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
-    const [searchTerm, setSearchTerm] = useState('');
 
-    // Filtrar apenas leads enriquecidos e aplicar busca
-    const enrichedLeads = leads.filter(l =>
-        l.status === LeadStatus.ENRICHED &&
-        (l.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            l.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            l.location?.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    // Filtrar apenas leads enriquecidos
+    const enrichedLeads = leads.filter(l => l.status === LeadStatus.ENRICHED);
 
     const handleExportCSV = () => {
         if (enrichedLeads.length === 0) return;
@@ -88,22 +82,15 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
                 </div>
             </div>
 
-            {/* Filters & Search */}
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col md:flex-row gap-4 items-center">
-                <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                    <input
-                        type="text"
-                        placeholder="Buscar por empresa, setor ou cidade..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all"
-                    />
-                </div>
-                <div className="flex items-center gap-2 text-slate-400 text-sm font-semibold px-4">
+            {/* Active Filters Info */}
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-slate-400 text-sm font-semibold">
                     <Filter size={16} />
-                    <span>Filtros Automáticos:</span>
+                    <span>Visualização:</span>
                     <span className="px-2 py-1 rounded bg-white/5 text-white">Status: Enriquecido</span>
+                </div>
+                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    Use a busca global no topo para filtrar a lista
                 </div>
             </div>
 

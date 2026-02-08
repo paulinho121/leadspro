@@ -4,7 +4,7 @@ import {
     Users, Building2, ShieldCheck, Zap, TrendingUp,
     Search, Filter, MoreHorizontal, UserCheck, UserX,
     CreditCard, LayoutDashboard, Globe, Mail, Phone, Bell, Send, AlertTriangle, Info, DollarSign, X, CheckCircle,
-    Terminal, Lock, ShieldAlert, History
+    Terminal, Lock, ShieldAlert, History, LifeBuoy, MessageSquare, Clock, CheckCircle2
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -25,6 +25,18 @@ interface UserProfile {
     tenant_id: string;
 }
 
+interface SupportTicket {
+    id: string;
+    tenant_id: string;
+    user_id: string;
+    subject: string;
+    message: string;
+    status: string;
+    priority: string;
+    category: string;
+    created_at: string;
+}
+
 const MasterConsole: React.FC = () => {
     const [tenants, setTenants] = useState<Tenant[]>([]);
     const [profiles, setProfiles] = useState<UserProfile[]>([]);
@@ -32,8 +44,10 @@ const MasterConsole: React.FC = () => {
     const [stats, setStats] = useState({
         totalLeads: 0,
         activeTenants: 0,
-        totalUsers: 0
+        totalUsers: 0,
+        openTickets: 0
     });
+    const [tickets, setTickets] = useState<SupportTicket[]>([]);
 
     // Ferramentas de Gestão
     const [isSendingNotification, setIsSendingNotification] = useState(false);
@@ -79,8 +93,22 @@ const MasterConsole: React.FC = () => {
             setStats({
                 totalLeads: leadsCount || 0,
                 activeTenants: tenantsData?.filter(t => t.is_active).length || 0,
-                totalUsers: profilesData?.length || 0
+                totalUsers: profilesData?.length || 0,
+                openTickets: 0 // Will be updated below
             });
+
+            // 4. Fetch Support Tickets
+            const { data: ticketsData, error: ticketsError } = await supabase
+                .from('support_tickets')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (ticketsError) {
+                console.error('Error fetching tickets:', ticketsError);
+            } else if (ticketsData) {
+                setTickets(ticketsData);
+                setStats(prev => ({ ...prev, openTickets: ticketsData.filter(t => t.status === 'open').length }));
+            }
         } catch (err: any) {
             console.error('Master Console Error:', err.message || err);
             alert('Erro ao sincronizar dados: ' + (err.message || 'Verifique o console.'));
@@ -101,6 +129,19 @@ const MasterConsole: React.FC = () => {
 
         if (error) {
             alert('Erro ao alterar status.');
+        } else {
+            fetchData();
+        }
+    };
+
+    const updateTicketStatus = async (ticketId: string, newStatus: string) => {
+        const { error } = await supabase
+            .from('support_tickets')
+            .update({ status: newStatus })
+            .eq('id', ticketId);
+
+        if (error) {
+            alert('Erro ao atualizar ticket.');
         } else {
             fetchData();
         }
@@ -416,6 +457,92 @@ const MasterConsole: React.FC = () => {
                             >
                                 <History size={14} /> Ver Logs do Sistema
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Support Tickets Section */}
+            <div className="space-y-6">
+                <h3 className="text-base lg:text-lg font-black text-white flex items-center gap-2">
+                    <LifeBuoy size={18} className="text-primary" />
+                    CENTRAL DE CHAMADOS
+                </h3>
+
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div className="glass rounded-3xl border border-white/5 overflow-hidden">
+                        <div className="p-6 border-b border-white/5 bg-white/5">
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Chamados Recentes</p>
+                        </div>
+                        <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto custom-scrollbar">
+                            {tickets.length === 0 ? (
+                                <div className="p-10 text-center text-slate-500 italic text-sm">Nenhum chamado pendente.</div>
+                            ) : (
+                                tickets.map(ticket => {
+                                    const tenant = tenants.find(t => t.id === ticket.tenant_id);
+                                    const user = profiles.find(p => p.id === ticket.user_id);
+                                    return (
+                                        <div key={ticket.id} className="p-5 hover:bg-white/5 transition-all group">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter ${ticket.status === 'open' ? 'bg-red-500/20 text-red-400' :
+                                                            ticket.status === 'resolved' ? 'bg-emerald-500/20 text-emerald-400' :
+                                                                'bg-slate-500/20 text-slate-400'
+                                                        }`}>
+                                                        {ticket.status}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-500 font-mono">#{ticket.id.slice(0, 6)}</span>
+                                                </div>
+                                                <span className="text-[9px] text-slate-600 flex items-center gap-1">
+                                                    <Clock size={10} /> {new Date(ticket.created_at).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <h4 className="text-white font-bold text-sm mb-1">{ticket.subject}</h4>
+                                            <p className="text-xs text-slate-400 line-clamp-2 mb-4">{ticket.message}</p>
+
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2 text-[10px] text-primary font-bold">
+                                                    <MessageSquare size={12} /> {tenant?.name || 'Tenant'} - {user?.full_name || 'Usuário'}
+                                                </div>
+                                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => updateTicketStatus(ticket.id, 'resolved')}
+                                                        className="p-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-lg transition-all"
+                                                        title="Resolver Chamado"
+                                                    >
+                                                        <CheckCircle2 size={14} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => updateTicketStatus(ticket.id, 'closed')}
+                                                        className="p-1.5 bg-slate-500/10 text-slate-400 hover:bg-slate-500 hover:text-white rounded-lg transition-all"
+                                                        title="Fechar Chamado"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="glass p-8 rounded-3xl border border-white/5 bg-gradient-to-br from-primary/5 to-transparent flex flex-col justify-center items-center text-center">
+                        <div className="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center text-primary mb-6">
+                            <LifeBuoy size={32} />
+                        </div>
+                        <h4 className="text-xl font-black text-white mb-2">Central de Relacionamento</h4>
+                        <p className="text-slate-400 text-sm max-w-sm mb-6">Você tem {stats.openTickets} chamado(s) aguardando resposta. Mantenha seus licenciados satisfeitos resolvendo os problemas rapidamente.</p>
+                        <div className="flex gap-4">
+                            <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/10">
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Tempo Médio</p>
+                                <p className="text-lg font-black text-white">2h 15m</p>
+                            </div>
+                            <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/10">
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Satisfação</p>
+                                <p className="text-lg font-black text-emerald-500">98%</p>
+                            </div>
                         </div>
                     </div>
                 </div>

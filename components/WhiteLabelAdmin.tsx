@@ -6,7 +6,7 @@ import { DEFAULT_BRANDING } from '../types/branding';
 
 const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' | 'api' }> = ({ initialTab = 'branding' }) => {
     const { config, refreshBranding } = useBranding();
-    const [activeSettingsTab, setSettingsTab] = useState<'branding' | 'domain' | 'users' | 'api'>(initialTab);
+    const [activeSettingsTab, setSettingsTab] = useState<'branding' | 'domain' | 'users' | 'api' | 'integrations'>(initialTab);
     const [formData, setFormData] = useState<any>({
         platformName: '',
         logoUrl: '',
@@ -26,6 +26,9 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
 
     // User Management State
     const [users, setUsers] = useState<any[]>([]);
+    const [webhooks, setWebhooks] = useState<any[]>([]);
+    const [newWebhook, setNewWebhook] = useState({ name: '', url: '', event_type: 'lead.enriched' });
+    const [isTestingWebhook, setIsTestingWebhook] = useState<string | null>(null);
 
     const fetchUsers = async () => {
         if (!config?.tenantId) return;
@@ -79,9 +82,85 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
         }
     };
 
+    const fetchWebhooks = async () => {
+        if (!config?.tenantId) return;
+        const tenantId = config.tenantId === 'default' ? '00000000-0000-0000-0000-000000000000' : config.tenantId;
+
+        const { data, error } = await supabase
+            .from('webhooks')
+            .select('*')
+            .eq('tenant_id', tenantId)
+            .order('created_at', { ascending: false });
+
+        if (data) setWebhooks(data);
+    };
+
+    const handleAddWebhook = async () => {
+        if (!newWebhook.name || !newWebhook.url || !config) return;
+        const tenantId = config.tenantId === 'default' ? '00000000-0000-0000-0000-000000000000' : config.tenantId;
+
+        const { error } = await supabase.from('webhooks').insert({
+            tenant_id: tenantId,
+            ...newWebhook,
+            secret_token: Math.random().toString(36).substring(2, 15)
+        });
+
+        if (error) {
+            alert('Erro ao adicionar webhook: ' + error.message);
+        } else {
+            setNewWebhook({ name: '', url: '', event_type: 'lead.enriched' });
+            fetchWebhooks();
+            alert('Webhook configurado com sucesso!');
+        }
+    };
+
+    const handleDeleteWebhook = async (id: string) => {
+        if (!window.confirm('Excluir este Webhook?')) return;
+        const { error } = await supabase.from('webhooks').delete().eq('id', id);
+        if (error) alert('Erro ao remover: ' + error.message);
+        else fetchWebhooks();
+    };
+
+    const handleTestWebhook = async (webhook: any) => {
+        setIsTestingWebhook(webhook.id);
+        try {
+            // Simulando um disparo de teste
+            const testPayload = {
+                event: 'test.webhook',
+                timestamp: new Date().toISOString(),
+                data: {
+                    lead_name: 'Lead de Teste LeadPro',
+                    email: 'parceiro@leadpro.com',
+                    status: 'enriched'
+                }
+            };
+
+            const response = await fetch(webhook.url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Webhook-Secret': webhook.secret_token || ''
+                },
+                body: JSON.stringify(testPayload)
+            });
+
+            if (response.ok) {
+                alert('Vinte! O destino recebeu o sinal com sucesso (200 OK)');
+            } else {
+                alert(`Falha no teste: O servidor destino retornou status ${response.status}`);
+            }
+        } catch (err: any) {
+            alert('Erro de conexão: Verifique se a URL permite requisições externas (CORS) ou se o endpoint está ativo.');
+        } finally {
+            setIsTestingWebhook(null);
+        }
+    };
+
     useEffect(() => {
         if (activeSettingsTab === 'users') {
             fetchUsers();
+        } else if (activeSettingsTab === 'integrations') {
+            fetchWebhooks();
         }
     }, [activeSettingsTab, config]);
 
@@ -318,6 +397,12 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                         label="Conexões API"
                         active={activeSettingsTab === 'api'}
                         onClick={() => setSettingsTab('api')}
+                    />
+                    <SettingsTab
+                        icon={<Link2 size={18} />}
+                        label="Integrações (CRM)"
+                        active={activeSettingsTab === 'integrations'}
+                        onClick={() => setSettingsTab('integrations')}
                     />
                 </div>
 
@@ -620,6 +705,99 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                                         O uso de APIs próprias garante que os dados processados permaneçam em sua conta e <strong>não sejam utilizados para treinamento de modelos públicos</strong>.
                                         Em total conformidade com a LGPD brasiliera.
                                     </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeSettingsTab === 'integrations' && (
+                        <div className="space-y-8 animate-in slide-in-from-right duration-300">
+                            <div>
+                                <h3 className="text-xl font-bold text-white mb-2 underline decoration-primary decoration-4">Power Integrations (Webhooks)</h3>
+                                <p className="text-sm text-slate-400">Conecte o LeadPro ao seu CRM (Hubspot, Pipedrive), ERP ou ferramentas como Zapier e Make.</p>
+                            </div>
+
+                            <div className="glass p-6 rounded-2xl border-primary/20 bg-primary/5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black uppercase text-slate-500">Nome da Conexão</label>
+                                        <input
+                                            placeholder="Ex: Pipedrive Leads"
+                                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-primary"
+                                            value={newWebhook.name}
+                                            onChange={e => setNewWebhook({ ...newWebhook, name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black uppercase text-slate-500">URL de Destino (Endpoint)</label>
+                                        <input
+                                            placeholder="https://hooks.zapier.com/..."
+                                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-primary"
+                                            value={newWebhook.url}
+                                            onChange={e => setNewWebhook({ ...newWebhook, url: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleAddWebhook}
+                                    className="w-full py-3 bg-primary text-slate-900 rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-[1.01] transition-all"
+                                >
+                                    Ativar Nova Integração
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-black uppercase text-slate-500 tracking-widest">Suas Conexões Ativas</h4>
+                                {webhooks.length === 0 ? (
+                                    <div className="p-8 text-center border border-dashed border-white/10 rounded-2xl opacity-50">
+                                        <p className="text-sm">Nenhuma integração configurada no momento.</p>
+                                    </div>
+                                ) : (
+                                    webhooks.map(wh => (
+                                        <div key={wh.id} className="p-5 glass border-white/5 rounded-2xl flex items-center justify-between group">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                                                    <Link2 className="text-primary" size={20} />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-white mb-1">{wh.name}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded font-black uppercase">{wh.event_type}</span>
+                                                        <span className="text-[10px] text-slate-500 font-mono truncate max-w-[200px]">{wh.url}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => handleTestWebhook(wh)}
+                                                    disabled={isTestingWebhook === wh.id}
+                                                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                                                >
+                                                    {isTestingWebhook === wh.id ? 'Testando...' : 'Testar Agora'}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteWebhook(wh.id)}
+                                                    className="p-1.5 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
+                                <h4 className="font-bold text-white mb-4 flex items-center gap-2">
+                                    <ShieldCheck className="text-primary" size={18} />
+                                    Documentação para TI
+                                </h4>
+                                <div className="space-y-4 text-xs text-slate-400 leading-relaxed">
+                                    <p>O LeadPro dispara um <strong>POST JSON</strong> sempre que um lead atinge o status "Enriquecido".</p>
+                                    <div className="bg-black/40 p-4 rounded-xl font-mono text-blue-400">
+                                        {'{\n  "event": "lead.enriched",\n  "tenant_id": "...",\n  "data": {\n    "name": "Nome da Empresa",\n    "email": "...",\n    "phone": "...",\n    "insights": "..."\n  }\n}'}
+                                    </div>
+                                    <p>Para segurança, enviamos o header <code>X-Webhook-Secret</code> com o token gerado na ativação.</p>
                                 </div>
                             </div>
                         </div>

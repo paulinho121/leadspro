@@ -20,7 +20,6 @@ interface LeadLabProps {
 
 const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnriching = false, onStopEnrichment }) => {
   const { config } = useBranding();
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedNiche, setSelectedNiche] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<LeadStatus | 'ALL'>('ALL');
@@ -31,10 +30,7 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
     const matchesStatus = filterStatus === 'ALL' || l.status === filterStatus;
     const matchesNiche = !selectedNiche || l.industry === selectedNiche;
     const matchesLocation = !selectedLocation || (l.location && l.location.includes(selectedLocation));
-    const matchesSearch = !searchTerm ||
-      l.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      l.industry.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesNiche && matchesLocation && matchesSearch;
+    return matchesStatus && matchesNiche && matchesLocation;
   });
 
   return (
@@ -193,17 +189,6 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="relative group w-full sm:w-64">
-              <input
-                type="text"
-                placeholder="Buscar amostra..."
-                className="bg-white/5 border border-white/5 rounded-2xl py-3.5 pl-11 pr-6 w-full text-sm focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none text-white transition-all shadow-inner"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Search className="absolute left-4 top-3.5 w-4.5 h-4.5 text-slate-600 group-focus-within:text-primary transition-colors" />
-            </div>
-
             <div className="flex items-center gap-3 w-full sm:w-auto">
               {leads.some(l => l.status === LeadStatus.NEW) && (
                 <div className="relative flex-1 sm:flex-none">
