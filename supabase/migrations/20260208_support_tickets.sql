@@ -1,3 +1,18 @@
+-- 00. Garantir Coluna de Admin
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_master_admin BOOLEAN DEFAULT false;
+
+-- 0. Função Auxiliar de Segurança (Master Admin)
+CREATE OR REPLACE FUNCTION public.check_is_master()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1
+    FROM public.profiles
+    WHERE id = auth.uid()
+    AND is_master_admin = true
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 1. Tabela de Tickets de Suporte
 CREATE TABLE IF NOT EXISTS public.support_tickets (

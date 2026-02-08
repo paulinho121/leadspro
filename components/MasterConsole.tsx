@@ -177,10 +177,50 @@ const MasterConsole: React.FC = () => {
         }
     };
 
+    const [responseMessage, setResponseMessage] = useState('');
+    const [respondingTicket, setRespondingTicket] = useState<SupportTicket | null>(null);
+
+    const handleResolveTicket = async () => {
+        if (!respondingTicket || !responseMessage) return;
+
+        try {
+            // 1. Send notification to the user
+            const { error: notifError } = await supabase.from('notifications').insert([{
+                tenant_id: respondingTicket.tenant_id,
+                title: `Chamado #${respondingTicket.id.slice(0, 6)} Respondido`,
+                message: `Sua solicitação foi respondida: "${responseMessage}". Verifique se o problema foi resolvido.`,
+                type: 'success'
+            }]);
+
+            if (notifError) throw notifError;
+
+            // 2. Update ticket status
+            const { error: ticketError } = await supabase
+                .from('support_tickets')
+                .update({
+                    status: 'resolved',
+                    // Assuming there might be a 'solution' or 'admin_response' column, but for now we just notify.
+                    // If you have an 'admin_reaction' column, update it here.
+                })
+                .eq('id', respondingTicket.id);
+
+            if (ticketError) throw ticketError;
+
+            alert('Resposta enviada e chamado resolvido!');
+            setRespondingTicket(null);
+            setResponseMessage('');
+            fetchData();
+        } catch (err: any) {
+            console.error('Error resolving ticket:', err);
+            alert('Erro ao responder: ' + err.message);
+        }
+    };
+
     return (
         <div className="flex-1 overflow-y-auto p-4 lg:p-10 space-y-6 lg:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 lg:pb-10">
             {/* Header & Stats */}
             <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+                {/* ... (Header content remains unchanged) ... */}
                 <div>
                     <h2 className="text-xl lg:text-3xl font-black text-white tracking-tighter flex items-center gap-3">
                         <ShieldCheck className="text-primary" size={24} />
@@ -215,6 +255,7 @@ const MasterConsole: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
                 {/* Tenants List */}
                 <div className="lg:col-span-2 space-y-6">
+                    {/* ... (Tenants list content remains unchanged) ... */}
                     <div className="flex items-center justify-between">
                         <h3 className="text-base lg:text-lg font-black text-white flex items-center gap-2">
                             <LayoutDashboard size={18} className="text-primary" />
@@ -414,6 +455,7 @@ const MasterConsole: React.FC = () => {
                             Volume de Dados
                         </h4>
                         <div className="space-y-6">
+                            {/* ... (Stats content remains unchanged) ... */}
                             <div>
                                 <div className="flex justify-between items-end mb-2">
                                     <p className="text-[10px] text-slate-500 font-black uppercase">Leads Capturados (Total)</p>
@@ -443,7 +485,7 @@ const MasterConsole: React.FC = () => {
                             Segurança & Auditoria
                         </h4>
                         <div className="space-y-4">
-                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex items-start gap-3">
+                            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-3">
                                 <ShieldAlert size={14} className="text-amber-500 shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-[10px] text-slate-300 font-bold uppercase tracking-tight">Logs de Ação Master</p>
@@ -470,12 +512,52 @@ const MasterConsole: React.FC = () => {
                 </h3>
 
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    <div className="glass rounded-3xl border border-white/5 overflow-hidden">
+                    <div className="glass rounded-3xl border border-white/5 overflow-hidden flex flex-col">
                         <div className="p-6 border-b border-white/5 bg-white/5">
                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Chamados Recentes</p>
                         </div>
-                        <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto custom-scrollbar">
-                            {tickets.length === 0 ? (
+
+                        <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto custom-scrollbar flex-1">
+                            {respondingTicket ? (
+                                <div className="p-6 space-y-4 animate-in fade-in zoom-in-95">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h4 className="text-primary font-black text-sm uppercase flex items-center gap-2">
+                                            <MessageSquare size={16} /> Respondendo Chamado #{respondingTicket.id.slice(0, 6)}
+                                        </h4>
+                                        <button onClick={() => setRespondingTicket(null)} className="text-slate-500 hover:text-white">
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                    <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Solicitação do Usuário:</p>
+                                        <p className="text-xs text-slate-300 italic">"{respondingTicket.message}"</p>
+                                    </div>
+
+                                    <textarea
+                                        placeholder="Escreva sua resposta técnica ou administrativa aqui..."
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-primary/50 transition-all min-h-[120px] resize-none"
+                                        value={responseMessage}
+                                        onChange={(e) => setResponseMessage(e.target.value)}
+                                        autoFocus
+                                    />
+
+                                    <div className="flex justify-end gap-3">
+                                        <button
+                                            onClick={() => setRespondingTicket(null)}
+                                            className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-white transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            onClick={handleResolveTicket}
+                                            disabled={!responseMessage}
+                                            className="px-6 py-2 bg-primary text-slate-900 rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform disabled:opacity-50 disabled:scale-100"
+                                        >
+                                            Enviar Resposta & Resolver
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : tickets.length === 0 ? (
                                 <div className="p-10 text-center text-slate-500 italic text-sm">Nenhum chamado pendente.</div>
                             ) : (
                                 tickets.map(ticket => {
@@ -486,8 +568,8 @@ const MasterConsole: React.FC = () => {
                                             <div className="flex justify-between items-start mb-2">
                                                 <div className="flex items-center gap-2">
                                                     <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter ${ticket.status === 'open' ? 'bg-red-500/20 text-red-400' :
-                                                            ticket.status === 'resolved' ? 'bg-emerald-500/20 text-emerald-400' :
-                                                                'bg-slate-500/20 text-slate-400'
+                                                        ticket.status === 'resolved' ? 'bg-emerald-500/20 text-emerald-400' :
+                                                            'bg-slate-500/20 text-slate-400'
                                                         }`}>
                                                         {ticket.status}
                                                     </span>
@@ -506,16 +588,16 @@ const MasterConsole: React.FC = () => {
                                                 </div>
                                                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button
-                                                        onClick={() => updateTicketStatus(ticket.id, 'resolved')}
-                                                        className="p-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-lg transition-all"
-                                                        title="Resolver Chamado"
+                                                        onClick={() => setRespondingTicket(ticket)}
+                                                        className="p-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-slate-900 rounded-lg transition-all flex items-center gap-2 px-3"
+                                                        title="Responder"
                                                     >
-                                                        <CheckCircle2 size={14} />
+                                                        <Send size={12} /> <span className="text-[10px] font-bold">Responder</span>
                                                     </button>
                                                     <button
                                                         onClick={() => updateTicketStatus(ticket.id, 'closed')}
                                                         className="p-1.5 bg-slate-500/10 text-slate-400 hover:bg-slate-500 hover:text-white rounded-lg transition-all"
-                                                        title="Fechar Chamado"
+                                                        title="Fechar Chamado (Sem Resposta)"
                                                     >
                                                         <X size={14} />
                                                     </button>
