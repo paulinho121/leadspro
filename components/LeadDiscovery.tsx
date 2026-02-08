@@ -16,7 +16,7 @@ interface LeadDiscoveryProps {
 
 const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEnrichment }) => {
   const { config } = useBranding();
-  const [mode, setMode] = useState<'MAPS' | 'CNPJ' | 'ENRICH'>('MAPS');
+  const [mode, setMode] = useState<'MAPS' | 'CNPJ' | 'ENRICH' | 'SHERLOCK'>('MAPS');
   const [filters, setFilters] = useState<SearchFilters>({
     keyword: '',
     location: '',
@@ -161,8 +161,12 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
 
           try {
             console.log(`[Neural Discovery] Loop de varredura executando com modo: ${searchMode}, keyword: ${cleanKeyword}, local: ${currentSearchLocation}`);
+
             if (searchMode === 'MAPS') {
               results = await DiscoveryService.performDeepScan(cleanKeyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
+            } else if (searchMode === 'SHERLOCK') {
+              console.log(`[Sherlock] Chamando performCompetitorScan com Alvo: ${cleanKeyword}`);
+              results = await DiscoveryService.performCompetitorScan(cleanKeyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
             } else {
               console.log(`[CNPJ] Chamando performCNPJScan com Q: ${cleanKeyword}`);
               results = await DiscoveryService.performCNPJScan(cleanKeyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
@@ -234,44 +238,52 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
       <div className="absolute -top-24 -left-24 w-64 h-64 bg-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
       <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-primary/5 blur-[100px] rounded-full pointer-events-none"></div>
 
-      <div className="flex flex-col xl:flex-row gap-12 relative z-10">
-        {/* Left Side: Brand & Status Monitoring */}
-        <div className="xl:w-[35%] space-y-8 flex flex-col">
-          <div className="flex items-center gap-5">
-            <div className={`relative p-5 rounded-3xl transition-all shrink-0 ${isScanning ? 'bg-primary shadow-[0_0_30px_rgba(6,182,212,0.6)]' : 'bg-primary/10'} text-primary overflow-hidden group/neural`}>
-              {/* Animated Background for the icon */}
-              <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover/neural:opacity-100 transition-opacity ${isScanning ? 'opacity-100 animate-spin-slow' : ''}`}></div>
-              <div className="relative z-10 transition-transform duration-500 group-hover/neural:scale-110">
-                {mode === 'MAPS' ? <Cpu size={32} className={isScanning ? 'animate-neural' : ''} /> : mode === 'CNPJ' ? <Building2 size={32} /> : <BrainCircuit size={32} className={isScanning ? 'animate-neural' : ''} />}
+      <div className="flex flex-col gap-10 relative z-10">
+
+        {/* HARMONIOUS HEADER: Title & Stats */}
+        <div className="flex flex-col lg:flex-row items-end justify-between gap-8 border-b border-white/5 pb-8">
+          <div className="space-y-6 flex-1">
+            <div className="flex items-center gap-5">
+              <div className={`relative p-4 rounded-2xl transition-all shrink-0 ${isScanning ? 'bg-primary shadow-[0_0_30px_rgba(6,182,212,0.6)]' : 'bg-primary/10'} text-primary overflow-hidden group/neural`}>
+                <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover/neural:opacity-100 transition-opacity ${isScanning ? 'opacity-100 animate-spin-slow' : ''}`}></div>
+                {mode === 'MAPS' ? <Cpu size={28} className={isScanning ? 'animate-neural' : ''} /> :
+                  mode === 'CNPJ' ? <Building2 size={28} /> :
+                    mode === 'SHERLOCK' ? <Crosshair size={28} className={isScanning ? 'animate-pulse text-red-500' : ''} /> :
+                      <BrainCircuit size={28} className={isScanning ? 'animate-neural' : ''} />}
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[9px] font-black text-primary/60 uppercase tracking-[0.3em] font-mono">Neural_Scanner</span>
+                  <span className="w-1 h-1 rounded-full bg-slate-700"></span>
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] font-mono">V2.0</span>
+                </div>
+                <h3 className="text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight">
+                  {mode === 'MAPS' ? 'Neural Extractor' :
+                    mode === 'CNPJ' ? 'Empresas Gov' :
+                      mode === 'SHERLOCK' ? 'Hunter Protocol' :
+                        'Deep Enrich'}
+                </h3>
               </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[9px] font-black text-primary/60 uppercase tracking-[0.3em] font-mono">Neural_Scanner</span>
-                <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] font-mono">V2.0</span>
-              </div>
-              <h3 className="text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight">
-                {mode === 'MAPS' ? 'Neural Extractor' : mode === 'CNPJ' ? 'Empresas Gov' : 'Deep Enrich'}
-              </h3>
+
+            <p className="text-slate-400 text-sm lg:text-base leading-relaxed max-w-2xl">
+              {mode === 'MAPS'
+                ? 'Localize leads qualificados com inteligência neural profunda e geolocalização.'
+                : mode === 'CNPJ'
+                  ? 'Acesse a base oficial de empresas brasileiras com alta precisão e dados da Receita.'
+                  : mode === 'SHERLOCK'
+                    ? 'Localize clientes insatisfeitos e interações públicas de seus concorrentes nas redes.'
+                    : 'Enriqueça dados de um CNPJ individual com IA e consulta em múltiplas APIs publicas.'}
+            </p>
+          </div>
+
+          {/* Stats Group */}
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="flex flex-col gap-2">
+              <FeatureTag icon={<Atom size={12} className="animate-spin-slow" />} label={mode === 'MAPS' ? 'Geospatial' : mode === 'SHERLOCK' ? 'Social Intel' : 'Public Data'} />
+              <FeatureTag icon={<Zap size={12} className="animate-pulse" />} label={mode === 'ENRICH' ? 'Direct Hit' : 'Deep Scan'} />
             </div>
-          </div>
-
-          <p className="text-slate-400 text-sm lg:text-base leading-relaxed">
-            {mode === 'MAPS'
-              ? 'Localize leads qualificados com inteligência neural profunda e geolocalização.'
-              : mode === 'CNPJ'
-                ? 'Acesse a base oficial de empresas brasileiras com alta precisão e dados da Receita.'
-                : 'Enriqueça dados de um CNPJ individual com IA e consulta em múltiplas APIs publicas.'}
-          </p>
-
-          <div className="grid grid-cols-2 gap-3">
-            <FeatureTag icon={<Atom size={12} className="animate-spin-slow" />} label={mode === 'MAPS' ? 'Geospatial' : mode === 'CNPJ' ? 'Public Data' : 'Neural IA'} />
-            <FeatureTag icon={<Zap size={12} className="animate-pulse" />} label={mode === 'ENRICH' ? 'Direct Hit' : 'Deep Scan'} />
-          </div>
-
-          <div className="flex-1 flex flex-col justify-end mt-4">
-            <div className="glass rounded-[2rem] p-2 border border-white/5 bg-white/[0.02]">
+            <div className="w-[140px] h-[70px]">
               <LiquidBattery
                 percentage={scanProgress}
                 isScanning={isScanning}
@@ -282,129 +294,138 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           </div>
         </div>
 
-        {/* Right Side: Setup & Action Area */}
-        <div className="flex-1 space-y-8 flex flex-col justify-between">
-          <div className="space-y-8">
-            {/* Mode Switcher */}
-            <div>
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2 mb-3 block">Selecione o Motor de Busca</label>
-              <div className="flex flex-wrap bg-white/5 rounded-2xl p-1.5 border border-white/5 w-fit">
-                <ModeButton
-                  active={mode === 'MAPS'}
-                  onClick={() => { setMode('MAPS'); console.log('[LeadDiscovery] Mode changed to MAPS'); }}
-                  disabled={isScanning}
-                  label="Neural Discovery"
-                />
-                <ModeButton
-                  active={mode === 'CNPJ'}
-                  onClick={() => { setMode('CNPJ'); console.log('[LeadDiscovery] Mode changed to CNPJ'); }}
-                  disabled={isScanning}
-                  label="CNPJ em Massa"
-                />
-                <ModeButton
-                  active={mode === 'ENRICH'}
-                  onClick={() => { setMode('ENRICH'); console.log('[LeadDiscovery] Mode changed to ENRICH'); }}
-                  disabled={isScanning}
-                  label="Enriquecer Individual"
-                />
-              </div>
-            </div>
+        {/* CONTROLS SECTION */}
+        <div className="space-y-8">
 
-            {/* Config Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className={`${mode === 'ENRICH' ? 'md:col-span-2' : ''} space-y-3`}>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">
-                  {mode === 'MAPS' ? 'Nicho ou Atividade' : mode === 'CNPJ' ? 'CNAE ou Palavra-chave' : 'Número do CNPJ'}
-                </label>
-                <div className="relative group/input">
-                  <Search className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
-                  <input
-                    type="text"
-                    disabled={isScanning}
-                    placeholder={mode === 'MAPS' ? "Ex: Academias, Restaurantes..." : mode === 'CNPJ' ? "Ex: 6201-5/00 ou Tecnologia" : "00.000.000/0001-00"}
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl py-5 pl-14 pr-6 text-white text-lg focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
-                    value={filters.keyword}
-                    onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {mode !== 'ENRICH' && (
-                <>
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Estado (UF)</label>
-                    <div className="relative group/input">
-                      <MapPin className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
-                      <select
-                        disabled={isScanning}
-                        className="w-full bg-white/5 border border-white/5 rounded-2xl py-5 pl-14 pr-6 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
-                        value={selectedState}
-                        onChange={(e) => setSelectedState(e.target.value)}
-                      >
-                        <option value="" className="bg-slate-900 text-slate-500">Selecione o Estado</option>
-                        {states.map(uf => (
-                          <option key={uf} value={uf} className="bg-slate-900 text-white">{uf}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-5 top-5.5 w-5 h-5 text-slate-500 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Cidade</label>
-                    <div className="relative group/input">
-                      {loadingCities ? (
-                        <Loader2 className="absolute left-5 top-5 w-5 h-5 text-primary animate-spin" />
-                      ) : (
-                        <MapPin className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
-                      )}
-                      <select
-                        disabled={isScanning || !selectedState || loadingCities}
-                        className="w-full bg-white/5 border border-white/5 rounded-2xl py-5 pl-14 pr-6 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
-                        value={selectedCity}
-                        onChange={(e) => setSelectedCity(e.target.value)}
-                      >
-                        <option value="" className="bg-slate-900 text-slate-500">
-                          {loadingCities ? 'Carregando cidades...' : !selectedState ? 'Selecione o Estado primeiro' : 'Selecione a Cidade'}
-                        </option>
-                        {cities.length > 0 && (
-                          <option value="TODO_ESTADO" className="bg-emerald-900 text-emerald-400 font-bold">
-                            ★ VARRER TODO O ESTADO ({selectedState})
-                          </option>
-                        )}
-                        {cities.map(city => (
-                          <option key={city} value={city} className="bg-slate-900 text-white">{city}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-5 top-5.5 w-5 h-5 text-slate-500 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Qtd. Leads Almejada</label>
-                    <div className="relative group/input">
-                      <Target className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
-                      <input
-                        type="number"
-                        disabled={isScanning}
-                        min="1"
-                        placeholder="Ex: 30"
-                        className="w-full bg-white/5 border border-white/5 rounded-2xl py-5 pl-14 pr-6 text-white text-lg focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        value={filters.limit || ''}
-                        onChange={(e) => setFilters({ ...filters, limit: parseInt(e.target.value) || 0 })}
-                      />
-                      <span className="absolute right-5 top-5 text-[10px] font-black text-slate-600 uppercase">LEADS</span>
-                    </div>
-                  </div>
-                </>
-              )}
+          {/* 1. Mode Switcher */}
+          <div className="space-y-3">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Selecione o Motor de Busca</label>
+            <div className="flex flex-wrap items-center gap-2">
+              <ModeButton
+                active={mode === 'MAPS'}
+                onClick={() => { setMode('MAPS'); console.log('[LeadDiscovery] Mode changed to MAPS'); }}
+                disabled={isScanning}
+                label="Neural Discovery"
+              />
+              <ModeButton
+                active={mode === 'CNPJ'}
+                onClick={() => { setMode('CNPJ'); console.log('[LeadDiscovery] Mode changed to CNPJ'); }}
+                disabled={isScanning}
+                label="CNPJ em Massa"
+              />
+              <ModeButton
+                active={mode === 'SHERLOCK'}
+                onClick={() => { setMode('SHERLOCK'); console.log('[LeadDiscovery] Mode changed to SHERLOCK'); }}
+                disabled={isScanning}
+                label="Espionagem"
+              />
+              <ModeButton
+                active={mode === 'ENRICH'}
+                onClick={() => { setMode('ENRICH'); console.log('[LeadDiscovery] Mode changed to ENRICH'); }}
+                disabled={isScanning}
+                label="Enriquecer Individual"
+              />
             </div>
           </div>
 
-          <div className="space-y-6 pt-4">
+          {/* 2. Inputs Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-1">
+            <div className={`${mode === 'ENRICH' || mode === 'SHERLOCK' ? 'md:col-span-2' : ''} space-y-3`}>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">
+                {mode === 'MAPS' ? 'Nicho ou Atividade' :
+                  mode === 'CNPJ' ? 'CNAE ou Palavra-chave' :
+                    mode === 'SHERLOCK' ? 'Alvo / Concorrente' :
+                      'Número do CNPJ'}
+              </label>
+              <div className="relative group/input">
+                <Search className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
+                <input
+                  type="text"
+                  disabled={isScanning}
+                  placeholder={mode === 'MAPS' ? "Ex: Academias, Restaurantes..." : mode === 'CNPJ' ? "Ex: 6201-5/00 ou Tecnologia" : mode === 'SHERLOCK' ? "Link Instagram/Site ou Nome do Concorrente" : "00.000.000/0001-00"}
+                  className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white text-lg focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
+                  value={filters.keyword}
+                  onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {mode !== 'ENRICH' && mode !== 'SHERLOCK' && (
+              <>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Estado (UF)</label>
+                  <div className="relative group/input">
+                    <MapPin className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
+                    <select
+                      disabled={isScanning}
+                      className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
+                      value={selectedState}
+                      onChange={(e) => setSelectedState(e.target.value)}
+                    >
+                      <option value="" className="bg-slate-900 text-slate-500">Selecione o Estado</option>
+                      {states.map(uf => (
+                        <option key={uf} value={uf} className="bg-slate-900 text-white">{uf}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-5 top-5.5 w-5 h-5 text-slate-500 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Cidade</label>
+                  <div className="relative group/input">
+                    {loadingCities ? (
+                      <Loader2 className="absolute left-5 top-5 w-5 h-5 text-primary animate-spin" />
+                    ) : (
+                      <MapPin className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
+                    )}
+                    <select
+                      disabled={isScanning || !selectedState || loadingCities}
+                      className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
+                      value={selectedCity}
+                      onChange={(e) => setSelectedCity(e.target.value)}
+                    >
+                      <option value="" className="bg-slate-900 text-slate-500">
+                        {loadingCities ? 'Carregando cidades...' : !selectedState ? 'Selecione o Estado primeiro' : 'Selecione a Cidade'}
+                      </option>
+                      {cities.length > 0 && (
+                        <option value="TODO_ESTADO" className="bg-emerald-900 text-emerald-400 font-bold">
+                          ★ VARRER TODO O ESTADO ({selectedState})
+                        </option>
+                      )}
+                      {cities.map(city => (
+                        <option key={city} value={city} className="bg-slate-900 text-white">{city}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-5 top-5.5 w-5 h-5 text-slate-500 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Qtd. Leads Almejada</label>
+                  <div className="relative group/input">
+                    <Target className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
+                    <input
+                      type="number"
+                      disabled={isScanning}
+                      min="1"
+                      placeholder="Ex: 30"
+                      className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white text-lg focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      value={filters.limit || ''}
+                      onChange={(e) => setFilters({ ...filters, limit: parseInt(e.target.value) || 0 })}
+                    />
+                    <span className="absolute right-5 top-5 text-[10px] font-black text-slate-600 uppercase">LEADS</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* 3. Global Action Button */}
+          <div className="space-y-6 pt-2">
             <button
               onClick={handleSearch}
-              disabled={(!isScanning && (!filters.keyword || (mode !== 'ENRICH' && !filters.location))) || (isScanning && stopSignal)}
+              disabled={(!isScanning && (!filters.keyword || (mode !== 'ENRICH' && mode !== 'SHERLOCK' && !filters.location))) || (isScanning && stopSignal)}
               className={`w-full py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 transition-all relative overflow-hidden group/btn shadow-2xl ${isScanning
                 ? 'bg-red-600 text-white border-red-400 shadow-red-900/40 hover:bg-red-700 animate-pulse'
                 : 'bg-primary text-slate-900 shadow-primary/20 hover:scale-[1.01] active:scale-[0.99]'

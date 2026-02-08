@@ -248,6 +248,90 @@ export class DiscoveryService {
         return null;
     }
 
+    /**
+     * MODO SHERLOCK: Prospecção de Clientes de Concorrentes
+     * Busca por interações públicas, reclamações e ex-clientes em redes sociais e portais.
+     */
+    static async performCompetitorScan(competitorInput: string, location: string, tenantId?: string, apiKeys?: any, page: number = 1): Promise<Lead[]> {
+        console.log(`[Sherlock Scan] Iniciando espionagem de: ${competitorInput} (Pág: ${page})`);
+
+        // 1. Tentar extrair nome limpo do concorrente a partir da URL ou Input
+        let competitorName = competitorInput;
+        try {
+            if (competitorInput.includes('http') || competitorInput.includes('www')) {
+                const urlObj = new URL(competitorInput.startsWith('http') ? competitorInput : `https://${competitorInput}`);
+                // Tenta pegar o handle do instagram/facebook ou o dominio
+                if (urlObj.hostname.includes('instagram') || urlObj.hostname.includes('facebook') || urlObj.hostname.includes('linkedin')) {
+                    const pathParts = urlObj.pathname.split('/').filter(p => p);
+                    if (pathParts.length > 0) competitorName = pathParts[0];
+                } else {
+                    competitorName = urlObj.hostname.replace('www.', '').split('.')[0];
+                }
+            }
+        } catch (e) {
+            // Falha silenciosa no parse, usa o input original
+            competitorName = competitorInput;
+        }
+
+        competitorName = competitorName.replace('@', '');
+        console.log(`[Sherlock Scan] Alvo Identificado: ${competitorName}`);
+
+        try {
+            // Estratégia de Dorks para encontrar Pessoas/Leads interagindo com a marca
+            // Focamos em: Reclamações (ReclameAqui), Dúvidas em Fóruns, Comentários Indexados
+            const dorks = [
+                `site:reclameaqui.com.br "${competitorName}"`,
+                `site:facebook.com "${competitorName}" "comentou"`,
+                `site:instagram.com "${competitorName}"`, // Indexação geral
+                `"${competitorName}" "insatisfeito" OR "recomendaçao" OR "indicação" -site:${competitorInput}`,
+                `related:${competitorInput}` // Encontrar empresas similares que podem ser leads B2B
+            ];
+
+            // Seleciona query baseada na paginação para variar a fonte
+            const queryTemplate = dorks[(page - 1) % dorks.length] || dorks[0];
+            const finalQuery = `${queryTemplate} ${location}`;
+
+            console.log(`[Sherlock Scan] Executing Dork: ${finalQuery}`);
+
+            const searchResponse: any = await ApiGatewayService.callApi(
+                'google-search',
+                'search',
+                { q: finalQuery, page: page, num: 15 },
+                { tenantId, apiKeys }
+            );
+
+            if (searchResponse && searchResponse.organic) {
+                return searchResponse.organic.map((result: any): Lead => {
+                    return {
+                        id: `sherlock-${Math.random().toString(36).substr(2, 9)}`,
+                        name: result.title.split('|')[0].substring(0, 50).trim(), // Tenta limpar o título
+                        website: result.link,
+                        phone: '', // Difícil pegar telefone direto, user terá que usar Enrichment depois
+                        industry: `Interesse em: ${competitorName}`,
+                        location: location || 'Brasil',
+                        status: LeadStatus.NEW,
+                        lastUpdated: new Date().toISOString(),
+                        details: {
+                            tradeName: result.title,
+                            // @ts-ignore
+                            notes: `Fonte Detectada: ${result.source || 'Busca Orgânica'}. Snippet: ${result.snippet}`
+                        },
+                        socialLinks: {
+                            map_link: result.link,
+                            whatsapp: null
+                        }
+                    };
+                });
+            }
+
+        } catch (error) {
+            console.error('[Sherlock Scan] Erro fatal:', error);
+            return [];
+        }
+
+        return [];
+    }
+
     private static async mockCNPJDiscovery(keyword: string, location: string): Promise<Lead[]> {
         // DESATIVADO: Geração de leads demo removida para produção estrita.
         return [];
