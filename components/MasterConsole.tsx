@@ -45,7 +45,12 @@ const MasterConsole: React.FC = () => {
         totalLeads: 0,
         activeTenants: 0,
         totalUsers: 0,
-        openTickets: 0
+        openTickets: 0,
+        enrichedLeads: 0,
+        citiesCount: 0,
+        statesCount: 0,
+        marketValue: 0,
+        leadsLast30Days: 0
     });
     const [tickets, setTickets] = useState<SupportTicket[]>([]);
 
@@ -83,18 +88,53 @@ const MasterConsole: React.FC = () => {
                 setProfiles(profilesData);
             }
 
-            // 3. Fetch Total Leads Count
-            const { count: leadsCount, error: leadsError } = await supabase
+            // 3. Fetch Total Leads Count & Aggregates
+            const { data: leadsData, error: leadsError, count: totalRealCount } = await supabase
                 .from('leads')
-                .select('*', { count: 'exact', head: true });
+                .select('status, location, created_at, tenant_id', { count: 'exact' });
 
             if (leadsError) throw leadsError;
 
+            let enriched = 0;
+            const cities = new Set<string>();
+            const states = new Set<string>();
+            let last30Days = 0;
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+            if (leadsData) {
+                leadsData.forEach(l => {
+                    if (l.status === 'ENRICHED') enriched++;
+
+                    if (l.location) {
+                        const parts = l.location.split(/[,\-]/).map(p => p.trim());
+                        if (parts.length >= 1 && parts[0]) cities.add(parts[0]);
+                        if (parts.length >= 2 && parts[1]) {
+                            const uf = parts[parts.length - 1].substring(0, 2).toUpperCase();
+                            if (uf.length === 2) states.add(uf);
+                        }
+                    }
+
+                    if (l.created_at && new Date(l.created_at) > thirtyDaysAgo) {
+                        last30Days++;
+                    }
+                });
+            }
+
+            const total = totalRealCount || leadsData?.length || 0;
+            // Valor de mercado estimado: R$ 25 por lead enriquecido (Premium AI Data)
+            const marketVal = (enriched * 25) + ((total - enriched) * 5);
+
             setStats({
-                totalLeads: leadsCount || 0,
+                totalLeads: total,
                 activeTenants: tenantsData?.filter(t => t.is_active).length || 0,
                 totalUsers: profilesData?.length || 0,
-                openTickets: 0 // Will be updated below
+                openTickets: 0, // Will be updated below
+                enrichedLeads: enriched,
+                citiesCount: cities.size,
+                statesCount: states.size,
+                marketValue: marketVal,
+                leadsLast30Days: last30Days
             });
 
             // 4. Fetch Support Tickets
@@ -103,12 +143,27 @@ const MasterConsole: React.FC = () => {
                 .select('*')
                 .order('created_at', { ascending: false });
 
-            if (ticketsError) {
-                console.error('Error fetching tickets:', ticketsError);
-            } else if (ticketsData) {
+            if (ticketsData) {
                 setTickets(ticketsData);
                 setStats(prev => ({ ...prev, openTickets: ticketsData.filter(t => t.status === 'open').length }));
             }
+
+            // 5. Calculate leads per tenant mapping
+            const leadsPerTenant: Record<string, { total: number, enriched: number }> = {};
+            if (leadsData) {
+                leadsData.forEach(l => {
+                    const tid = l.tenant_id || 'default';
+                    if (!leadsPerTenant[tid]) leadsPerTenant[tid] = { total: 0, enriched: 0 };
+                    leadsPerTenant[tid].total++;
+                    if (l.status === 'ENRICHED') leadsPerTenant[tid].enriched++;
+                });
+            }
+            // @ts-ignore - Atachando aos tenants para renderização
+            setTenants(prev => prev.map(t => ({
+                ...t,
+                leadsCount: leadsPerTenant[t.id]?.total || 0,
+                enrichedCount: leadsPerTenant[t.id]?.enriched || 0
+            })));
         } catch (err: any) {
             console.error('Master Console Error:', err.message || err);
             alert('Erro ao sincronizar dados: ' + (err.message || 'Verifique o console.'));
@@ -319,6 +374,7 @@ const MasterConsole: React.FC = () => {
                                         <tr className="bg-white/5">
                                             <th className="p-5 text-[10px] font-black text-slate-500 uppercase border-b border-white/5">Empresa / Slug</th>
                                             <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/5">Plano</th>
+                                            <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/5">Leads / Enriq.</th>
                                             <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/5">Usuários</th>
                                             <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/10 border-l">Status</th>
                                             <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-right border-b border-white/5">Ações</th>
@@ -348,9 +404,10 @@ const MasterConsole: React.FC = () => {
                                                             </div>
                                                         </td>
                                                         <td className="p-5 text-center">
-                                                            <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-widest ${tenant.plan === 'pro' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/20' : 'bg-slate-500/10 text-slate-500 border border-white/5'}`}>
-                                                                {tenant.plan}
-                                                            </span>
+                                                            <div className="flex flex-col items-center">
+                                                                <span className="text-sm font-black text-white">{(tenant as any).leadsCount || 0}</span>
+                                                                <span className="text-[9px] text-primary font-bold uppercase">{(tenant as any).enrichedCount || 0} Enriq.</span>
+                                                            </div>
                                                         </td>
                                                         <td className="p-5 text-center font-bold text-white text-sm">
                                                             {tenantUsers.length}
@@ -511,14 +568,44 @@ const MasterConsole: React.FC = () => {
                             Volume de Dados
                         </h4>
                         <div className="space-y-6">
-                            {/* ... (Stats content remains unchanged) ... */}
-                            <div>
-                                <div className="flex justify-between items-end mb-2">
-                                    <p className="text-[10px] text-slate-500 font-black uppercase">Leads Capturados (Total)</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-[10px] text-slate-500 font-black uppercase mb-1">MÉTRICA GLOBAL (TODOS)</p>
                                     <p className="text-2xl font-black text-white leading-none">{stats.totalLeads}</p>
+                                    <p className="text-[9px] text-emerald-500 font-bold mt-1">Leads Coletados (Total)</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-slate-500 font-black uppercase mb-1">TOTAL ENRIQUECIDO</p>
+                                    <p className="text-2xl font-black text-primary leading-none">{stats.enrichedLeads}</p>
+                                    <p className="text-[9px] text-slate-500 font-bold mt-1">Processados por IA</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
+                                <div>
+                                    <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Capilaridade</p>
+                                    <p className="text-lg font-black text-white">{stats.citiesCount} Cidades</p>
+                                    <p className="text-[9px] text-slate-500">{stats.statesCount} Estados Brasileiros</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Equity Estimado (Data)</p>
+                                    <p className="text-lg font-black text-emerald-500">
+                                        {stats.marketValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </p>
+                                    <p className="text-[9px] text-slate-500 italic">Preço de mercado B2B</p>
+                                </div>
+                            </div>
+
+                            <div className="pt-4 border-t border-white/5">
+                                <div className="flex justify-between items-end mb-2">
+                                    <p className="text-[10px] text-slate-500 font-black uppercase">Eficiência de Enriquecimento</p>
+                                    <p className="text-xs font-mono text-white">{(stats.totalLeads > 0 ? (stats.enrichedLeads / stats.totalLeads * 100).toFixed(1) : 0)}%</p>
                                 </div>
                                 <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                    <div className="h-full bg-primary w-[75%]" />
+                                    <div
+                                        className="h-full bg-primary transition-all duration-1000 shadow-[0_0_10px_var(--color-primary)]"
+                                        style={{ width: `${(stats.totalLeads > 0 ? (stats.enrichedLeads / stats.totalLeads * 100) : 0)}%` }}
+                                    />
                                 </div>
                             </div>
 
