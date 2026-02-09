@@ -13,6 +13,16 @@ interface WhatsAppScoutProps {
     apiKeys: any;
 }
 
+const RadarIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 12L19 12" />
+        <path d="M12 12L12 5" />
+        <path d="M12 12L5 12" />
+        <path d="M12 12L12 19" />
+    </svg>
+);
+
 const WhatsAppScout: React.FC<WhatsAppScoutProps> = ({ tenantId, apiKeys }) => {
     const [keyword, setKeyword] = useState('');
     const [location, setLocation] = useState('');
@@ -271,15 +281,5 @@ const WhatsAppScout: React.FC<WhatsAppScoutProps> = ({ tenantId, apiKeys }) => {
         </div>
     );
 };
-
-const RadarIcon = ({ className }: { className?: string }) => (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 12L19 12" />
-        <path d="M12 12L12 5" />
-        <path d="M12 12L5 12" />
-        <path d="M12 12L12 19" />
-    </svg>
-);
 
 export default WhatsAppScout;

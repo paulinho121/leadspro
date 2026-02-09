@@ -633,6 +633,7 @@ const App: React.FC = () => {
           <NavItem icon={<Search size={20} />} label="Extração" active={activeTab === 'discovery'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('discovery'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
           <NavItem icon={<Database size={20} />} label="Laboratório" active={activeTab === 'lab'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('lab'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
           <NavItem icon={<Rocket size={20} />} label="Enriquecidos" active={activeTab === 'enriched'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<MessageSquare size={20} />} label="WhatsApp Scout" active={activeTab === 'whatsapp'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('whatsapp'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
 
           <div className="pt-8 pb-4">
             {(!isSidebarOpen) && <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Sistemas</p>}
@@ -640,7 +641,6 @@ const App: React.FC = () => {
           </div>
 
           <NavItem icon={<Activity size={20} />} label="Histórico" active={activeTab === 'history'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('history'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-          <NavItem icon={<MessageSquare size={20} />} label="WhatsApp Scout" active={activeTab === 'whatsapp'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('whatsapp'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
           <NavItem icon={<ShieldCheck size={20} />} label="Parceiro" active={activeTab === 'partner'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
 
           {isMaster && (
