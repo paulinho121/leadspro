@@ -32,11 +32,15 @@ Acesso direto à base governamental de empresas brasileiras. Filtros por CNAE, d
 Inteligência competitiva social. O sistema localiza potenciais clientes que estão interagindo ou reclamando de concorrentes nas redes sociais e plataformas públicas.
 *   *Diferencial:* Captura o "momento de dor" do lead para uma abordagem infalível.
 
-### � Neural Email Recovery (Anti-Contab)
+### 🔗 Native CRM Integration
+Exportação inteligente compatível com **HubSpot, Pipedrive, Salesforce e RD Station**. Os dados são formatados automaticamente seguindo os padrões rigorosos de cada plataforma.
+*   *Diferencial:* Elimina o trabalho manual de planilhas e permite a subida imediata para o funil de vendas.
+
+### 📧 Neural Email Recovery (Anti-Contab)
 Técnica exclusiva para ignorar o e-mail da contabilidade e localizar o e-mail real de contato/diretoria através de varredura web e análise de IA.
 *   *Diferencial:* Aumenta a taxa de entrega em campanhas de Cold Mail em até 300%.
 
-### �👑 Master Console & White Label Control
+### 👑 Master Console & White Label Control
 O comprador terá acesso a um painel mestre de administração para criar e gerenciar "instâncias parceiras".
 *   *Diferencial:* Controle total de API Keys, branding customizado por cliente e monitoramento de consumo de leads em tempo real.
 

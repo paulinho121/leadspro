@@ -2,48 +2,31 @@
 import React, { useState } from 'react';
 import { Download, Search, CheckCircle, ExternalLink, Filter, MapPin, Phone, MessageCircle } from 'lucide-react';
 import { Lead, LeadStatus } from '../types';
+import { ExportService, CRMFormat } from '../services/exportService';
 
 interface EnrichedLeadsViewProps {
     leads: Lead[];
 }
 
+const CRMMenuItem = ({ label, icon, onClick }: { label: string, icon: React.ReactNode, onClick: () => void }) => (
+    <button
+        onClick={onClick}
+        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white transition-all text-xs font-bold text-left group"
+    >
+        <span className="opacity-40 group-hover:opacity-100 transition-opacity">{icon}</span>
+        {label}
+    </button>
+);
+
 const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
+    const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
     // Filtrar apenas leads enriquecidos
     const enrichedLeads = leads.filter(l => l.status === LeadStatus.ENRICHED);
 
-    const handleExportCSV = () => {
-        if (enrichedLeads.length === 0) return;
-
-        // Cabeçalhos
-        const headers = ['Nome', 'Website', 'Telefone', 'Setor', 'Localização', 'Insights IA', 'Instagram', 'Facebook', 'LinkedIn'];
-
-        // Dados
-        const rows = enrichedLeads.map(lead => [
-            `"${lead.name.replace(/"/g, '""')}"`,
-            lead.website || '',
-            lead.phone || '',
-            lead.industry || '',
-            lead.location || '',
-            `"${(lead.ai_insights || '').replace(/"/g, '""')}"`,
-            lead.socialLinks?.instagram || '',
-            lead.socialLinks?.facebook || '',
-            lead.socialLinks?.linkedin || ''
-        ]);
-
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(r => r.join(','))
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'leads_enriquecidos.csv');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const handleExport = (format: CRMFormat) => {
+        ExportService.exportToCSV(enrichedLeads, format);
+        setIsExportMenuOpen(false);
     };
 
     const openWhatsApp = (phone: string) => {
@@ -55,7 +38,7 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
+            <div className="flex flex-col lg:flex-row justify-between items-end lg:items-center gap-6">
                 <div>
                     <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-emerald-400">
@@ -66,19 +49,30 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
                         </span>
                     </h2>
                     <p className="text-slate-400 mt-2 font-medium">
-                        Baixe, filtre e entre em contato com seus leads qualificados e enriquecidos pela IA.
+                        Baixe, filtre e integre seus leads qualificados diretamente no seu CRM favorito.
                     </p>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="relative">
                     <button
-                        onClick={handleExportCSV}
-                        className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-bold flex items-center gap-2 transition-all hover:scale-105 shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:hover:scale-100"
+                        onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                        className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-2xl font-black flex items-center gap-3 transition-all hover:scale-105 shadow-[0_10px_30px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:hover:scale-100 uppercase text-xs tracking-widest"
                         disabled={enrichedLeads.length === 0}
                     >
-                        <Download size={18} />
-                        Exportar Planilha
+                        <Download size={20} />
+                        Exportar para CRM
                     </button>
+
+                    {isExportMenuOpen && (
+                        <div className="absolute top-full right-0 mt-3 w-64 bg-slate-900 border border-white/10 rounded-[2rem] shadow-2xl p-3 z-50 animate-in fade-in slide-in-from-top-2">
+                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-4 py-2 mb-2 border-b border-white/5">Selecione o Formato</div>
+                            <CRMMenuItem label="HubSpot CRM" onClick={() => handleExport('HUBSPOT')} icon={<div className="w-2 h-2 rounded-full bg-orange-500" />} />
+                            <CRMMenuItem label="Pipedrive" onClick={() => handleExport('PIPEDRIVE')} icon={<div className="w-2 h-2 rounded-full bg-green-500" />} />
+                            <CRMMenuItem label="Salesforce" onClick={() => handleExport('SALESFORCE')} icon={<div className="w-2 h-2 rounded-full bg-blue-500" />} />
+                            <CRMMenuItem label="RD Station / Kommo" onClick={() => handleExport('RD_STATION')} icon={<div className="w-2 h-1 rounded-full bg-blue-400" />} />
+                            <CRMMenuItem label="Planilha Padrão (CSV)" onClick={() => handleExport('GENERIC')} icon={<Download size={12} />} />
+                        </div>
+                    )}
                 </div>
             </div>
 
