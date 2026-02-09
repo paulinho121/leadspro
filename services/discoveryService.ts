@@ -386,46 +386,67 @@ export class DiscoveryService {
     static async performWhatsAppGroupScan(keyword: string, location: string, tenantId?: string, apiKeys?: any, page: number = 1): Promise<Lead[]> {
         console.log(`[WhatsApp Scout] Buscando grupos para: ${keyword} (Pág: ${page})`);
 
-        const query = `site:chat.whatsapp.com "${keyword}" ${location}`;
+        // Dork ultra-otimizado para capturar links de convite
+        const query = `site:chat.whatsapp.com "${keyword}" ${location}`.trim();
+        // Fallback: Tentamos uma busca mais ampla se a primeira falhar ou para expandir resultados
+        const alternateQuery = `site:chat.whatsapp.com ${keyword} ${location} "invite"`.trim();
+
+        console.log(`[WhatsApp Scout] Dorks: "${query}" | "${alternateQuery}"`);
 
         try {
             const searchResponse: any = await ApiGatewayService.callApi(
                 'google-search',
                 'search',
-                { q: query, page: page, num: 20 },
+                { q: query, page: page, num: 30 },
                 { tenantId, apiKeys }
             );
 
-            if (searchResponse && searchResponse.organic) {
-                return searchResponse.organic.map((result: any): Lead => {
-                    // Tenta extrair um nome mais amigável do título
-                    let groupName = result.title;
-                    if (groupName.includes('| WhatsApp')) groupName = groupName.split('| WhatsApp')[0].trim();
-                    if (groupName.includes('WhatsApp Group')) groupName = groupName.split('WhatsApp Group')[0].trim();
+            if (searchResponse && searchResponse.organic && searchResponse.organic.length > 0) {
+                return this.mapWhatsAppResults(searchResponse.organic, location);
+            }
 
-                    const randomId = Math.random().toString(36).substring(2, 11);
+            // FASE DE RECAPTURURA: Se não achou nada com o nicho exato, tenta a query alternativa
+            console.log('[WhatsApp Scout] Nenhuma correspondência exata. Iniciando busca de recalibragem...');
+            const fallbackResponse: any = await ApiGatewayService.callApi(
+                'google-search',
+                'search',
+                { q: alternateQuery, page: page, num: 30 },
+                { tenantId, apiKeys }
+            );
 
-                    return {
-                        id: `wa-group-${Date.now()}-${randomId}`,
-                        name: groupName,
-                        industry: 'WhatsApp Group',
-                        website: result.link,
-                        phone: '',
-                        location: location,
-                        status: LeadStatus.NEW,
-                        lastUpdated: new Date().toISOString(),
-                        socialLinks: {
-                            whatsapp: result.link
-                        }
-                    } as Lead;
-                });
+            if (fallbackResponse && fallbackResponse.organic) {
+                return this.mapWhatsAppResults(fallbackResponse.organic, location);
             }
         } catch (error: any) {
             console.error('[WhatsApp Scout] Erro na busca:', error);
-            throw error; // Repassa para o componente tratar
+            throw error;
         }
 
         return [];
+    }
+
+    private static mapWhatsAppResults(results: any[], location: string): Lead[] {
+        return results.map((result: any): Lead => {
+            let groupName = result.title;
+            if (groupName.includes('| WhatsApp')) groupName = groupName.split('| WhatsApp')[0].trim();
+            if (groupName.includes('WhatsApp Group')) groupName = groupName.split('WhatsApp Group')[0].trim();
+
+            const randomId = Math.random().toString(36).substring(2, 11);
+
+            return {
+                id: `wa-group-${Date.now()}-${randomId}`,
+                name: groupName,
+                industry: 'WhatsApp Group',
+                website: result.link,
+                phone: '',
+                location: location || 'Brasil',
+                status: LeadStatus.NEW,
+                lastUpdated: new Date().toISOString(),
+                socialLinks: {
+                    whatsapp: result.link
+                }
+            } as Lead;
+        });
     }
 
 
