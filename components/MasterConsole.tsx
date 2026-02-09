@@ -37,7 +37,11 @@ interface SupportTicket {
     created_at: string;
 }
 
-const MasterConsole: React.FC = () => {
+interface MasterConsoleProps {
+    onlineUsers?: any[];
+}
+
+const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
     const [tenants, setTenants] = useState<Tenant[]>([]);
     const [profiles, setProfiles] = useState<UserProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -174,6 +178,22 @@ const MasterConsole: React.FC = () => {
 
     useEffect(() => {
         fetchData();
+
+        // Sincronização em tempo real para o Master
+        const channel = supabase
+            .channel('master-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+                console.log('[Master] Atualizando dados globais em tempo real...');
+                fetchData();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
+                fetchData();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const toggleTenantStatus = async (tenantId: string, currentStatus: boolean) => {
@@ -617,6 +637,51 @@ const MasterConsole: React.FC = () => {
                                     </div>
                                     <span className="text-[10px] font-mono text-emerald-500 font-bold tracking-tighter">95% Uptime</span>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Online Users Card */}
+                    <div className="glass p-6 rounded-3xl border border-emerald-500/20 bg-emerald-500/5 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-all">
+                            <Users size={80} className="text-emerald-500" />
+                        </div>
+
+                        <h4 className="text-white font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <UserCheck size={16} className="text-emerald-500" />
+                            USUÁRIOS ONLINE
+                        </h4>
+
+                        <div className="space-y-4 relative z-10">
+                            <div className="flex items-center justify-between">
+                                <p className="text-[10px] text-slate-400 uppercase font-bold leading-tight">Monitoramento em tempo real do ecossistema.</p>
+                                <span className="bg-emerald-500 text-slate-900 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter animate-pulse">
+                                    {onlineUsers.length} ONLINE
+                                </span>
+                            </div>
+
+                            <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-2 pr-2">
+                                {onlineUsers.length === 0 ? (
+                                    <p className="text-[10px] text-slate-600 italic">Sincronizando presença...</p>
+                                ) : (
+                                    onlineUsers.map((user, idx) => {
+                                        const tenant = tenants.find(t => t.id === user.tenant_id);
+                                        return (
+                                            <div key={user.id || idx} className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-all">
+                                                <div className="relative">
+                                                    <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center font-bold text-[10px] text-white uppercase">
+                                                        {user.name ? user.name.slice(0, 2) : '??'}
+                                                    </div>
+                                                    <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-900 animate-pulse"></div>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-bold text-white truncate">{user.name || 'Usuário Anonimo'}</p>
+                                                    <p className="text-[9px] text-primary font-black uppercase truncate">{tenant?.name || 'Sistema'}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
                             </div>
                         </div>
                     </div>

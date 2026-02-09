@@ -101,6 +101,77 @@ const App: React.FC = () => {
     return () => { channel.unsubscribe(); };
   }, [session]);
 
+  // Sincronização em Tempo Real de Leads
+  useEffect(() => {
+    if (!session?.user || !userTenantId) return;
+
+    console.log('[Realtime] Ativando sincronização neural de leads...');
+
+    const channel = supabase
+      .channel('leads-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads',
+          filter: `tenant_id=eq.${userTenantId}`
+        },
+        (payload) => {
+          console.log('[Realtime] Mudança detectada nos leads:', payload.eventType);
+          fetchLeads();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session, userTenantId]);
+
+  // Sistema de Presença (Online Status)
+  const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!session?.user) return;
+
+    const channel = supabase.channel('online-users', {
+      config: {
+        presence: {
+          key: session.user.id,
+        },
+      },
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const users = Object.values(state).flat();
+        setOnlineUsers(users);
+      })
+      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        console.log('User joined: ', key, newPresences);
+      })
+      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        console.log('User left: ', key, leftPresences);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            id: session.user.id,
+            name: userName,
+            email: session.user.email,
+            online_at: new Date().toISOString(),
+            tenant_id: userTenantId
+          });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session, userName, userTenantId]);
+
   useEffect(() => {
     const handleAuthCheck = async (currSession: any) => {
       if (currSession?.user) {
@@ -558,7 +629,7 @@ const App: React.FC = () => {
       case 'partner':
         return <WhiteLabelAdmin initialTab="api" />;
       case 'master':
-        return <MasterConsole />;
+        return <MasterConsole onlineUsers={onlineUsers} />;
       case 'history':
         return <ActivityHistory />;
       case 'whatsapp':

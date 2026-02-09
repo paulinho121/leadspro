@@ -20,12 +20,27 @@ const CRMMenuItem = ({ label, icon, onClick }: { label: string, icon: React.Reac
 
 const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+    const [selectedIndustry, setSelectedIndustry] = useState<string>('todos');
 
     // Filtrar apenas leads enriquecidos
     const enrichedLeads = leads.filter(l => l.status === LeadStatus.ENRICHED);
 
+    // Mapear indústrias únicas para o filtro
+    const industries = React.useMemo(() => {
+        const types = new Set<string>();
+        enrichedLeads.forEach(l => {
+            if (l.industry) types.add(l.industry);
+        });
+        return ['todos', ...Array.from(types).sort()];
+    }, [enrichedLeads]);
+
+    // Filtrar por indústria selecionada
+    const filteredLeads = selectedIndustry === 'todos'
+        ? enrichedLeads
+        : enrichedLeads.filter(l => l.industry === selectedIndustry);
+
     const handleExport = (format: CRMFormat) => {
-        ExportService.exportToCSV(enrichedLeads, format);
+        ExportService.exportToCSV(filteredLeads, format); // Exporta apenas o filtro atual se desejar, ou manter enrichedLeads
         setIsExportMenuOpen(false);
     };
 
@@ -45,7 +60,7 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
                             Gerenciamento Comercial
                         </span>
                         <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider">
-                            {enrichedLeads.length} Leads Prontos
+                            {filteredLeads.length} de {enrichedLeads.length} Leads Prontos
                         </span>
                     </h2>
                     <p className="text-slate-400 mt-2 font-medium">
@@ -57,7 +72,7 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
                     <button
                         onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
                         className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-2xl font-black flex items-center gap-3 transition-all hover:scale-105 shadow-[0_10px_30px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:hover:scale-100 uppercase text-xs tracking-widest"
-                        disabled={enrichedLeads.length === 0}
+                        disabled={filteredLeads.length === 0}
                     >
                         <Download size={20} />
                         Exportar para CRM
@@ -77,32 +92,40 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
                 </div>
             </div>
 
-            {/* Active Filters Info */}
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-400 text-sm font-semibold">
-                    <Filter size={16} />
-                    <span>Visualização:</span>
-                    <span className="px-2 py-1 rounded bg-white/5 text-white">Status: Enriquecido</span>
+            {/* Category Filter Bar */}
+            <div className="flex flex-wrap items-center gap-2 pb-2 overflow-x-auto no-scrollbar">
+                <div className="flex items-center gap-2 mr-4 px-3 py-2 border-r border-white/10 shrink-0">
+                    <Filter size={16} className="text-slate-500" />
+                    <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Filtrar por Setor:</span>
                 </div>
-                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                    Use a busca global no topo para filtrar a lista
-                </div>
+                {industries.map(industry => (
+                    <button
+                        key={industry}
+                        onClick={() => setSelectedIndustry(industry)}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0
+                            ${selectedIndustry === industry
+                                ? 'bg-primary text-slate-900 border-primary shadow-[0_5px_15px_rgba(6,182,212,0.3)]'
+                                : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/10 hover:bg-white/[0.08]'}`}
+                    >
+                        {industry === 'todos' ? '🎯 Todos os Tipos' : industry}
+                    </button>
+                ))}
             </div>
 
             {/* Leads Grid */}
-            {enrichedLeads.length === 0 ? (
+            {filteredLeads.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-white/10 rounded-3xl bg-white/5">
                     <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6">
                         <Filter className="text-slate-500" size={32} />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">Nenhum Lead Enriquecido Encontrado</h3>
+                    <h3 className="text-xl font-bold text-white mb-2">Nenhum Lead Encontrado</h3>
                     <p className="text-slate-400 max-w-md">
-                        Vá até o "Laboratório de Leads" e execute o enriquecimento com IA para popular esta lista.
+                        Não existem leads para a categoria selecionada neste momento.
                     </p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-4">
-                    {enrichedLeads.map((lead, idx) => (
+                    {filteredLeads.map((lead, idx) => (
                         <div key={lead.id || idx} className="group p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-emerald-500/30 hover:bg-white/[0.07] transition-all duration-300 relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
                                 {lead.phone && (
