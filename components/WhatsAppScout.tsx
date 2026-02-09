@@ -38,7 +38,12 @@ const WhatsAppScout: React.FC<WhatsAppScoutProps> = ({ tenantId, apiKeys }) => {
 
     const handleSearchGroups = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!keyword) return;
+        console.log('[WhatsAppScout] Botão apertado. Keyword:', keyword);
+
+        if (!keyword) {
+            alert('Por favor, digite um nicho para buscar.');
+            return;
+        }
 
         setIsSearching(true);
         try {
@@ -46,10 +51,17 @@ const WhatsAppScout: React.FC<WhatsAppScoutProps> = ({ tenantId, apiKeys }) => {
             setGroups(results);
             if (results.length > 0) {
                 alert(`Sucesso! Encontramos ${results.length} grupos potenciais para o nicho ${keyword}.`);
+            } else {
+                alert('Escaner finalizado: Nenhum link de convite público foi encontrado para este nicho/localização no momento.');
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            alert('Erro ao buscar grupos. Verifique sua chave Serper.');
+            const msg = err.message || '';
+            if (msg.includes('SERPER_API_KEY_MISSING')) {
+                alert('CHAVE API AUSENTE: Você precisa configurar sua chave Serper na aba "Parceiro" para usar o radar.');
+            } else {
+                alert('Ocorreu um erro técnico na varredura: ' + (err.message || 'Verifique sua conexão.'));
+            }
         } finally {
             setIsSearching(false);
         }

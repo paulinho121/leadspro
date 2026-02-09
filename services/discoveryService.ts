@@ -403,8 +403,10 @@ export class DiscoveryService {
                     if (groupName.includes('| WhatsApp')) groupName = groupName.split('| WhatsApp')[0].trim();
                     if (groupName.includes('WhatsApp Group')) groupName = groupName.split('WhatsApp Group')[0].trim();
 
+                    const randomId = Math.random().toString(36).substring(2, 11);
+
                     return {
-                        id: crypto.randomUUID(),
+                        id: `wa-group-${Date.now()}-${randomId}`,
                         name: groupName,
                         industry: 'WhatsApp Group',
                         website: result.link,
@@ -418,8 +420,9 @@ export class DiscoveryService {
                     } as Lead;
                 });
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('[WhatsApp Scout] Erro na busca:', error);
+            throw error; // Repassa para o componente tratar
         }
 
         return [];
