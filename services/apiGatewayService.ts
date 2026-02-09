@@ -128,7 +128,9 @@ export class ApiGatewayService {
 
         const prompt = endpoint === 'analyze-website'
             ? `Analise a empresa ${payload.leadName} no nicho ${payload.industry}. Site: ${payload.website}. Gere 3 insights de vendas curtos e diretos em português.`
-            : `Dê uma nota de 1 a 100 para este lead baseado no potencial de vendas (B2B): ${JSON.stringify(payload.leadData)}. Retorne apenas o número puro.`;
+            : endpoint === 'custom-prompt'
+                ? payload.prompt
+                : `Dê uma nota de 1 a 100 para este lead baseado no potencial de vendas (B2B): ${JSON.stringify(payload.leadData)}. Retorne apenas o número puro.`;
 
         const response = await fetch(baseUrl, {
             method: 'POST',

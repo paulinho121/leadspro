@@ -8,7 +8,7 @@ export class EnrichmentService {
     /**
      * Enriquece um lead individualmente buscando dados em múltiplas fontes
      */
-    static async enrichLead(lead: Lead, apiKeys?: any): Promise<{ insights: string, details: any, socialData: any }> {
+    static async enrichLead(lead: Lead, apiKeys?: any): Promise<{ insights: string, details: any, socialData: any, realEmail?: string }> {
         console.log(`[Neural Enrichment] Processing: ${lead.name}`);
 
         // 1. Dados Governamentais (Se houver CNPJ)
@@ -60,13 +60,15 @@ export class EnrichmentService {
             activity: officialData.activity || lead.industry,
             tradeName: officialData.tradeName || lead.name,
             foundedDate: officialData.foundedDate || 'Não identificado',
-            size: officialData.size || 'Pequeno Porte'
+            size: officialData.size || 'Pequeno Porte',
+            real_email: socialData.realEmail
         };
 
         return {
             insights,
             details: enrichedDetails,
-            socialData // Exportar explicitamente para atualizar coluna social_links
+            socialData, // Exportar explicitamente para atualizar coluna social_links
+            realEmail: socialData.realEmail
         };
     }
 
@@ -76,15 +78,44 @@ export class EnrichmentService {
 
             if (hasKey) {
                 console.log(`[Social Discovery] Buscando dados reais para: ${lead.name}`);
+
+                // Busca ampliada para encontrar contato e email real
                 const searchResults: any = await ApiGatewayService.callApi(
                     'google-search',
                     'search',
-                    { q: `${lead.name} ${lead.location} site instagram facebook` },
+                    { q: `${lead.name} ${lead.location} "email" "contato" site instagram facebook` },
                     { apiKeys, ttl: 86400 * 7 }
                 );
 
                 const organic = searchResults.organic || [];
                 const findLink = (domain: string) => organic.find((r: any) => r.link && r.link.includes(domain))?.link;
+
+                // Capturar todos os snippets para extração de email via IA
+                const snippets = organic.map((r: any) => r.snippet).join(' | ');
+
+                // Tenta extrair email real via IA se houver snippets
+                let realEmail = '';
+                try {
+                    const prompt = `Analise os seguintes textos de resultados de busca e extraia o EMAIL REAL de contato da empresa "${lead.name}". 
+                    IGNORE e-mails terminados em @gmail.com, @hotmail.com ou emails de contabilidade (ex: contabil, adm, fiscal) a menos que sejam os únicos disponíveis. 
+                    Dê preferência para emails com o domínio da empresa. 
+                    Retorne APENAS o email puro ou "NÃO ENCONTRADO".
+                    Textos: ${snippets}`;
+
+                    const extracted = await ApiGatewayService.callApi<string>(
+                        'gemini-1.5-flash',
+                        'custom-prompt',
+                        { prompt },
+                        { apiKeys, ttl: 86400 }
+                    );
+
+                    if (extracted && extracted.includes('@') && !extracted.includes(' ')) {
+                        realEmail = extracted.toLowerCase().trim();
+                        console.log(`[Neural Email] Email Real detectado: ${realEmail}`);
+                    }
+                } catch (emailErr) {
+                    console.warn('Erro ao extrair email via IA:', emailErr);
+                }
 
                 const websiteRaw = organic.find((r: any) => {
                     const l = r.link || '';
@@ -102,19 +133,20 @@ export class EnrichmentService {
                     instagram: findLink('instagram.com') || '',
                     facebook: findLink('facebook.com') || '',
                     linkedin: findLink('linkedin.com') || '',
-                    website: lead.website || websiteRaw || ''
+                    website: lead.website || websiteRaw || '',
+                    realEmail: realEmail
                 };
             }
         } catch (e) {
             console.warn('Erro na busca social real:', e);
         }
 
-        // REMOVIDO: Geração de dados simulados (Demo)
         return {
             instagram: '',
             facebook: '',
             linkedin: '',
-            website: lead.website || ''
+            website: lead.website || '',
+            realEmail: ''
         };
     }
 }

@@ -2,7 +2,7 @@
 import React from 'react';
 import {
   X, Instagram, Facebook, Globe, Search,
-  MessageCircle, Phone, MapPin,
+  MessageCircle, Phone, MapPin, Mail,
   Building2, Hash, Calendar, Layers, Zap,
   BrainCircuit, Sparkles, Cpu, Atom
 } from 'lucide-react';
@@ -102,27 +102,39 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
         )}
 
         {/* Neural Actions Grid (Social Links) */}
-        <div className="px-10 pb-6 grid grid-cols-4 gap-4 relative z-10">
+        <div className="px-10 pb-6 grid grid-cols-5 gap-3 relative z-10">
           <SourceButton
-            icon={<Globe size={24} className="text-blue-400" />}
+            icon={<Globe size={20} className="text-blue-400" />}
             label="SITE"
             onClick={() => handleSocialClick(lead.website)}
             disabled={!lead.website}
           />
           <SourceButton
-            icon={<Instagram size={24} className="text-magenta-500" />}
+            icon={<Instagram size={20} className="text-magenta-500" />}
             label="INSTA"
             onClick={() => handleSocialClick(details.instagram)}
             disabled={!details.instagram}
           />
           <SourceButton
-            icon={<Facebook size={24} className="text-blue-600" />}
+            icon={<Mail size={20} className="text-primary shadow-[0_0_10px_rgba(6,182,212,0.5)]" />}
+            label="EMAIL"
+            onClick={() => {
+              const email = details.real_email || lead.email;
+              if (email) {
+                navigator.clipboard.writeText(email);
+                alert('Email copiado: ' + email);
+              }
+            }}
+            disabled={!details.real_email && !lead.email}
+          />
+          <SourceButton
+            icon={<Facebook size={20} className="text-blue-600" />}
             label="FB"
             onClick={() => handleSocialClick(details.facebook)}
             disabled={!details.facebook}
           />
           <SourceButton
-            icon={<Search size={24} className="text-primary" />}
+            icon={<Search size={20} className="text-primary" />}
             label="LOCAL"
             onClick={() => handleSocialClick(lead.socialLinks?.map_link)}
             disabled={!lead.socialLinks?.map_link}

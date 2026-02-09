@@ -18,6 +18,7 @@ export interface CompanyDetails {
   rating?: number;
   reviews?: number;
   ai_score?: number;
+  email?: string; // Email governamental/oficial
 }
 
 export interface Lead {
@@ -25,6 +26,7 @@ export interface Lead {
   name: string;
   website: string;
   phone: string;
+  email?: string; // Email REAL para abordagem
   industry: string;
   location: string;
   status: LeadStatus;
