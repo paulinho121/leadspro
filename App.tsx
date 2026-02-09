@@ -61,12 +61,12 @@ const App: React.FC = () => {
 
   // Função auxiliar para logar atividades
   const logActivity = async (action: string, details: string) => {
-    if (!userTenantId && !session?.user) return;
+    if (!userTenantId || !session?.user) return;
 
     try {
       await supabase.from('activity_logs').insert([{
-        tenant_id: userTenantId || '00000000-0000-0000-0000-000000000000',
-        user_id: session?.user?.id,
+        tenant_id: userTenantId,
+        user_id: session.user.id,
         action,
         details
       }]);
@@ -402,33 +402,36 @@ const App: React.FC = () => {
       return;
     }
 
-    // Se o branding ainda não carregou o ID real, tentamos resolver via perfil se possível
-    let activeTenantId = (config.tenantId !== 'default' ? config.tenantId : null);
+    // PRIORIDADE MÁXIMA: Usar o Tenant ID do perfil carregado no estado
+    let activeTenantId = userTenantId;
 
+    // Se ainda não carregou, tentamos buscar na hora via perfil (fail-safe)
     if (!activeTenantId && session?.user) {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('tenant_id')
+          .select('tenant_id, is_master_admin')
           .eq('id', session.user.id)
           .maybeSingle();
 
         if (profile?.tenant_id) {
           activeTenantId = profile.tenant_id;
+        } else if (profile?.is_master_admin || session.user.email === 'paulofernandoautomacao@gmail.com') {
+          activeTenantId = '00000000-0000-0000-0000-000000000000';
         }
       } catch (err) {
-        console.warn('[Tenant] Falha na busca rápida via perfil (406?), tentando fallback via config.');
+        console.warn('[Tenant] Falha na busca rápida via perfil');
       }
     }
 
-    // Fallback Final: Se ainda for null e for o Paulo, usa o tenant master
-    if (!activeTenantId && session?.user?.email === 'paulofernandoautomacao@gmail.com') {
-      activeTenantId = '00000000-0000-0000-0000-000000000000';
+    // Se ainda assim for null, e o branding tiver algo que NÃO seja o padrão, usamos como última opção
+    if (!activeTenantId && config.tenantId && config.tenantId !== 'default' && config.tenantId !== '00000000-0000-0000-0000-000000000000') {
+      activeTenantId = config.tenantId;
     }
 
     if (!activeTenantId) {
       console.error('Erro Crítico: Tentativa de salvar leads sem um Tenant ID definido.');
-      alert('Aguarde a inicialização do sistema ou recarregue a página.');
+      alert('Aguarde a inicialização da sua conta ou recarregue a página.');
       return;
     }
 
@@ -574,8 +577,8 @@ const App: React.FC = () => {
       if (error) throw error;
 
       const sessionUser = (await supabase.auth.getSession()).data.session?.user;
-      if (sessionUser) {
-        ActivityService.log(config.tenantId, sessionUser.id, 'LEAD_DELETE', `Lead ${leadId} excluído.`);
+      if (sessionUser && userTenantId) {
+        ActivityService.log(userTenantId, sessionUser.id, 'LEAD_DELETE', `Lead ${leadId} excluído.`);
       }
 
     } catch (err) {
@@ -598,8 +601,8 @@ const App: React.FC = () => {
       if (error) throw error;
 
       const sessionUser = (await supabase.auth.getSession()).data.session?.user;
-      if (sessionUser) {
-        ActivityService.log(config.tenantId, sessionUser.id, 'LEAD_BULK_DELETE', `${leadIds.length} leads excluídos.`);
+      if (sessionUser && userTenantId) {
+        ActivityService.log(userTenantId, sessionUser.id, 'LEAD_BULK_DELETE', `${leadIds.length} leads excluídos.`);
       }
     } catch (err) {
       console.error('Erro na exclusão em massa:', err);
@@ -623,6 +626,7 @@ const App: React.FC = () => {
           onStopEnrichment={() => stopEnrichmentSignal.current = true}
           onDelete={handleDeleteLead}
           onBulkDelete={handleBulkDelete}
+          userTenantId={userTenantId}
         />;
       case 'enriched':
         return <EnrichedLeadsView leads={filteredLeads} />;
@@ -631,7 +635,7 @@ const App: React.FC = () => {
       case 'master':
         return <MasterConsole onlineUsers={onlineUsers} />;
       case 'history':
-        return <ActivityHistory />;
+        return <ActivityHistory tenantId={userTenantId} isMaster={isMaster} />;
       case 'whatsapp':
         return <WhatsAppScout
           tenantId={userTenantId}
@@ -951,7 +955,7 @@ const App: React.FC = () => {
             </div>
 
             {showNotifications && (
-              <NotificationsList onClose={() => setShowNotifications(false)} />
+              <NotificationsList onClose={() => setShowNotifications(false)} tenantId={userTenantId} />
             )}
           </div>
         </header>

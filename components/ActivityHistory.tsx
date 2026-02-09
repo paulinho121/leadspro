@@ -11,16 +11,28 @@ interface ActivityLog {
     user_id: string;
 }
 
-const ActivityHistory: React.FC = () => {
+interface ActivityHistoryProps {
+    tenantId?: string;
+    isMaster?: boolean;
+}
+
+const ActivityHistory: React.FC<ActivityHistoryProps> = ({ tenantId, isMaster }) => {
     const [logs, setLogs] = useState<ActivityLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const fetchLogs = async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('activity_logs')
-                .select('*')
+                .select('*');
+
+            // Camada Extra de Segurança: Se não for Master, filtra explicitamente pelo Tenant
+            if (!isMaster && tenantId) {
+                query = query.eq('tenant_id', tenantId);
+            }
+
+            const { data, error } = await query
                 .order('created_at', { ascending: false })
                 .limit(50);
 

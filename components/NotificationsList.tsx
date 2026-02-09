@@ -14,18 +14,25 @@ interface Notification {
 
 interface NotificationsListProps {
     onClose: () => void;
+    tenantId?: string;
 }
 
-const NotificationsList: React.FC<NotificationsListProps> = ({ onClose }) => {
+const NotificationsList: React.FC<NotificationsListProps> = ({ onClose, tenantId }) => {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const fetchNotifications = async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('notifications')
-                .select('*')
+                .select('*');
+
+            if (tenantId) {
+                query = query.eq('tenant_id', tenantId);
+            }
+
+            const { data, error } = await query
                 .order('created_at', { ascending: false })
                 .limit(20);
 

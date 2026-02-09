@@ -92,57 +92,39 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                 setProfiles(profilesData);
             }
 
-            // 3. Fetch Total Leads Count & Aggregates
-            const { data: leadsData, error: leadsError, count: totalRealCount } = await supabase
-                .from('leads')
-                .select('status, location, created_at, tenant_id', { count: 'exact' });
-
-            if (leadsError) throw leadsError;
-
-            let enriched = 0;
-            const cities = new Set<string>();
-            const states = new Set<string>();
-            let last30Days = 0;
+            // 3. Agregações Globais via Supabase Count (Evita limite de 1000)
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-            if (leadsData) {
-                leadsData.forEach(l => {
-                    if (l.status === 'ENRICHED') enriched++;
+            const [
+                { count: totalCount },
+                { count: enrichedCount },
+                { count: recentLeadsCount }
+            ] = await Promise.all([
+                supabase.from('leads').select('*', { count: 'exact', head: true }),
+                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'ENRICHED'),
+                supabase.from('leads').select('*', { count: 'exact', head: true }).gt('created_at', thirtyDaysAgo.toISOString())
+            ]);
 
-                    if (l.location) {
-                        const parts = l.location.split(/[,\-]/).map(p => p.trim());
-                        if (parts.length >= 1 && parts[0]) cities.add(parts[0]);
-                        if (parts.length >= 2 && parts[1]) {
-                            const uf = parts[parts.length - 1].substring(0, 2).toUpperCase();
-                            if (uf.length === 2) states.add(uf);
-                        }
-                    }
+            const total = totalCount || 0;
+            const enriched = enrichedCount || 0;
+            const recent = recentLeadsCount || 0;
 
-                    if (l.created_at && new Date(l.created_at) > thirtyDaysAgo) {
-                        last30Days++;
-                    }
-                });
-            }
-
-            const total = totalRealCount || leadsData?.length || 0;
             // Valor de mercado estimado: R$ 25 por lead enriquecido (Premium AI Data)
             const marketVal = (enriched * 25) + ((total - enriched) * 5);
 
-            setStats({
+            setStats(prev => ({
+                ...prev,
                 totalLeads: total,
                 activeTenants: tenantsData?.filter(t => t.is_active).length || 0,
                 totalUsers: profilesData?.length || 0,
-                openTickets: 0, // Will be updated below
                 enrichedLeads: enriched,
-                citiesCount: cities.size,
-                statesCount: states.size,
                 marketValue: marketVal,
-                leadsLast30Days: last30Days
-            });
+                leadsLast30Days: recent
+            }));
 
-            // 4. Fetch Support Tickets
-            const { data: ticketsData, error: ticketsError } = await supabase
+            // 4. Buscar Chamados
+            const { data: ticketsData } = await supabase
                 .from('support_tickets')
                 .select('*')
                 .order('created_at', { ascending: false });
@@ -152,25 +134,50 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                 setStats(prev => ({ ...prev, openTickets: ticketsData.filter(t => t.status === 'open').length }));
             }
 
-            // 5. Calculate leads per tenant mapping
-            const leadsPerTenant: Record<string, { total: number, enriched: number }> = {};
-            if (leadsData) {
-                leadsData.forEach(l => {
+            // 5. Calcular leads por tenant (Aumentamos o limite para garantir que pegamos os counts de muitos tenants)
+            // Em cenários de escala maior que 10k leads, o ideal seria um view ou RPC, 
+            // mas para este volume, otimizamos o select para ser mais leve.
+            const { data: leadCounts } = await supabase
+                .from('leads')
+                .select('tenant_id, status, location')
+                .limit(10000);
+
+            if (leadCounts) {
+                const leadsPerTenant: Record<string, { total: number, enriched: number }> = {};
+                const cities = new Set<string>();
+                const states = new Set<string>();
+
+                leadCounts.forEach(l => {
                     const tid = l.tenant_id || 'default';
                     if (!leadsPerTenant[tid]) leadsPerTenant[tid] = { total: 0, enriched: 0 };
                     leadsPerTenant[tid].total++;
                     if (l.status === 'ENRICHED') leadsPerTenant[tid].enriched++;
+
+                    if (l.location) {
+                        const parts = l.location.split(/[,\-]/).map(p => p.trim());
+                        if (parts.length >= 1 && parts[0]) cities.add(parts[0]);
+                        if (parts.length >= 2) {
+                            const uf = parts[parts.length - 1].substring(0, 2).toUpperCase();
+                            if (uf.length === 2) states.add(uf);
+                        }
+                    }
                 });
+
+                setStats(prev => ({
+                    ...prev,
+                    citiesCount: cities.size,
+                    statesCount: states.size
+                }));
+
+                setTenants(prev => prev.map(t => ({
+                    ...t,
+                    leadsCount: leadsPerTenant[t.id]?.total || 0,
+                    enrichedCount: leadsPerTenant[t.id]?.enriched || 0
+                })));
             }
-            // @ts-ignore - Atachando aos tenants para renderização
-            setTenants(prev => prev.map(t => ({
-                ...t,
-                leadsCount: leadsPerTenant[t.id]?.total || 0,
-                enrichedCount: leadsPerTenant[t.id]?.enriched || 0
-            })));
+
         } catch (err: any) {
             console.error('Master Console Error:', err.message || err);
-            alert('Erro ao sincronizar dados: ' + (err.message || 'Verifique o console.'));
         } finally {
             setIsLoading(false);
         }
@@ -591,12 +598,12 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-[10px] text-slate-500 font-black uppercase mb-1">MÉTRICA GLOBAL (TODOS)</p>
-                                    <p className="text-2xl font-black text-white leading-none">{stats.totalLeads}</p>
+                                    <p key={`total-${stats.totalLeads}`} className="text-2xl font-black text-white leading-none animate-in zoom-in-95 duration-500">{stats.totalLeads}</p>
                                     <p className="text-[9px] text-emerald-500 font-bold mt-1">Leads Coletados (Total)</p>
                                 </div>
                                 <div>
                                     <p className="text-[10px] text-slate-500 font-black uppercase mb-1">TOTAL ENRIQUECIDO</p>
-                                    <p className="text-2xl font-black text-primary leading-none">{stats.enrichedLeads}</p>
+                                    <p key={`enriched-${stats.enrichedLeads}`} className="text-2xl font-black text-primary leading-none animate-in zoom-in-95 duration-500 shadow-[0_0_20px_rgba(6,182,212,0.2)]">{stats.enrichedLeads}</p>
                                     <p className="text-[9px] text-slate-500 font-bold mt-1">Processados por IA</p>
                                 </div>
                             </div>
@@ -604,12 +611,12 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                             <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
                                 <div>
                                     <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Capilaridade</p>
-                                    <p className="text-lg font-black text-white">{stats.citiesCount} Cidades</p>
+                                    <p key={`cities-${stats.citiesCount}`} className="text-lg font-black text-white animate-fade-in">{stats.citiesCount} Cidades</p>
                                     <p className="text-[9px] text-slate-500">{stats.statesCount} Estados Brasileiros</p>
                                 </div>
                                 <div>
                                     <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Equity Estimado (Data)</p>
-                                    <p className="text-lg font-black text-emerald-500">
+                                    <p key={`equity-${stats.marketValue}`} className="text-lg font-black text-emerald-500 animate-in slide-in-from-right-2 duration-500">
                                         {stats.marketValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                     </p>
                                     <p className="text-[9px] text-slate-500 italic">Preço de mercado B2B</p>

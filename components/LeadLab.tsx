@@ -18,9 +18,10 @@ interface LeadLabProps {
   onStopEnrichment?: () => void;
   onDelete?: (id: string) => void;
   onBulkDelete?: (ids: string[]) => void;
+  userTenantId?: string;
 }
 
-const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnriching = false, onStopEnrichment, onDelete, onBulkDelete }) => {
+const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnriching = false, onStopEnrichment, onDelete, onBulkDelete, userTenantId }) => {
   const { config } = useBranding();
   const [selectedNiche, setSelectedNiche] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -206,8 +207,8 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                           setIsEnrichMenuOpen(false);
 
                           supabase.auth.getSession().then(({ data: { session } }) => {
-                            if (session?.user) {
-                              ActivityService.log(config.tenantId, session.user.id, 'LEAD_ENRICH', `Iniciado enriquecimento em massa para o nicho "${selectedNiche}".`);
+                            if (session?.user && userTenantId) {
+                              ActivityService.log(userTenantId, session.user.id, 'LEAD_ENRICH', `Iniciado enriquecimento em massa para o nicho "${selectedNiche}".`);
                             }
                           });
                         }}
@@ -222,8 +223,8 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                           setIsEnrichMenuOpen(false);
 
                           supabase.auth.getSession().then(({ data: { session } }) => {
-                            if (session?.user) {
-                              ActivityService.log(config.tenantId, session.user.id, 'LEAD_ENRICH', `Iniciado enriquecimento completo para ${toEnrich.length} leads novos.`);
+                            if (session?.user && userTenantId) {
+                              ActivityService.log(userTenantId, session.user.id, 'LEAD_ENRICH', `Iniciado enriquecimento completo para ${toEnrich.length} leads novos.`);
                             }
                           });
                         }}
