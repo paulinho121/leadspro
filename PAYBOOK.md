@@ -33,7 +33,7 @@ Inteligência competitiva social. O sistema localiza potenciais clientes que est
 *   *Diferencial:* Captura o "momento de dor" do lead para uma abordagem infalível.
 
 ### 🔗 Native CRM Integration
-Exportação inteligente compatível com **HubSpot, Pipedrive, Salesforce e RD Station**. Os dados são formatados automaticamente seguindo os padrões rigorosos de cada plataforma.
+Exportação inteligente compatível com **HubSpot, Pipedrive, Salesforce, RD Station e Brevo**. Os dados são formatados automaticamente seguindo os padrões rigorosos de cada plataforma.
 *   *Diferencial:* Elimina o trabalho manual de planilhas e permite a subida imediata para o funil de vendas.
 
 ### 📧 Neural Email Recovery (Anti-Contab)

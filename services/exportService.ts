@@ -1,7 +1,7 @@
 
 import { Lead } from '../types';
 
-export type CRMFormat = 'GENERIC' | 'HUBSPOT' | 'PIPEDRIVE' | 'SALESFORCE' | 'RD_STATION' | 'KOMMO';
+export type CRMFormat = 'GENERIC' | 'HUBSPOT' | 'PIPEDRIVE' | 'SALESFORCE' | 'RD_STATION' | 'KOMMO' | 'BREVO';
 
 export class ExportService {
     static exportToCSV(leads: Lead[], format: CRMFormat = 'GENERIC') {
@@ -79,6 +79,24 @@ export class ExportService {
                         this.sanitize(cidade),
                         this.sanitize(estado),
                         this.sanitize(l.ai_insights || '')
+                    ];
+                });
+                break;
+
+            case 'BREVO':
+                headers = ['EMAIL', 'FIRSTNAME', 'LASTNAME', 'SMS', 'COMPANY', 'WEBSITE', 'CITY', 'ATTRIBUTES'];
+                rows = leads.map(l => {
+                    const [firstName, ...lastNames] = l.name.split(' ');
+                    const lastName = lastNames.join(' ') || '.';
+                    return [
+                        this.sanitize(l.email || l.details?.email || ''),
+                        this.sanitize(firstName),
+                        this.sanitize(lastName),
+                        this.sanitize(l.phone || ''),
+                        this.sanitize(l.details?.tradeName || l.name),
+                        this.sanitize(l.website || ''),
+                        this.sanitize(l.location.split(',')[0] || ''),
+                        this.sanitize(`Insight: ${l.ai_insights || ''}`)
                     ];
                 });
                 break;

@@ -70,6 +70,7 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
                             <CRMMenuItem label="Pipedrive" onClick={() => handleExport('PIPEDRIVE')} icon={<div className="w-2 h-2 rounded-full bg-green-500" />} />
                             <CRMMenuItem label="Salesforce" onClick={() => handleExport('SALESFORCE')} icon={<div className="w-2 h-2 rounded-full bg-blue-500" />} />
                             <CRMMenuItem label="RD Station / Kommo" onClick={() => handleExport('RD_STATION')} icon={<div className="w-2 h-1 rounded-full bg-blue-400" />} />
+                            <CRMMenuItem label="Brevo (Sendinblue)" onClick={() => handleExport('BREVO')} icon={<div className="w-2 h-2 rounded-full bg-cyan-500" />} />
                             <CRMMenuItem label="Planilha Padrão (CSV)" onClick={() => handleExport('GENERIC')} icon={<Download size={12} />} />
                         </div>
                     )}
