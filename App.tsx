@@ -13,6 +13,7 @@ import EnrichedLeadsView from './components/EnrichedLeadsView';
 import EnrichmentModal from './components/EnrichmentModal';
 import WhiteLabelAdmin from './components/WhiteLabelAdmin';
 import MasterConsole from './components/MasterConsole';
+import WhatsAppScout from './components/WhatsAppScout';
 import LoginPage from './components/LoginPage';
 import ActivityHistory from './components/ActivityHistory';
 import NotificationsList from './components/NotificationsList';
@@ -28,7 +29,7 @@ import { Megaphone, Send as SendIcon, CheckCircle, Info, AlertTriangle as AlertI
 
 const App: React.FC = () => {
   const { config, isLoading } = useBranding();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched' | 'master' | 'history'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched' | 'master' | 'history' | 'whatsapp'>('dashboard');
   const [isMaster, setIsMaster] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -560,6 +561,14 @@ const App: React.FC = () => {
         return <MasterConsole />;
       case 'history':
         return <ActivityHistory />;
+      case 'whatsapp':
+        return <WhatsAppScout
+          tenantId={userTenantId}
+          apiKeys={{
+            serper: config.apiKeys?.serper || '',
+            gemini: config.apiKeys?.gemini || ''
+          }}
+        />;
       default:
         return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
     }
@@ -631,6 +640,7 @@ const App: React.FC = () => {
           </div>
 
           <NavItem icon={<Activity size={20} />} label="Histórico" active={activeTab === 'history'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('history'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<MessageSquare size={20} />} label="WhatsApp Scout" active={activeTab === 'whatsapp'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('whatsapp'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
           <NavItem icon={<ShieldCheck size={20} />} label="Parceiro" active={activeTab === 'partner'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
 
           {isMaster && (

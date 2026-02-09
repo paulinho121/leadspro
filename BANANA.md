@@ -90,4 +90,23 @@ Para demonstrar o valor e o crescimento da plataforma para investidores, o **Mas
 > **Uso sugerido:** Use este painel durante reuniões de pitching para mostrar a tração real (last 30 days) e o valor acumulado dos ativos de dados da plataforma através de todos os seus usuários.
 
 ---
+
+## 🟢 6. WhatsApp Scout (Busca de Grupos e Multidisparo)
+
+Este módulo permite encontrar comunidades inteiras no seu nicho e abordar os membros de forma individual.
+
+### **Fase 1: Radar de Grupos**
+1. Acesse a aba **WhatsApp Scout** (ícone de balão de mensagem).
+2. No modo **Radar**, digite o nicho (ex: `Donos de Restaurante`) e a cidade.
+3. O sistema varrerá a rede em busca de links de convite (`chat.whatsapp.com`).
+4. Clique em **Entrar** para se juntar à comunidade.
+
+### **Fase 2: Multidisparo (Envio em Massa)**
+1. Dentro do grupo no WhatsApp Web, colete os números dos membros.
+2. No LeadPro, vá para a aba **Multidisparo**.
+3. Cole a lista de números (um por linha) e escreva sua mensagem de abordagem.
+4. Clique em **Iniciar Multidisparo**. 
+5. O sistema abrirá abas individuais de forma cadenciada para você apenas clicar em "Enviar", garantindo segurança contra banimentos.
+
+---
 *Documentação Gerada via Interface Neural Assistente*

@@ -379,6 +379,53 @@ export class DiscoveryService {
     }
 
 
+    /**
+     * BUSCA DE GRUPOS WHATSAPP (MODO SCOUT)
+     * Encontra centenas de links de grupos por nicho e localização.
+     */
+    static async performWhatsAppGroupScan(keyword: string, location: string, tenantId?: string, apiKeys?: any, page: number = 1): Promise<Lead[]> {
+        console.log(`[WhatsApp Scout] Buscando grupos para: ${keyword} (Pág: ${page})`);
+
+        const query = `site:chat.whatsapp.com "${keyword}" ${location}`;
+
+        try {
+            const searchResponse: any = await ApiGatewayService.callApi(
+                'google-search',
+                'search',
+                { q: query, page: page, num: 20 },
+                { tenantId, apiKeys }
+            );
+
+            if (searchResponse && searchResponse.organic) {
+                return searchResponse.organic.map((result: any): Lead => {
+                    // Tenta extrair um nome mais amigável do título
+                    let groupName = result.title;
+                    if (groupName.includes('| WhatsApp')) groupName = groupName.split('| WhatsApp')[0].trim();
+                    if (groupName.includes('WhatsApp Group')) groupName = groupName.split('WhatsApp Group')[0].trim();
+
+                    return {
+                        id: crypto.randomUUID(),
+                        name: groupName,
+                        industry: 'WhatsApp Group',
+                        website: result.link,
+                        phone: '',
+                        location: location,
+                        status: LeadStatus.NEW,
+                        lastUpdated: new Date().toISOString(),
+                        socialLinks: {
+                            whatsapp: result.link
+                        }
+                    } as Lead;
+                });
+            }
+        } catch (error) {
+            console.error('[WhatsApp Scout] Erro na busca:', error);
+        }
+
+        return [];
+    }
+
+
     private static async mockCNPJDiscovery(keyword: string, location: string): Promise<Lead[]> {
         // DESATIVADO: Geração de leads demo removida para produção estrita.
         return [];
