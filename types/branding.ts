@@ -15,13 +15,6 @@ export interface BrandingConfig {
     domain?: string;
     subdomain?: string;
     customScripts?: string;
-    apiKeys?: {
-        gemini?: string;
-        openai?: string;
-        deepseek?: string;
-        serper?: string;
-        maps?: string;
-    };
 }
 
 export const DEFAULT_BRANDING: BrandingConfig = {

@@ -19,12 +19,12 @@ import ActivityHistory from './components/ActivityHistory';
 import NotificationsList from './components/NotificationsList';
 import { DiscoveryService } from './services/discoveryService';
 import { EnrichmentService } from './services/enrichmentService';
+import { SecretService, TenantSecrets } from './services/secretService';
 import { ActivityService } from './services/activityService';
 import { IntegrationService } from './services/IntegrationService';
 import { Lead, LeadStatus } from './types';
 import { useBranding } from './components/BrandingProvider';
 import { supabase } from './lib/supabase';
-import { MOCK_LEADS } from './constants';
 import { Megaphone, Send as SendIcon, CheckCircle, Info, AlertTriangle as AlertIcon, DollarSign as MoneyIcon } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -45,6 +45,7 @@ const App: React.FC = () => {
   const [showSupport, setShowSupport] = useState(false);
   const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
   const [supportForm, setSupportForm] = useState({ subject: '', message: '', category: 'technical' });
+  const [tenantSecrets, setTenantSecrets] = useState<TenantSecrets>({});
 
   // Leads filtrados pela busca
   const filteredLeads = React.useMemo(() => {
@@ -244,46 +245,22 @@ const App: React.FC = () => {
         }
       } else {
         setIsMaster(false);
+        setTenantSecrets({}); // Limpar segredos no logout
+        SecretService.clearCache();
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // SEGURANÇA: Bloqueio de Inspeção e Proteção de Propriedade Intelectual
-  // SEGURANÇA: Bloqueio de Inspeção e Proteção de Propriedade Intelectual
+  // Busca de Segredos após carregamento do Tenant
   useEffect(() => {
-    const handleContextMenu = (e: MouseEvent) => e.preventDefault();
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Bloquear F12
-      if (e.key === 'F12') {
-        e.preventDefault();
-      }
-      // Bloquear Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C (DevTools)
-      if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) {
-        e.preventDefault();
-      }
-      // Bloquear Ctrl+U (Ver código fonte)
-      if (e.ctrlKey && e.key === 'u') {
-        e.preventDefault();
-      }
-      // Bloquear Ctrl+S (Salvar página)
-      if (e.ctrlKey && e.key === 's') {
-        e.preventDefault();
-      }
-    };
-
-    document.addEventListener('contextmenu', handleContextMenu);
-    document.addEventListener('keydown', handleKeyDown);
-
-    console.log('🔒 Proteção de IP Ativada: Sistemas de inspeção desabilitados.');
-
-    return () => {
-      document.removeEventListener('contextmenu', handleContextMenu);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
+    if (userTenantId && userTenantId !== 'default') {
+      SecretService.getTenantSecrets(userTenantId).then(secrets => {
+        if (secrets) setTenantSecrets(secrets);
+      });
+    }
+  }, [userTenantId]);
 
   // Sistema de Bootstrap para Provisionamento Automático de Tenant
   useEffect(() => {
@@ -487,7 +464,7 @@ const App: React.FC = () => {
         console.log(`[AI] Motor de Enriquecimento Ativado: ${lead.name}`);
 
         try {
-          const { insights, details, socialData } = await EnrichmentService.enrichLead(lead, config.apiKeys);
+          const { insights, details, socialData } = await EnrichmentService.enrichLead(lead, tenantSecrets);
 
           await handleEnrichComplete(lead.id, insights, details, socialData);
         } catch (err) {
@@ -616,7 +593,7 @@ const App: React.FC = () => {
       case 'dashboard':
         return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
       case 'discovery':
-        return <LeadDiscovery onResultsFound={handleAddLeads} onStartEnrichment={handleBulkEnrich} />;
+        return <LeadDiscovery onResultsFound={handleAddLeads} onStartEnrichment={handleBulkEnrich} apiKeys={tenantSecrets} />;
       case 'lab':
         return <LeadLab
           leads={filteredLeads}
@@ -639,10 +616,7 @@ const App: React.FC = () => {
       case 'whatsapp':
         return <WhatsAppScout
           tenantId={userTenantId}
-          apiKeys={{
-            serper: config.apiKeys?.serper || '',
-            gemini: config.apiKeys?.gemini || ''
-          }}
+          apiKeys={tenantSecrets}
         />;
       default:
         return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;

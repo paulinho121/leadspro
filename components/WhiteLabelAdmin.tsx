@@ -3,6 +3,7 @@ import { Save, Globe, Palette, Layout, Link2, ShieldCheck, Mail, Database, Loade
 import { useBranding } from './BrandingProvider';
 import { supabase } from '../lib/supabase';
 import { DEFAULT_BRANDING } from '../types/branding';
+import { SecretService } from '../services/secretService';
 
 const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' | 'api' }> = ({ initialTab = 'branding' }) => {
     const { config, refreshBranding } = useBranding();
@@ -216,19 +217,35 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
     };
 
     useEffect(() => {
-        if (config) {
-            setFormData({
-                platformName: config.platformName || '',
-                logoUrl: config.logoUrl || '',
-                faviconUrl: config.faviconUrl || '',
-                primaryColor: config.colors?.primary || '#06b6d4',
-                secondaryColor: config.colors?.secondary || '#3b82f6',
-                backgroundColor: config.colors?.background || '#0f172a',
-                sidebarColor: config.colors?.sidebar || 'rgba(30, 41, 59, 0.7)',
-                customDomain: config.domain || '',
-                subdomain: config.subdomain || '',
-                apiKeys: config.apiKeys || { gemini: '', openai: '', serper: '' }
-            });
+        if (config && config.tenantId !== 'default') {
+            const loadData = async () => {
+                const brandingData = {
+                    platformName: config.platformName || '',
+                    logoUrl: config.logoUrl || '',
+                    faviconUrl: config.faviconUrl || '',
+                    primaryColor: config.colors?.primary || '#06b6d4',
+                    secondaryColor: config.colors?.secondary || '#3b82f6',
+                    backgroundColor: config.colors?.background || '#0f172a',
+                    sidebarColor: config.colors?.sidebar || 'rgba(30, 41, 59, 0.7)',
+                    customDomain: config.domain || '',
+                    subdomain: config.subdomain || '',
+                    apiKeys: { gemini: '', openai: '', serper: '' }
+                };
+
+                // Carregar Segredos separadamente (Segurança Sênior)
+                const secrets = await SecretService.getTenantSecrets(config.tenantId);
+                if (secrets) {
+                    brandingData.apiKeys = {
+                        gemini: secrets.gemini || '',
+                        openai: secrets.openai || '',
+                        serper: secrets.serper || ''
+                    };
+                }
+
+                setFormData(brandingData);
+            };
+
+            loadData();
         }
     }, [config]);
 
@@ -314,15 +331,8 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
 
             console.log('[WhiteLabelAdmin] Executando UPSERT para:', activeTenantId);
 
-            // 4. Garantir que apiKeys seja um objeto limpo antes de salvar
-            const apiKeysToSave = {
-                gemini: formData.apiKeys?.gemini?.trim() || null,
-                serper: formData.apiKeys?.serper?.trim() || null,
-                openai: formData.apiKeys?.openai?.trim() || null,
-                deepseek: formData.apiKeys?.deepseek?.trim() || null
-            };
-
-            const { error } = await supabase
+            // 4. Salvar Branding (Público)
+            const { error: brandingError } = await supabase
                 .from('white_label_configs')
                 .upsert({
                     tenant_id: activeTenantId,
@@ -335,14 +345,28 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                     sidebar_color: formData.sidebarColor,
                     custom_domain: formData.customDomain || null,
                     subdomain: formData.subdomain || null,
-                    api_keys: apiKeysToSave,
                     updated_at: new Date().toISOString()
                 }, { onConflict: 'tenant_id' });
 
-            if (error) {
-                console.error('[WhiteLabelAdmin] Erro RLS/DB:', error);
-                throw error;
+            if (brandingError) throw brandingError;
+
+            // 5. Salvar Segredos (Privado - Tabela Isolada)
+            const { error: keysError } = await supabase
+                .from('tenant_api_keys')
+                .upsert({
+                    tenant_id: activeTenantId,
+                    gemini_key: formData.apiKeys?.gemini?.trim() || null,
+                    serper_key: formData.apiKeys?.serper?.trim() || null,
+                    openai_key: formData.apiKeys?.openai?.trim() || null,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'tenant_id' });
+
+            if (keysError) {
+                console.error('[WhiteLabelAdmin] Erro ao salvar chaves:', keysError);
+                throw new Error('As cores foram salvas, mas houve um erro ao proteger suas chaves de API.');
             }
+
+            SecretService.clearCache(); // Forçar recarregamento
 
             await refreshBranding();
             alert('Configurações salvas com sucesso!');

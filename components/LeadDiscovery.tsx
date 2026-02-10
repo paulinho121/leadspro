@@ -12,9 +12,10 @@ import { supabase } from '../lib/supabase';
 interface LeadDiscoveryProps {
   onResultsFound: (results: any[]) => void;
   onStartEnrichment: () => void;
+  apiKeys?: any;
 }
 
-const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEnrichment }) => {
+const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEnrichment, apiKeys }) => {
   const { config } = useBranding();
   const [mode, setMode] = useState<'MAPS' | 'CNPJ' | 'ENRICH' | 'SHERLOCK'>('MAPS');
   const [filters, setFilters] = useState<SearchFilters>({
@@ -163,15 +164,15 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
             console.log(`[Neural Discovery] Loop de varredura executando com modo: ${searchMode}, keyword: ${cleanKeyword}, local: ${currentSearchLocation}`);
 
             if (searchMode === 'MAPS') {
-              results = await DiscoveryService.performDeepScan(cleanKeyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
+              results = await DiscoveryService.performDeepScan(cleanKeyword, currentSearchLocation, config.tenantId, apiKeys, currentPage);
             } else if (searchMode === 'SHERLOCK') {
               // No modo SHERLOCK, usamos o campo "industry" para passar as palavras-chave de contexto
               const contextKeywords = filters.industry;
               console.log(`[Sherlock] Chamando performCompetitorScan com Alvo: ${cleanKeyword} e Contexto: ${contextKeywords}`);
-              results = await DiscoveryService.performCompetitorScan(cleanKeyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage, contextKeywords);
+              results = await DiscoveryService.performCompetitorScan(cleanKeyword, currentSearchLocation, config.tenantId, apiKeys, currentPage, contextKeywords);
             } else {
               console.log(`[CNPJ] Chamando performCNPJScan com Q: ${cleanKeyword}`);
-              results = await DiscoveryService.performCNPJScan(cleanKeyword, currentSearchLocation, config.tenantId, config.apiKeys, currentPage);
+              results = await DiscoveryService.performCNPJScan(cleanKeyword, currentSearchLocation, config.tenantId, apiKeys, currentPage);
             }
           } finally {
             clearInterval(progressInterval);

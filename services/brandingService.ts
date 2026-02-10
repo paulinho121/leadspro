@@ -73,12 +73,7 @@ export class BrandingService {
                 sidebar: data.sidebar_color,
             },
             domain: data.custom_domain,
-            subdomain: data.subdomain,
-            apiKeys: isSecureFallback ? {} : {
-                gemini: data.api_keys?.gemini || '',
-                openai: data.api_keys?.openai || '',
-                serper: data.api_keys?.serper || ''
-            } // Proteção para fallbacks e normalização de nulos
+            subdomain: data.subdomain
         };
     }
 
