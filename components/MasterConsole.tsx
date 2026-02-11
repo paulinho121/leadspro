@@ -92,82 +92,66 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                 setProfiles(profilesData);
             }
 
-            // 3. Agregações Globais via Supabase Count (Evita limite de 1000)
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            // 3. Agregações Globais via RPC (Estatísticas Reais e Otimizadas)
+            console.log('[Master Console] Buscando métricas reais via RPC...');
+            const { data: rpcStats, error: rpcError } = await supabase.rpc('get_master_console_stats');
 
-            const [
-                { count: totalCount },
-                { count: enrichedCount },
-                { count: recentLeadsCount }
-            ] = await Promise.all([
-                supabase.from('leads').select('*', { count: 'exact', head: true }),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'ENRICHED'),
-                supabase.from('leads').select('*', { count: 'exact', head: true }).gt('created_at', thirtyDaysAgo.toISOString())
-            ]);
+            if (rpcError) {
+                console.error('[Master Console] Falha no RPC, usando fallback:', rpcError);
+                // Fallback manual (limitado a 1000 ou o que o Supabase permitir no select simples)
+                const [{ count: total }, { count: enriched }] = await Promise.all([
+                    supabase.from('leads').select('*', { count: 'exact', head: true }),
+                    supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'ENRICHED')
+                ]);
 
-            const total = totalCount || 0;
-            const enriched = enrichedCount || 0;
-            const recent = recentLeadsCount || 0;
+                setStats(prev => ({
+                    ...prev,
+                    totalLeads: total || 0,
+                    enrichedLeads: enriched || 0,
+                    activeTenants: tenantsData?.filter(t => t.is_active).length || 0,
+                    totalUsers: profilesData?.length || 0
+                }));
+            } else if (rpcStats) {
+                setStats({
+                    totalLeads: rpcStats.totalLeads,
+                    enrichedLeads: rpcStats.enrichedLeads,
+                    leadsLast30Days: rpcStats.leadsLast30Days,
+                    citiesCount: rpcStats.citiesCount,
+                    statesCount: rpcStats.statesCount,
+                    marketValue: rpcStats.marketValue,
+                    activeTenants: rpcStats.activeTenants,
+                    totalUsers: rpcStats.totalUsers,
+                    openTickets: rpcStats.openTickets
+                });
+            }
 
-            // Valor de mercado estimado: R$ 25 por lead enriquecido (Premium AI Data)
-            const marketVal = (enriched * 25) + ((total - enriched) * 5);
-
-            setStats(prev => ({
-                ...prev,
-                totalLeads: total,
-                activeTenants: tenantsData?.filter(t => t.is_active).length || 0,
-                totalUsers: profilesData?.length || 0,
-                enrichedLeads: enriched,
-                marketValue: marketVal,
-                leadsLast30Days: recent
-            }));
-
-            // 4. Buscar Chamados
+            // 4. Buscar Chamados Recentess
             const { data: ticketsData } = await supabase
                 .from('support_tickets')
                 .select('*')
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .limit(50);
 
             if (ticketsData) {
                 setTickets(ticketsData);
-                setStats(prev => ({ ...prev, openTickets: ticketsData.filter(t => t.status === 'open').length }));
             }
 
-            // 5. Calcular leads por tenant (Aumentamos o limite para garantir que pegamos os counts de muitos tenants)
-            // Em cenários de escala maior que 10k leads, o ideal seria um view ou RPC, 
-            // mas para este volume, otimizamos o select para ser mais leve.
-            const { data: leadCounts } = await supabase
+            // 5. Calcular leads por tenant para a lista (Otimizado)
+            // Aqui ainda usamos um select, mas focamos apenas no necessário.
+            // Para escala massiva, o ideal seria uma View ou Colunas calculadas na tabela tenants.
+            const { data: perTenantData } = await supabase
                 .from('leads')
-                .select('tenant_id, status, location')
-                .limit(10000);
+                .select('tenant_id, status')
+                .limit(10000); // Limite de visualização para a tabela
 
-            if (leadCounts) {
+            if (perTenantData) {
                 const leadsPerTenant: Record<string, { total: number, enriched: number }> = {};
-                const cities = new Set<string>();
-                const states = new Set<string>();
-
-                leadCounts.forEach(l => {
+                perTenantData.forEach(l => {
                     const tid = l.tenant_id || 'default';
                     if (!leadsPerTenant[tid]) leadsPerTenant[tid] = { total: 0, enriched: 0 };
                     leadsPerTenant[tid].total++;
                     if (l.status === 'ENRICHED') leadsPerTenant[tid].enriched++;
-
-                    if (l.location) {
-                        const parts = l.location.split(/[,\-]/).map(p => p.trim());
-                        if (parts.length >= 1 && parts[0]) cities.add(parts[0]);
-                        if (parts.length >= 2) {
-                            const uf = parts[parts.length - 1].substring(0, 2).toUpperCase();
-                            if (uf.length === 2) states.add(uf);
-                        }
-                    }
                 });
-
-                setStats(prev => ({
-                    ...prev,
-                    citiesCount: cities.size,
-                    statesCount: states.size
-                }));
 
                 setTenants(prev => prev.map(t => ({
                     ...t,
