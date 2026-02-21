@@ -15,7 +15,7 @@ export class SecretService {
      * Requer que o usuário esteja autenticado e tenha permissão via RLS.
      */
     static async getTenantSecrets(tenantId: string): Promise<TenantSecrets | null> {
-        if (!tenantId || tenantId === 'default') return null;
+        if (!tenantId) return null;
 
         // Verificar cache
         if (this.secretsCache.has(tenantId)) {
@@ -31,15 +31,13 @@ export class SecretService {
 
             if (error) {
                 console.warn('[Security] Erro ao buscar segredos:', error.message);
-                return null;
             }
 
-            if (!data) return null;
-
+            // Fallback para variáveis de ambiente se não houver no banco ou se o tenant for o default
             const secrets = {
-                gemini: data.gemini_key || undefined,
-                openai: data.openai_key || undefined,
-                serper: data.serper_key || undefined
+                gemini: data?.gemini_key || (import.meta as any).env.VITE_GEMINI_API_KEY || undefined,
+                openai: data?.openai_key || (import.meta as any).env.VITE_OPENAI_API_KEY || undefined,
+                serper: data?.serper_key || (import.meta as any).env.VITE_SERPER_API_KEY || undefined
             };
 
             // Armazenar no cache para evitar múltiplas chamadas
@@ -47,7 +45,12 @@ export class SecretService {
             return secrets;
         } catch (err) {
             console.error('[Security] Falha crítica ao recuperar segredos:', err);
-            return null;
+            // Fallback de emergência caso o banco falhe
+            return {
+                gemini: (import.meta as any).env.VITE_GEMINI_API_KEY,
+                serper: (import.meta as any).env.VITE_SERPER_API_KEY,
+                openai: (import.meta as any).env.VITE_OPENAI_API_KEY
+            };
         }
     }
 

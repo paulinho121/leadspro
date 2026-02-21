@@ -33,7 +33,7 @@ const App: React.FC = () => {
   const [isMaster, setIsMaster] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [isSidebarOpen, setSidebarOpen] = useState(true); // true = Expandida por padrão
   const [isEnriching, setIsEnriching] = useState(false);
   const [session, setSession] = useState<any>(null);
   const [showAccountCard, setShowAccountCard] = useState(false);
@@ -260,7 +260,7 @@ const App: React.FC = () => {
         if (secrets) setTenantSecrets(secrets);
       });
     }
-  }, [userTenantId]);
+  }, [userTenantId, activeTab]);
 
   // Sistema de Bootstrap para Provisionamento Automático de Tenant
   useEffect(() => {
@@ -624,7 +624,7 @@ const App: React.FC = () => {
   };
 
   // Verificação de Chaves de API Ausentes
-  const missingKeys = !config.apiKeys?.gemini || !config.apiKeys?.serper;
+  const missingKeys = !tenantSecrets?.serper || (!tenantSecrets?.gemini && !tenantSecrets?.openai);
 
   if (isLoading) {
     return (
@@ -657,9 +657,9 @@ const App: React.FC = () => {
       {/* Sidebar */}
       <aside className={`glass border-r border-white/5 transition-all duration-500 ease-in-out z-50 flex flex-col 
         fixed md:relative inset-y-0 left-0 
-        ${!isSidebarOpen ? 'translate-x-0 w-80' : '-translate-x-full md:translate-x-0 w-80 md:w-24'}`}>
+        ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0 w-72 md:w-20'}`}>
 
-        <div className="p-6 md:p-8 flex items-center gap-4 group cursor-pointer overflow-hidden" onClick={() => setActiveTab('dashboard')}>
+        <div className="p-6 flex items-center gap-4 group cursor-pointer overflow-hidden" onClick={() => setActiveTab('dashboard')}>
           <div className={`bg-primary/20 p-2 rounded-2xl group-hover:scale-110 group-hover:bg-primary/30 transition-all duration-500 shadow-2xl shadow-primary/20 flex items-center justify-center shrink-0 ${config.logoUrl ? 'bg-white/5' : ''}`}>
             {config.logoUrl ? (
               <img
@@ -671,69 +671,93 @@ const App: React.FC = () => {
               <BrainCircuit className="text-primary" size={32} />
             )}
           </div>
-          <div className={`transition-all duration-500 ${!isSidebarOpen || (isSidebarOpen && false) ? 'opacity-100' : 'md:opacity-0 md:hidden'}`}>
-            <h1 className="text-2xl font-black text-white tracking-tighter leading-none">{config.platformName.split(' ')[0]}<span className="text-primary italic">{config.platformName.split(' ')[1] || 'Pro'}</span></h1>
-            <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.3em] mt-1">Matrix v3.2</p>
+          <div className={`transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 md:hidden invisible'}`}>
+            <h1 className="text-xl font-black text-white tracking-tighter leading-none">{config.platformName.split(' ')[0]}<span className="text-primary italic">{config.platformName.split(' ')[1] || 'Pro'}</span></h1>
+            <p className="text-[9px] font-black text-primary/60 uppercase tracking-[0.3em] mt-1">Matrix v3.5</p>
           </div>
         </div>
 
-        <nav className="flex-1 px-4 py-4 md:py-8 space-y-2 overflow-y-auto custom-scrollbar">
-          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('dashboard'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-          <NavItem icon={<Search size={20} />} label="Extração" active={activeTab === 'discovery'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('discovery'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-          <NavItem icon={<Database size={20} />} label="Laboratório" active={activeTab === 'lab'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('lab'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-          <NavItem icon={<Rocket size={20} />} label="Enriquecidos" active={activeTab === 'enriched'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-          <NavItem icon={<MessageSquare size={20} />} label="WhatsApp Scout" active={activeTab === 'whatsapp'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('whatsapp'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+        <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto custom-scrollbar">
+          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('dashboard'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<Search size={20} />} label="Extração" active={activeTab === 'discovery'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('discovery'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<Database size={20} />} label="Laboratório" active={activeTab === 'lab'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('lab'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<Rocket size={20} />} label="Enriquecidos" active={activeTab === 'enriched'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<MessageSquare size={20} />} label="WhatsApp Scout" active={activeTab === 'whatsapp'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('whatsapp'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
 
           <div className="pt-8 pb-4">
-            {(!isSidebarOpen) && <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Sistemas</p>}
+            {isSidebarOpen && <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Sistemas</p>}
             <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mx-4 mb-4"></div>
           </div>
 
-          <NavItem icon={<ShieldCheck size={20} />} label="Parceiro" active={activeTab === 'partner'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<ShieldCheck size={20} />} label="Branding" active={activeTab === 'partner'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
 
           {isMaster && (
             <>
-              <NavItem icon={<Activity size={20} />} label="Histórico" active={activeTab === 'history'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('history'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-              <NavItem icon={<ShieldCheck className="text-primary" size={20} />} label="Master" active={activeTab === 'master'} expanded={!isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('master'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+              <NavItem icon={<Activity size={20} />} label="Histórico" active={activeTab === 'history'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('history'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+              <NavItem icon={<ShieldCheck className="text-primary" size={20} />} label="Master" active={activeTab === 'master'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('master'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
             </>
           )}
         </nav>
 
         <div className="p-4 mt-auto">
           {showAccountCard && (
-            <div className="absolute bottom-28 left-4 right-4 animate-fade-in-up z-[70]">
-              <div className="glass-strong border border-primary/20 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
+            <div
+              className={`fixed z-[100] animate-in fade-in slide-in-from-left-4 duration-300`}
+              style={{
+                bottom: '80px',
+                left: isSidebarOpen ? '296px' : '88px',
+                width: '320px'
+              }}
+            >
+              <div className="glass-strong border border-white/10 rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden group backdrop-blur-3xl">
                 {/* Background Decor */}
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-500"></div>
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-500"></div>
+                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-secondary/5 rounded-full blur-3xl group-hover:bg-secondary/10 transition-all duration-500"></div>
 
-                <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4">Informações da Conta</h3>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.25em]">Sessão do Operador</h3>
+                  <button onClick={() => setShowAccountCard(false)} className="text-slate-500 hover:text-white transition-colors">
+                    <X size={16} />
+                  </button>
+                </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Operador</p>
-                    <p className="text-sm font-bold text-white tracking-tight">{userName}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">ID de Monitoramento</p>
-                    <div className="flex items-center gap-2">
-                      <div className="px-2 py-1 bg-white/5 rounded-lg border border-white/10">
-                        <p className="text-[10px] font-mono text-primary font-bold">
-                          #{userTenantId ? userTenantId.split('-')[0].toUpperCase() : '00000000'}
-                        </p>
-                      </div>
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4 p-4 bg-white/5 rounded-3xl border border-white/5">
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
+                      <span className="text-xl font-black text-primary uppercase">{userName.slice(0, 2)}</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-0.5">Identidade</p>
+                      <p className="text-base font-bold text-white tracking-tight">{userName}</p>
                     </div>
                   </div>
 
-                  <div className="pt-2">
-                    <button
-                      onClick={() => setShowAccountCard(false)}
-                      className="w-full py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-bold text-slate-400 hover:text-white transition-all border border-white/5"
-                    >
-                      Fechar Detalhes
-                    </button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 bg-white/5 rounded-3xl border border-white/5">
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Status</p>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                        <span className="text-[10px] font-black text-green-500 uppercase tracking-wider">Online</span>
+                      </div>
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-3xl border border-white/5">
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">ID Neural</p>
+                      <p className="text-[10px] font-mono text-primary font-bold">
+                        #{userTenantId ? userTenantId.split('-')[0].toUpperCase() : 'DE-ROOT'}
+                      </p>
+                    </div>
                   </div>
+
+                  <button
+                    onClick={() => {
+                      supabase.auth.signOut();
+                      setSession(null);
+                      setIsMaster(false);
+                    }}
+                    className="w-full py-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-red-500/20 flex items-center justify-center gap-2"
+                  >
+                    <LogOut size={14} /> Encerrar Conexão
+                  </button>
                 </div>
               </div>
             </div>
@@ -741,46 +765,44 @@ const App: React.FC = () => {
 
           <div
             onClick={() => setShowAccountCard(!showAccountCard)}
-            className={`glass border border-white/5 rounded-[2rem] p-4 md:p-5 premium-card group cursor-pointer relative overflow-hidden transition-all duration-300 hover:border-primary/30 ${showAccountCard ? 'ring-2 ring-primary/20 border-primary/30' : ''}`}
+            className={`glass-strong border border-white/5 rounded-[2rem] p-4 premium-card group cursor-pointer relative overflow-hidden transition-all duration-300 hover:border-primary/30 ${showAccountCard ? 'ring-2 ring-primary/20 border-primary/30' : ''}`}
           >
-            <div className={`flex items-center gap-4 transition-all duration-500 ${!isSidebarOpen ? 'opacity-100' : 'md:opacity-0'}`}>
+            <div className={`flex items-center gap-4 transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'justify-center'}`}>
               <div className="relative shrink-0">
                 <div
-                  className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-primary p-[2px]"
-                  style={{ boxShadow: `0 0 15px ${config.colors.primary}4d` }} // 30% opacity
+                  className="w-10 h-10 rounded-2xl bg-primary p-[2px]"
+                  style={{ boxShadow: `0 0 15px ${config.colors.primary}4d` }}
                 >
-                  <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center font-bold text-xs md:text-sm text-white uppercase tracking-tighter">
+                  <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center font-bold text-xs text-white uppercase tracking-tighter">
                     {userName.slice(0, 2)}
                   </div>
                 </div>
+                {!isSidebarOpen && unreadCount > 0 && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-950 animate-pulse"></div>
+                )}
               </div>
 
-              <div className="flex-1 overflow-hidden">
-                <p className="text-sm font-black text-white truncate">{userName.split(' ')[0]}</p>
-                <p className="text-[10px] text-slate-400 truncate font-mono">Sessão Segura</p>
-              </div>
+              {isSidebarOpen && (
+                <div className="flex-1 overflow-hidden animate-in fade-in duration-300">
+                  <p className="text-sm font-black text-white truncate">{userName.split(' ')[0]}</p>
+                  <p className="text-[10px] text-slate-400 truncate font-mono">Sessão Ativa</p>
+                </div>
+              )}
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  supabase.auth.signOut();
-                  setSession(null);
-                  setIsMaster(false);
-                }}
-                className="p-2 hover:bg-red-500/10 rounded-xl text-slate-500 hover:text-red-400 transition-colors shrink-0 group/logout"
-                title="Sair"
-              >
-                <LogOut size={18} />
-              </button>
+              {isSidebarOpen && (
+                <div className="p-2 text-slate-500 group-hover:text-primary transition-colors">
+                  <ChevronRight size={14} className={`transition-transform duration-300 ${showAccountCard ? 'rotate-90' : ''}`} />
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         <button
           onClick={() => setSidebarOpen(!isSidebarOpen)}
-          className="absolute -right-3 top-24 bg-primary text-slate-900 p-2 rounded-full shadow-2xl hover:scale-110 transition-all duration-500 z-[60] md:flex"
+          className="absolute -right-3 top-24 bg-primary text-slate-900 p-2 rounded-full shadow-2xl hover:scale-110 transition-all duration-500 z-[60] flex"
         >
-          {!isSidebarOpen ? <X size={14} /> : <Menu size={14} />}
+          {isSidebarOpen ? <X size={14} /> : <Menu size={14} />}
         </button>
       </aside>
 
