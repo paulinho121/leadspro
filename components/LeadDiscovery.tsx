@@ -34,6 +34,8 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
   const [selectedCity, setSelectedCity] = useState('');
   const [loadingCities, setLoadingCities] = useState(false);
 
+  const [neuralError, setNeuralError] = useState<{ type: 'MISSING' | 'INVALID' | 'CREDITS' | 'GENERIC', message: string } | null>(null);
+
   const [stopSignal, setStopSignal] = useState(false);
   const isStoppingRef = useRef(false);
 
@@ -92,6 +94,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
       return;
     }
 
+    setNeuralError(null);
     let searchMode = mode;
     const cleanKeyword = filters.keyword.trim();
 
@@ -114,9 +117,9 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
         setIsScanning(false);
         setHasFinished(true);
         onStartEnrichment(); // Aciona enriquecimento automático
-      } catch (err) {
-        console.error(err);
+      } catch (err: any) {
         setIsScanning(false);
+        handleNeuralError(err);
       }
       return;
     }
@@ -148,7 +151,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
 
           // LOGICA DE VARREDURA MASSIVA ESTADUAL
           if (selectedCity === 'TODO_ESTADO' && cities.length > 0) {
-            // Se varrer estado, percorre cada cidade. 
+            // Se varrer estado, percorre cada cidade.
             // Incrementa a página apenas quando rodar todas as cidades do estado.
             const targetCity = cities[cityIndex];
             currentSearchLocation = `${targetCity}, ${selectedState}`;
@@ -226,14 +229,10 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           // Não zera, apenas volta um pouco para sinalizar novo salto de busca
           setScanProgress(10);
         } catch (err: any) {
-          console.error(err);
-          if (err.message === 'SERPER_API_KEY_MISSING') {
-            alert('Erro: Chave do Serper (Google Search) não configurada. Configure no menu Parceiro ou no arquivo .env.local.');
-            isStoppingRef.current = true;
-            break;
-          }
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          if (isStoppingRef.current) break;
+          console.error("[LeadDiscovery] Erro no loop:", err);
+          handleNeuralError(err);
+          isStoppingRef.current = true;
+          break;
         }
       }
 
@@ -246,6 +245,31 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
     };
 
     runDiscoveryLoop();
+  };
+
+  const handleNeuralError = (err: any) => {
+    const msg = String(err.message || '');
+    if (msg.includes('SERPER_API_KEY_MISSING') || msg.includes('GEMINI_API_KEY_MISSING')) {
+      setNeuralError({
+        type: 'MISSING',
+        message: 'Chaves de API não configuradas. Você precisa configurar o motor de busca e IA no menu de Parceiro para realizar extrações.'
+      });
+    } else if (msg.includes('401') || msg.includes('403') || msg.includes('invalid') || msg.includes('Unauthorized')) {
+      setNeuralError({
+        type: 'INVALID',
+        message: 'Chave de API inválida ou expirada. Verifique se copiou a chave corretamente no painel do provedor.'
+      });
+    } else if (msg.includes('429') || msg.includes('rate limit') || msg.includes('quota')) {
+      setNeuralError({
+        type: 'CREDITS',
+        message: 'Limite de créditos atingido. Adquira mais créditos ou verifique sua conta no provedor da API.'
+      });
+    } else {
+      setNeuralError({
+        type: 'GENERIC',
+        message: 'Ocorreu um erro inesperado na conexão com o motor neural. Tente novamente em alguns segundos.'
+      });
+    }
   };
 
   return (
@@ -508,6 +532,55 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           </div>
         </div>
       </div>
+
+      {/* NEURAL ERROR OVERLAY */}
+      {neuralError && (
+        <div className="absolute inset-0 z-[100] bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-8 animate-in fade-in duration-500">
+          <div className="max-w-md w-full text-center space-y-8 animate-in zoom-in-95 duration-500 scale-100">
+            <div className="relative inline-block">
+              <div className="absolute inset-0 bg-red-500/20 blur-[60px] rounded-full"></div>
+              <img
+                src="/api_error.png"
+                alt="Neural Error"
+                className="w-48 h-48 object-contain mx-auto relative z-10 drop-shadow-[0_0_30px_rgba(239,68,68,0.3)]"
+              />
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-3xl font-black text-white tracking-tighter">
+                {neuralError.type === 'MISSING' ? 'Motor Desativado' :
+                  neuralError.type === 'INVALID' ? 'Falha de Autenticação' :
+                    neuralError.type === 'CREDITS' ? 'Créditos Esgotados' : 'Instabilidade Neural'}
+              </h4>
+              <p className="text-slate-400 text-base leading-relaxed">
+                {neuralError.message}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <button
+                onClick={() => setNeuralError(null)}
+                className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white font-black uppercase tracking-widest transition-all"
+              >
+                ENTENDI
+              </button>
+              <button
+                onClick={() => {
+                  setNeuralError(null);
+                  window.location.hash = '#partner'; // Tenta navegar para o menu de parceiro se existir rota por hash
+                }}
+                className="w-full py-5 bg-primary text-slate-900 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all"
+              >
+                CONFIGURAR AGORA
+              </button>
+            </div>
+
+            <p className="text-[10px] font-mono text-slate-600 uppercase tracking-widest">
+              Error_Code: 0x{neuralError.type}_{Date.now().toString(16).toUpperCase()}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
