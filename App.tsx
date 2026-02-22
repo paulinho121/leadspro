@@ -372,7 +372,7 @@ const App: React.FC = () => {
 
         if (profile?.tenant_id) {
           activeTenantId = profile.tenant_id;
-        } else if (profile?.is_master_admin || session.user.email === 'paulofernandoautomacao@gmail.com') {
+        } else if (profile?.is_master_admin) {
           activeTenantId = '00000000-0000-0000-0000-000000000000';
         }
       } catch (err) {
