@@ -176,32 +176,17 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleAuthCheck = async (currSession: any) => {
       if (currSession?.user) {
-        const userEmail = currSession.user.email?.toLowerCase().trim() || '';
-        const isMasterByEmail = userEmail === 'paulofernandoautomacao@gmail.com';
-
-        // PRIORIDADE 1: E-mail Fixo (Acesso Imediato)
-        if (isMasterByEmail) {
-          setIsMaster(true);
-          console.log('[Auth] Master Admin detectado via E-MAIL:', userEmail);
-        }
-
         // Carregar nome dos metadados de Auth primeiro (mais rápido)
         const metaName = currSession.user.user_metadata?.full_name;
         if (metaName) setUserName(metaName);
 
-        // PRIORIDADE 2: Banco de Dados (Fallback + Carregar Dados)
+        // Banco de Dados (Fonte da Verdade)
         try {
-          // Usamos select('*') temporariamente ou listamos colunas de forma segura para evitar 406 
-          // caso o esquema no banco tenha sido alterado recentemente
-          const { data: profile, error: selectError } = await supabase
+          const { data: profile } = await supabase
             .from('profiles')
             .select('tenant_id, full_name, is_master_admin')
             .eq('id', currSession.user.id)
             .maybeSingle();
-
-          if (selectError) {
-            console.error('[Auth] Erro na consulta de perfil (Pode ser o 406):', selectError);
-          }
 
           if (profile) {
             if (profile.full_name) setUserName(profile.full_name);
@@ -209,15 +194,9 @@ const App: React.FC = () => {
             setUserTenantId(tid);
             console.log('[Auth] Tenant ID carregado:', tid);
 
-            if (profile.is_master_admin || isMasterByEmail) {
+            if (profile.is_master_admin) {
               setIsMaster(true);
-              console.log('[Auth] Master Admin detectado');
-            }
-          } else {
-            console.warn('[Auth] Perfil não encontrado. Usando fallback de Master se e-mail bater.');
-            if (isMasterByEmail) {
-              setIsMaster(true);
-              setUserTenantId('00000000-0000-0000-0000-000000000000');
+              console.log('[Auth] Master Admin detectado via perfil DB');
             }
           }
         } catch (err) {

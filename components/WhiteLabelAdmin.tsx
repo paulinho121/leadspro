@@ -310,8 +310,7 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                 .eq('id', session.user.id)
                 .maybeSingle();
 
-            const isMasterByEmail = session.user.email === 'paulofernandoautomacao@gmail.com';
-            const isMaster = profile?.is_master_admin || isMasterByEmail;
+            const isMaster = !!profile?.is_master_admin;
 
             if (profile?.tenant_id) {
                 activeTenantId = profile.tenant_id;
