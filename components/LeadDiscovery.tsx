@@ -42,11 +42,24 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
       const fetchCities = async () => {
         setLoadingCities(true);
         try {
-          const response = await fetch(`https://brasilapi.com.br/api/ibge/municipios/v1/${selectedState}?providers=dados-abertos-br,gov,wikipedia`);
+          // Usamos a API do IBGE que é a fonte oficial e mais estável
+          const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedState}/municipios`);
+          if (!response.ok) throw new Error('Falha na API IBGE');
+
           const data = await response.json();
-          setCities(data.map((c: any) => c.nome).sort());
+          const sortedCities = data.map((c: any) => c.nome).sort();
+          setCities(sortedCities);
         } catch (error) {
-          console.error('Erro ao buscar cidades:', error);
+          console.error('Erro ao buscar cidades (IBGE), tentando BrasilAPI:', error);
+          try {
+            // Fallback para BrasilAPI
+            const response = await fetch(`https://brasilapi.com.br/api/ibge/municipios/v1/${selectedState}`);
+            const data = await response.json();
+            setCities(data.map((c: any) => c.nome).sort());
+          } catch (err2) {
+            console.error('Todas as APIs de cidades falharam:', err2);
+            setCities([]); // Manter vazio mas permitir busca manual ou estadual
+          }
         } finally {
           setLoadingCities(false);
         }
@@ -400,15 +413,15 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                       <MapPin className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
                     )}
                     <select
-                      disabled={isScanning || !selectedState || loadingCities}
+                      disabled={isScanning || !selectedState}
                       className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
                       value={selectedCity}
                       onChange={(e) => setSelectedCity(e.target.value)}
                     >
                       <option value="" className="bg-slate-900 text-slate-500">
-                        {loadingCities ? 'Carregando cidades...' : !selectedState ? 'Selecione o Estado primeiro' : 'Selecione a Cidade'}
+                        {loadingCities ? 'Carregando cidades...' : !selectedState ? 'Selecione o Estado primeiro' : 'Selecione a Cidade (Opcional)'}
                       </option>
-                      {cities.length > 0 && (
+                      {selectedState && (
                         <option value="TODO_ESTADO" className="bg-emerald-900 text-emerald-400 font-bold">
                           ★ VARRER TODO O ESTADO ({selectedState})
                         </option>
@@ -416,6 +429,11 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                       {cities.map(city => (
                         <option key={city} value={city} className="bg-slate-900 text-white">{city}</option>
                       ))}
+                      {!loadingCities && selectedState && cities.length === 0 && (
+                        <option value="ERRO" disabled className="bg-red-900 text-red-200">
+                          Erro ao carregar lista. Use "Varrer Estado".
+                        </option>
+                      )}
                     </select>
                     <ChevronDown className="absolute right-5 top-5.5 w-5 h-5 text-slate-500 pointer-events-none" />
                   </div>
