@@ -152,24 +152,30 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
           </div>
 
           <div className="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
-            <div className={`absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-20 transition-all duration-700 ${isEnriching ? 'animate-neural opacity-20 scale-110' : 'group-hover:scale-110'}`}>
-              <BrainCircuit size={64} style={{ color: 'var(--color-primary)' }} />
+            <div className={`absolute -right-4 -top-4 p-4 opacity-5 group-hover:opacity-20 transition-all duration-700 ${isEnriching ? 'animate-neural opacity-20 scale-110' : 'group-hover:scale-110'}`}>
+              <BrainCircuit size={80} style={{ color: 'var(--color-primary)' }} />
             </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-70" style={{ color: 'var(--color-primary)' }}>Enriquecidos (IA)</p>
-            <div className="text-3xl font-black text-white">{leads.filter(l => l.status === LeadStatus.ENRICHED).length}</div>
-            <div className="text-[10px] mt-2 font-mono flex items-center gap-1 opacity-60" style={{ color: 'var(--color-primary)' }}>
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-primary)' }}></span> Dados Completos
+            <div className="relative z-10">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-70" style={{ color: 'var(--color-primary)' }}>Enriquecidos (IA)</p>
+              <div className="text-3xl font-black text-white tracking-tighter">{leads.filter(l => l.status === LeadStatus.ENRICHED).length}</div>
+              <div className="text-[10px] mt-2 font-mono flex items-center gap-1.5 opacity-60" style={{ color: 'var(--color-primary)' }}>
+                <div className="w-1.5 h-1.5 rounded-full animate-pulse bg-current"></div>
+                <span className="font-bold tracking-tight">DADOS NEURAIS COMPLETOS</span>
+              </div>
             </div>
           </div>
 
           <div className="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
-            <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-20 transition-all duration-700 group-hover:scale-110">
-              <Cpu size={64} style={{ color: 'var(--color-secondary)' }} />
+            <div className="absolute -right-4 -top-4 p-4 opacity-5 group-hover:opacity-20 transition-all duration-700 group-hover:scale-110">
+              <Cpu size={80} style={{ color: 'var(--color-secondary)' }} />
             </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-70" style={{ color: 'var(--color-secondary)' }}>Novos (Fila)</p>
-            <div className="text-3xl font-black text-white">{leads.filter(l => l.status === LeadStatus.NEW).length}</div>
-            <div className="text-[10px] mt-2 font-mono flex items-center gap-1 opacity-60" style={{ color: 'var(--color-secondary)' }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-secondary)' }}></span> Aguardando Processamento
+            <div className="relative z-10">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-70" style={{ color: 'var(--color-secondary)' }}>Novos na Fila</p>
+              <div className="text-3xl font-black text-white tracking-tighter">{leads.filter(l => l.status === LeadStatus.NEW).length}</div>
+              <div className="text-[10px] mt-2 font-mono flex items-center gap-1.5 opacity-60" style={{ color: 'var(--color-secondary)' }}>
+                <div className="w-1.5 h-1.5 rounded-full bg-current"></div>
+                <span className="font-bold tracking-tight">AGUARDANDO PROCESSAMENTO</span>
+              </div>
             </div>
           </div>
         </div>
@@ -307,60 +313,75 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
           )}
           <div className="overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
             <table className="w-full text-left border-separate border-spacing-0 min-w-[800px]">
-              <thead className="sticky top-0 z-20 bg-[#0f172a]/95 backdrop-blur-md">
-                <tr className="text-slate-500 font-mono text-[9px] uppercase tracking-[0.25em]">
-                  <th className="px-6 lg:px-10 py-5 font-black border-b border-white/5">Razão Social</th>
-                  <th className="px-6 lg:px-10 py-5 font-black border-b border-white/5">Localização</th>
-                  <th className="px-6 lg:px-10 py-5 font-black border-b border-white/5 text-center">Status</th>
-                  <th className="px-6 lg:px-10 py-5 font-black border-b border-white/5 text-center">Atualização</th>
-                  <th className="px-6 lg:px-10 py-5 font-black border-b border-white/5 text-right">Ações</th>
+              <thead className="sticky top-0 z-20 bg-[#0f172a]/80 backdrop-blur-xl">
+                <tr className="text-slate-500 font-black text-[10px] uppercase tracking-[0.25em]">
+                  <th className="px-8 lg:px-12 py-6 border-b border-white/5">Razão Social</th>
+                  <th className="px-8 lg:px-12 py-6 border-b border-white/5">Localização & Nicho</th>
+                  <th className="px-8 lg:px-12 py-6 border-b border-white/5 text-center">Status</th>
+                  <th className="px-8 lg:px-12 py-6 border-b border-white/5 text-center">Data</th>
+                  <th className="px-8 lg:px-12 py-6 border-b border-white/5 text-right">Controles</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
                 {filteredLeads.map((lead) => (
                   <tr key={lead.id} className="group hover:bg-white/[0.02] transition-all relative">
-                    <td className="px-6 lg:px-10 py-5">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-2.5 h-2.5 rounded-full shadow-lg ${lead.status === LeadStatus.ENRICHED ? 'animate-pulse' : ''}`}
-                          style={{
-                            backgroundColor: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
-                            boxShadow: lead.status === LeadStatus.ENRICHED ? '0 0 10px var(--color-primary)' : '0 0 10px var(--color-secondary)',
-                            opacity: lead.status === LeadStatus.ENRICHED ? 1 : 0.6
-                          }}
-                        ></div>
-                        <div>
-                          <div className="font-bold text-white text-sm lg:text-base group-hover:text-primary transition-colors leading-tight">
+                    <td className="px-8 lg:px-12 py-6 align-middle">
+                      <div className="flex items-center gap-5">
+                        <div className="relative shrink-0">
+                          <div
+                            className={`w-3 h-3 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all duration-700 ${lead.status === LeadStatus.ENRICHED ? 'animate-pulse scale-125' : ''}`}
+                            style={{
+                              backgroundColor: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
+                              boxShadow: lead.status === LeadStatus.ENRICHED ? '0 0 15px var(--color-primary)' : '0 0 10px var(--color-secondary)',
+                            }}
+                          ></div>
+                          {lead.status === LeadStatus.ENRICHED && (
+                            <div className="absolute inset-0 w-3 h-3 rounded-full animate-ping bg-primary opacity-30"></div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-white text-sm lg:text-[15px] group-hover:text-primary transition-all duration-300 leading-none mb-1.5 truncate">
                             {lead.details?.tradeName || lead.name}
                           </div>
-                          <div className="text-[10px] text-slate-600 font-mono mt-0.5">ID: {lead.id.slice(0, 8)}</div>
+                          <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2 tracking-wider">
+                            <span className="px-1.5 py-0.5 bg-white/5 rounded border border-white/5 uppercase">UUID</span>
+                            {lead.id.slice(0, 8).toUpperCase()}
+                          </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 lg:px-10 py-5">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-slate-300 font-semibold text-xs">{lead.location}</span>
-                        <div className="text-[10px] text-slate-500">{lead.industry}</div>
+                    <td className="px-8 lg:px-12 py-6 align-middle">
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2 text-slate-200 font-bold text-xs tracking-tight">
+                          <MapPin size={12} className="text-slate-500" />
+                          {lead.location}
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-semibold flex items-center gap-2 uppercase tracking-widest pl-5">
+                          <div className="w-1 h-1 rounded-full bg-slate-700"></div>
+                          {lead.industry}
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 lg:px-10 py-5 text-center">
+                    <td className="px-8 lg:px-12 py-6 text-center align-middle">
                       <span
-                        className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all`}
+                        className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[2px] border-2 transition-all shadow-lg shadow-black/20`}
                         style={{
-                          borderColor: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
-                          backgroundColor: lead.status === LeadStatus.ENRICHED ? 'rgba(var(--color-primary-rgb), 0.1)' : 'rgba(var(--color-secondary-rgb), 0.1)',
+                          borderColor: lead.status === LeadStatus.ENRICHED ? 'rgba(var(--color-primary-rgb), 0.3)' : 'rgba(var(--color-secondary-rgb), 0.3)',
+                          backgroundColor: lead.status === LeadStatus.ENRICHED ? 'rgba(var(--color-primary-rgb), 0.15)' : 'rgba(var(--color-secondary-rgb), 0.15)',
                           color: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
-                          opacity: 0.8
                         }}
                       >
-                        {lead.status === LeadStatus.ENRICHED ? 'COMPLETO' : 'NOVO'}
+                        {lead.status === LeadStatus.ENRICHED ? 'Enriquecido' : 'Novo Lab'}
                       </span>
                     </td>
-                    <td className="px-6 lg:px-10 py-5 text-center text-[10px] text-slate-500 font-mono">
-                      {new Date(lead.lastUpdated).toLocaleDateString()}
+                    <td className="px-8 lg:px-12 py-6 text-center align-middle">
+                      <div className="flex flex-col items-center">
+                        <span className="text-[11px] text-white font-black tracking-tighter">{new Date(lead.lastUpdated).toLocaleDateString()}</span>
+                        <span className="text-[9px] text-slate-600 font-mono uppercase tracking-widest mt-0.5">Capturado</span>
+                      </div>
                     </td>
-                    <td className="px-6 lg:px-10 py-5 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="px-8 lg:px-12 py-6 text-right align-middle">
+                      <div className="flex items-center justify-end gap-3">
                         <button
                           onClick={() => {
                             const clean = lead.phone?.replace(/\D/g, '');
@@ -371,15 +392,17 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                             const message = `Olá! Vi que a ${company} atua em ${city}. Gostaria de conversar.`;
                             window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
                           }}
-                          className="p-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-lg transition-all"
+                          className="p-3 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-2xl transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-90"
+                          title="WhatsApp Scout"
                         >
-                          <MessageCircle size={14} />
+                          <MessageCircle size={15} />
                         </button>
                         <button
                           onClick={() => onEnrich(lead)}
-                          className="p-2 bg-primary/10 text-primary hover:bg-primary hover:text-slate-900 rounded-lg transition-all"
+                          className="p-3 bg-primary/10 text-primary hover:bg-primary hover:text-slate-900 rounded-2xl transition-all shadow-lg hover:shadow-primary/20 active:scale-90"
+                          title="Análise Neural"
                         >
-                          <FlaskConical size={14} />
+                          <FlaskConical size={15} />
                         </button>
                         {onDelete && (
                           <button
@@ -388,9 +411,10 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                                 onDelete(lead.id);
                               }
                             }}
-                            className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all"
+                            className="p-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-2xl transition-all shadow-lg hover:shadow-red-500/20 active:scale-90"
+                            title="Descartar"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={15} />
                           </button>
                         )}
                       </div>
