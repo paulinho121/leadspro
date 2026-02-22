@@ -128,9 +128,39 @@ export class ApiGatewayService {
 
         const prompt = endpoint === 'analyze-website'
             ? `Analise a empresa ${payload.leadName} no nicho ${payload.industry}. Site: ${payload.website}. Gere 3 insights de vendas curtos e diretos em português.`
-            : endpoint === 'custom-prompt'
-                ? payload.prompt
-                : `Dê uma nota de 1 a 100 para este lead baseado no potencial de vendas (B2B): ${JSON.stringify(payload.leadData)}. Retorne apenas o número puro.`;
+            : endpoint === 'analyze-commercial'
+                ? `Você é um analista de inteligência comercial especializado em negócios locais.
+                  Com base nos dados fornecidos abaixo, analise a empresa e retorne um JSON estruturado.
+                  
+                  DADOS DA EMPRESA:
+                  Nome: ${payload.leadName}
+                  Categoria: ${payload.industry}
+                  Cidade/Estado: ${payload.location}
+                  Website: ${payload.website}
+                  Instagram: ${payload.instagram}
+                  Facebook: ${payload.facebook}
+                  Google Maps/Avaliações: ${payload.mapSnippet}
+
+                  CRITÉRIOS:
+                  - O campo "whatsapp_status" deve ser: "Confirmado", "Provável", "Baixa probabilidade" ou "Não identificado". Baseie no telefone ${payload.phone} e CTAs no site.
+                  - O campo "ads_status" deve ser: "Ativo", "Provável" ou "Não detectado". Baseie em pixels de rastreamento ou landing pages.
+                  - O campo "instagram_status" deve ser: "Ativo", "Pouco ativo", "Inativo" ou "Não encontrado".
+                  - O campo "digital_maturity" deve ser: "Muito Alta", "Alta", "Média", "Baixa" ou "Muito Baixa".
+                  - O campo "commercial_score" (0-10).
+                  - O campo "strategic_insight" (max 3 linhas).
+
+                  RETORNE APENAS JSON no formato:
+                  {
+                    "whatsapp_status": "",
+                    "ads_status": "",
+                    "instagram_status": "",
+                    "digital_maturity": "",
+                    "commercial_score": 0,
+                    "strategic_insight": ""
+                  }`
+                : endpoint === 'custom-prompt'
+                    ? payload.prompt
+                    : `Dê uma nota de 1 a 100 para este lead baseado no potencial de vendas (B2B): ${JSON.stringify(payload.leadData)}. Retorne apenas o número puro.`;
 
         const response = await fetch(baseUrl, {
             method: 'POST',
@@ -146,13 +176,24 @@ export class ApiGatewayService {
                 console.warn(`[Neural Gateway] Model ${model} not found in V1, trying -latest in v1beta...`);
                 return this.callGeminiReal(endpoint, payload, apiKey, `${model}-latest`);
             }
-            const errorBody = await response.text(); // Capture response body for diagnosis
+            const errorBody = await response.text();
             throw new Error(`Gemini Error: ${response.statusText} (${response.status}) - ${errorBody}`);
         }
         const data = await response.json();
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
+        // Limpar o texto caso a IA retorne markdown
+        const cleanJson = text.replace(/```json|```/g, '').trim();
+
         if (endpoint === 'score-lead') return { score: parseInt(text.replace(/\D/g, '')) || 70 };
+        if (endpoint === 'analyze-commercial') {
+            try {
+                return JSON.parse(cleanJson);
+            } catch (e) {
+                console.error("[Neural Gateway] Falha ao parsear JSON comercial:", e);
+                return { commercial_score: 5, strategic_insight: "Não foi possível gerar análise detalhada." };
+            }
+        }
         return text;
     }
 

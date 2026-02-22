@@ -20,31 +20,31 @@ export class EnrichmentService {
         // 2. Presença Digital (Busca Real Google)
         const socialData = await this.discoverSocialPresence(lead, apiKeys);
 
-        // 3. Análise Neural via Gemini (Insights de Venda)
+        // 3. Análise Neural via Gemini (Análise Comercial Completa)
         let insights = '';
         let aiScore = 50;
+        let diagnostic: any = {};
 
         try {
-            // Chamada Real para Análise
-            insights = await ApiGatewayService.callApi<string>(
+            // Chamada Real para Análise Comercial Consolidada
+            diagnostic = await ApiGatewayService.callApi<any>(
                 'gemini-1.5-flash',
-                'analyze-website',
+                'analyze-commercial',
                 {
                     leadName: lead.name,
                     industry: lead.industry,
-                    website: lead.website || socialData.instagram
+                    location: lead.location,
+                    website: lead.website || socialData.website,
+                    instagram: socialData.instagram,
+                    facebook: socialData.facebook,
+                    phone: lead.phone,
+                    mapSnippet: lead.socialLinks?.map_link || ''
                 },
-                { apiKeys, ttl: 86400 } // Cache d 24h para economia
-            );
-
-            // Chamada Real para Scoring
-            const scoreResult = await ApiGatewayService.callApi<{ score: number }>(
-                'gemini-1.5-flash',
-                'score-lead',
-                { leadData: { ...lead, ...officialData } },
                 { apiKeys, ttl: 86400 }
             );
-            aiScore = scoreResult.score;
+
+            insights = diagnostic.strategic_insight || '';
+            aiScore = (diagnostic.commercial_score || 5) * 10; // Normalizar para escala 1-100
 
         } catch (error) {
             console.warn('[Enrichment] IA indisponível, usando fallback local.', error);
@@ -56,6 +56,7 @@ export class EnrichmentService {
             ...lead.details,
             ...officialData,
             ...socialData,
+            ...diagnostic, // WhatsApp, Ads, Instagram status e maturidade
             ai_score: aiScore,
             activity: officialData.activity || lead.industry,
             tradeName: officialData.tradeName || lead.name,

@@ -80,6 +80,36 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
                 highlight={score > 70}
               />
             </div>
+
+            {/* AI Diagnostics Indicators */}
+            {details.whatsapp_status && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-white/5">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">WhatsApp</span>
+                  <span className={`text-[10px] font-bold ${details.whatsapp_status === 'Confirmado' ? 'text-emerald-400' : 'text-slate-300'}`}>
+                    {details.whatsapp_status}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Anúncios</span>
+                  <span className={`text-[10px] font-bold ${details.ads_status === 'Ativo' ? 'text-primary' : 'text-slate-300'}`}>
+                    {details.ads_status}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Maturidade</span>
+                  <span className="text-[10px] font-bold text-white">
+                    {details.digital_maturity}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Instagram</span>
+                  <span className={`text-[10px] font-bold ${details.instagram_status === 'Ativo' ? 'text-magenta-400' : 'text-slate-300'}`}>
+                    {details.instagram_status}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
