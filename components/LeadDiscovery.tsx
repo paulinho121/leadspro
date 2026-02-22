@@ -44,23 +44,19 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
       const fetchCities = async () => {
         setLoadingCities(true);
         try {
-          // Usamos a API do IBGE que é a fonte oficial e mais estável
           const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedState}/municipios`);
-          if (!response.ok) throw new Error('Falha na API IBGE');
-
+          if (!response.ok) throw new Error('IBGE_FAILED');
           const data = await response.json();
-          const sortedCities = data.map((c: any) => c.nome).sort();
-          setCities(sortedCities);
+          setCities(data.map((c: any) => c.nome).sort());
         } catch (error) {
-          console.error('Erro ao buscar cidades (IBGE), tentando BrasilAPI:', error);
+          console.error('[Discovery] IBGE falhou, tentando fallback...', error);
           try {
-            // Fallback para BrasilAPI
             const response = await fetch(`https://brasilapi.com.br/api/ibge/municipios/v1/${selectedState}`);
             const data = await response.json();
             setCities(data.map((c: any) => c.nome).sort());
           } catch (err2) {
-            console.error('Todas as APIs de cidades falharam:', err2);
-            setCities([]); // Manter vazio mas permitir busca manual ou estadual
+            console.error('[Discovery] Todas as APIs de cidades falharam.');
+            setCities([]);
           }
         } finally {
           setLoadingCities(false);
@@ -70,14 +66,13 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
     } else {
       setCities([]);
     }
-    setSelectedCity('');
   }, [selectedState]);
 
   useEffect(() => {
-    if (selectedCity && selectedState) {
+    if (selectedState) {
       if (selectedCity === 'TODO_ESTADO') {
         setFilters(prev => ({ ...prev, location: `${selectedState}, Brasil` }));
-      } else {
+      } else if (selectedCity) {
         setFilters(prev => ({ ...prev, location: `${selectedCity}, ${selectedState}` }));
       }
     }
@@ -436,30 +431,49 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                     ) : (
                       <MapPin className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
                     )}
-                    <select
-                      disabled={isScanning || !selectedState}
-                      className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
-                      value={selectedCity}
-                      onChange={(e) => setSelectedCity(e.target.value)}
-                    >
-                      <option value="" className="bg-slate-900 text-slate-500">
-                        {loadingCities ? 'Carregando cidades...' : !selectedState ? 'Selecione o Estado primeiro' : 'Selecione a Cidade (Opcional)'}
-                      </option>
-                      {selectedState && (
-                        <option value="TODO_ESTADO" className="bg-emerald-900 text-emerald-400 font-bold">
-                          ★ VARRER TODO O ESTADO ({selectedState})
-                        </option>
-                      )}
-                      {cities.map(city => (
-                        <option key={city} value={city} className="bg-slate-900 text-white">{city}</option>
-                      ))}
-                      {!loadingCities && selectedState && cities.length === 0 && (
-                        <option value="ERRO" disabled className="bg-red-900 text-red-200">
-                          Erro ao carregar lista. Use "Varrer Estado".
-                        </option>
-                      )}
-                    </select>
-                    <ChevronDown className="absolute right-5 top-5.5 w-5 h-5 text-slate-500 pointer-events-none" />
+
+                    {/* INPUT HÍBRIDO: Se não tem cidades (Erro API), permite digitar. Se tem, funciona como seletor buscador. */}
+                    {cities.length > 0 ? (
+                      <>
+                        <select
+                          disabled={isScanning || !selectedState}
+                          className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-12 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
+                          value={selectedCity}
+                          onChange={(e) => setSelectedCity(e.target.value)}
+                        >
+                          <option value="" className="bg-slate-900 text-slate-500">Selecione a Cidade (Opcional)</option>
+                          <option value="TODO_ESTADO" className="bg-emerald-900 text-emerald-400 font-bold">★ VARRER TODO O ESTADO ({selectedState})</option>
+                          {cities.map(city => (
+                            <option key={city} value={city} className="bg-slate-900 text-white">{city}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-5 top-5.5 w-5 h-5 text-slate-500 pointer-events-none" />
+                      </>
+                    ) : (
+                      <input
+                        type="text"
+                        disabled={isScanning || !selectedState}
+                        placeholder={!selectedState ? "Selecione o Estado primeiro" : "Digite o nome da cidade..."}
+                        className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
+                        value={selectedCity === 'TODO_ESTADO' ? '' : selectedCity}
+                        onChange={(e) => setSelectedCity(e.target.value)}
+                        onBlur={() => {
+                          if (!selectedCity && selectedState) {
+                            // Fallback se o usuário limpar
+                          }
+                        }}
+                      />
+                    )}
+
+                    {/* Dica de Varredura Estadual se a API falhar */}
+                    {!loadingCities && selectedState && cities.length === 0 && (
+                      <div className="absolute -bottom-6 left-2 flex items-center gap-2">
+                        <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span className="text-[8px] font-bold text-emerald-500/80 uppercase tracking-widest leading-none">
+                          APIs Lentas: Você pode digitar a cidade manualmente acima.
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
