@@ -21,11 +21,11 @@ export const DEFAULT_BRANDING: BrandingConfig = {
     id: 'default',
     tenantId: 'default',
     platformName: 'LeadPro',
-    logoUrl: 'https://paulinho121.github.io/leadspro/logo.png',
+    logoUrl: '/logo.png',
     colors: {
-        primary: '#22c55e', // Verde Neon inspirado na nova logo
-        secondary: '#0f172a', // Navy profundo
-        accent: '#4ade80', // Verde claro
+        primary: '#f97316', // Laranja do "Pro" e do ícone de pulso
+        secondary: '#0f172a', // Navy profundo do "Lead"
+        accent: '#fb923c', // Laranja claro para realces
         background: '#020617', // Fundo ultra dark (Deep Navy)
         sidebar: 'rgba(2, 6, 23, 0.95)',
     }
