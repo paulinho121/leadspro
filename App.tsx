@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Search, Database, Settings,
   HelpCircle, LogOut, Bell, Menu, X, Sparkles,
   ChevronRight, BrainCircuit, Activity, Globe, Map as MapIcon,
-  Zap, ShieldCheck, Rocket, AlertTriangle, ArrowRight, Cpu, LifeBuoy, MessageSquare
+  Zap, ShieldCheck, Rocket, AlertTriangle, ArrowRight, Cpu, LifeBuoy, MessageSquare, TrendingUp
 } from 'lucide-react';
 import LeadDiscovery from './components/LeadDiscovery';
 import BentoDashboard from './components/BentoDashboard';
@@ -13,7 +13,9 @@ import EnrichedLeadsView from './components/EnrichedLeadsView';
 import EnrichmentModal from './components/EnrichmentModal';
 import WhiteLabelAdmin from './components/WhiteLabelAdmin';
 import MasterConsole from './components/MasterConsole';
-import WhatsAppScout from './components/WhatsAppScout';
+
+import PipelineView from './components/PipelineView';
+import AutomationView from './components/AutomationView';
 import LoginPage from './components/LoginPage';
 import ActivityHistory from './components/ActivityHistory';
 import NotificationsList from './components/NotificationsList';
@@ -22,6 +24,7 @@ import { EnrichmentService } from './services/enrichmentService';
 import { SecretService, TenantSecrets } from './services/secretService';
 import { ActivityService } from './services/activityService';
 import { IntegrationService } from './services/IntegrationService';
+import { RevenueService } from './services/revenueService';
 import { Lead, LeadStatus } from './types';
 import { useBranding } from './components/BrandingProvider';
 import { supabase } from './lib/supabase';
@@ -29,7 +32,7 @@ import { Megaphone, Send as SendIcon, CheckCircle, Info, AlertTriangle as AlertI
 
 const App: React.FC = () => {
   const { config, isLoading } = useBranding();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched' | 'master' | 'history' | 'whatsapp'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched' | 'master' | 'history' | 'pipeline' | 'automation'>('dashboard');
   const [isMaster, setIsMaster] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -469,6 +472,10 @@ const App: React.FC = () => {
       updatePayload.social_links = socialData;
     }
 
+    if (details.p2c_score) {
+      updatePayload.p2c_score = details.p2c_score;
+    }
+
     const { error } = await supabase
       .from('leads')
       .update(updatePayload)
@@ -567,6 +574,18 @@ const App: React.FC = () => {
     }
   };
 
+  const handleConvertToDeal = async (leadId: string) => {
+    if (!userTenantId) return;
+    try {
+      await RevenueService.createDeal(userTenantId, leadId, undefined, 1000); // 1000 como valor demo
+      alert('Lead convertido em oportunidade com sucesso!');
+      setActiveTab('pipeline');
+    } catch (err) {
+      console.error('Erro ao converter lead:', err);
+      alert('Falha ao converter lead.');
+    }
+  };
+
   const renderActiveSection = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -582,6 +601,7 @@ const App: React.FC = () => {
           onStopEnrichment={() => stopEnrichmentSignal.current = true}
           onDelete={handleDeleteLead}
           onBulkDelete={handleBulkDelete}
+          onConvertToDeal={handleConvertToDeal}
           userTenantId={userTenantId}
         />;
       case 'enriched':
@@ -592,11 +612,11 @@ const App: React.FC = () => {
         return <MasterConsole onlineUsers={onlineUsers} />;
       case 'history':
         return <ActivityHistory tenantId={userTenantId} isMaster={isMaster} />;
-      case 'whatsapp':
-        return <WhatsAppScout
-          tenantId={userTenantId}
-          apiKeys={tenantSecrets}
-        />;
+
+      case 'pipeline':
+        return <PipelineView tenantId={userTenantId} apiKeys={tenantSecrets} />;
+      case 'automation':
+        return <AutomationView tenantId={userTenantId} apiKeys={tenantSecrets} />;
       default:
         return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
     }
@@ -661,7 +681,9 @@ const App: React.FC = () => {
           <NavItem icon={<Search size={20} />} label="Extração" active={activeTab === 'discovery'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('discovery'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
           <NavItem icon={<Database size={20} />} label="Laboratório" active={activeTab === 'lab'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('lab'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
           <NavItem icon={<Rocket size={20} />} label="Enriquecidos" active={activeTab === 'enriched'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-          <NavItem icon={<MessageSquare size={20} />} label="WhatsApp Scout" active={activeTab === 'whatsapp'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('whatsapp'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<TrendingUp size={20} />} label="Pipeline" active={activeTab === 'pipeline'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('pipeline'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<Megaphone size={20} />} label="Automação" active={activeTab === 'automation'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('automation'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+
 
           <div className="pt-8 pb-4">
             {isSidebarOpen && <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Sistemas</p>}

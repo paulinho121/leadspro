@@ -6,6 +6,15 @@ export enum LeadStatus {
   EXPORTED = 'EXPORTED'
 }
 
+export enum DealStage {
+  DISCOVERY = 'discovery',
+  PRESENTATION = 'presentation',
+  PROPOSAL = 'proposal',
+  NEGOTIATION = 'negotiation',
+  WON = 'won',
+  LOST = 'lost'
+}
+
 export interface CompanyDetails {
   cnpj?: string;
   legalName?: string;
@@ -33,6 +42,8 @@ export interface Lead {
   details?: CompanyDetails;
   ai_insights?: string;
   lastUpdated: string;
+  p2c_score?: number; // Probability to Close (0-1)
+  intent_signals?: any[];
   socialLinks?: {
     instagram?: string;
     facebook?: string;
@@ -43,6 +54,29 @@ export interface Lead {
   };
 }
 
+export interface Campaign {
+  id: string;
+  name: string;
+  description?: string;
+  status: 'active' | 'paused' | 'completed';
+  target_niche?: string;
+  target_location?: string;
+  created_at: string;
+}
+
+export interface Deal {
+  id: string;
+  lead_id: string;
+  campaign_id?: string;
+  estimated_value: number;
+  probability_to_close: number;
+  stage: DealStage;
+  status: 'open' | 'won' | 'lost' | 'abandoned';
+  closed_at?: string;
+  created_at: string;
+  lead?: Lead; // Join
+}
+
 export interface SearchFilters {
   keyword: string;
   location: string;
@@ -50,4 +84,19 @@ export interface SearchFilters {
   cnae?: string;
   radius?: number;
   limit?: number;
+}
+
+export interface SequenceStep {
+  delay_days: number;
+  channel: 'whatsapp' | 'email';
+  template?: string;
+}
+
+export interface OutreachSequence {
+  id: string;
+  tenant_id: string;
+  name: string;
+  steps: SequenceStep[];
+  is_active: boolean;
+  created_at: string;
 }

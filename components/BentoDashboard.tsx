@@ -60,10 +60,14 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
   const newLeadsCount = leads.filter(l => l.status === LeadStatus.NEW).length;
   const enrichingCount = leads.filter(l => l.status === LeadStatus.ENRICHING).length;
 
-  // Cálculos Dinâmicos
-  const estimatedBalance = (enrichedCount * 12.5).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const qualityScore = totalLeads > 0 ? (84.2 + (enrichedCount / totalLeads) * 10).toFixed(1) : "0.0";
-  const consumptionPercent = Math.min(100, (totalLeads * 0.5)); // Exemplo de escala de consumo
+  // Cálculos de Receita (Revenue OS)
+  const pipelineValue = leads.reduce((acc, l) => acc + (l.p2c_score ? (l.p2c_score * 1500) : 0), 0); // Ex: 1500 por lead qualificado
+  const estimatedBalance = pipelineValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const qualityScore = totalLeads > 0
+    ? (leads.reduce((acc, l) => acc + (l.p2c_score || 0), 0) / totalLeads * 100).toFixed(1)
+    : "0.0";
+
+  const consumptionPercent = Math.min(100, (totalLeads * 0.5));
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6 max-w-7xl mx-auto animate-fade-in pb-10">
@@ -77,8 +81,8 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
 
         <div className="flex items-center justify-between mb-6 md:mb-8 relative z-10">
           <div>
-            <h3 className="text-xl md:text-2xl font-bold text-white mb-1 tracking-tight">Fluxo de Inteligência</h3>
-            <p className="text-[9px] md:text-xs font-mono tracking-widest uppercase" style={{ color: `${primaryColor}99` }}>Lead_Stream_Realtime</p>
+            <h3 className="text-xl md:text-2xl font-bold text-white mb-1 tracking-tight">Revenue Pulse</h3>
+            <p className="text-[9px] md:text-xs font-mono tracking-widest uppercase" style={{ color: `${primaryColor}99` }}>Pipeline_Realtime_Engine</p>
           </div>
           <div className="flex items-center gap-3">
             <span className="flex h-3 w-3 relative">
@@ -91,7 +95,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
                 style={{ backgroundColor: primaryColor }}
               ></span>
             </span>
-            <span className="text-xs font-bold uppercase tracking-tighter" style={{ color: primaryColor }}>Sistemas Ativos</span>
+            <span className="text-xs font-bold uppercase tracking-tighter" style={{ color: primaryColor }}>Neural Core Active</span>
           </div>
         </div>
 
@@ -132,18 +136,18 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
 
         <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
           <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
-            <Activity className="text-slate-400" size={18} /> Pulso Operacional
+            <Activity className="text-slate-400" size={18} /> Revenue Intelligence
           </h3>
           <div className="flex flex-col items-end shrink-0">
-            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Saldo Estimado</span>
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Pipeline Estimado</span>
             <span className="text-lg font-mono font-bold text-emerald-400">{estimatedBalance}</span>
           </div>
         </div>
 
         <div className="space-y-4 md:space-y-6 relative z-10 flex-1">
-          <StatBox label="Leads Identificados" value={totalLeads.toString()} color="primary" icon={<Users size={18} />} />
-          <StatBox label="Enriquecidos e prontos" value={enrichedCount.toString()} color="emerald-400" icon={<CheckCircle size={18} md:size={20} />} />
-          <StatBox label="Score de Qualidade" value={qualityScore} color="primary" icon={<Sparkles size={18} md:size={20} />} />
+          <StatBox label="Leads no Sistema" value={totalLeads.toString()} color="primary" icon={<Users size={18} />} />
+          <StatBox label="Prontos p/ Fechamento" value={enrichedCount.toString()} color="emerald-400" icon={<CheckCircle size={18} md:size={20} />} />
+          <StatBox label="P2C Médio (Score)" value={qualityScore + "%"} color="primary" icon={<Sparkles size={18} md:size={20} />} />
 
           <div className="pt-4 border-t border-white/5">
             <div className="flex items-center justify-between mb-2">

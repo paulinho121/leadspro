@@ -56,8 +56,9 @@ export class EnrichmentService {
             ...lead.details,
             ...officialData,
             ...socialData,
-            ...diagnostic, // WhatsApp, Ads, Instagram status e maturidade
+            ...diagnostic, // WhatsApp, Ads, Instagram status, maturidade e p2c_score
             ai_score: aiScore,
+            p2c_score: diagnostic.p2c_score || (aiScore / 100), // Fallback baseado no aiScore
             activity: officialData.activity || lead.industry,
             tradeName: officialData.tradeName || lead.name,
             foundedDate: officialData.foundedDate || 'Não identificado',

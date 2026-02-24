@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   FlaskConical, Search, Filter, Mail, Phone, ExternalLink,
   MoreHorizontal, ChevronDown, CheckCircle, Database, Sparkles,
-  Zap, Globe, Download, LayoutList, Trash2, MapPin, MessageCircle, Layers, Loader2, Square, BrainCircuit, Cpu, Atom
+  Zap, Globe, Download, LayoutList, Trash2, MapPin, MessageCircle, Layers, Loader2, Square, BrainCircuit, Cpu, Atom, TrendingUp
 } from 'lucide-react';
 import LiquidBattery from './LiquidBattery';
 import { Lead, LeadStatus } from '../types';
@@ -18,10 +18,11 @@ interface LeadLabProps {
   onStopEnrichment?: () => void;
   onDelete?: (id: string) => void;
   onBulkDelete?: (ids: string[]) => void;
+  onConvertToDeal?: (leadId: string) => void;
   userTenantId?: string;
 }
 
-const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnriching = false, onStopEnrichment, onDelete, onBulkDelete, userTenantId }) => {
+const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnriching = false, onStopEnrichment, onDelete, onBulkDelete, onConvertToDeal, userTenantId }) => {
   const { config } = useBranding();
   const [selectedNiche, setSelectedNiche] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -397,6 +398,15 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                         >
                           <MessageCircle size={15} />
                         </button>
+                        {onConvertToDeal && lead.status === LeadStatus.ENRICHED && (
+                          <button
+                            onClick={() => onConvertToDeal(lead.id)}
+                            className="p-3 bg-violet-500/10 text-violet-500 hover:bg-violet-500 hover:text-white rounded-2xl transition-all shadow-lg hover:shadow-violet-500/20 active:scale-90"
+                            title="Mover para Pipeline"
+                          >
+                            <TrendingUp size={15} />
+                          </button>
+                        )}
                         <button
                           onClick={() => onEnrich(lead)}
                           className="p-3 bg-primary/10 text-primary hover:bg-primary hover:text-slate-900 rounded-2xl transition-all shadow-lg hover:shadow-primary/20 active:scale-90"

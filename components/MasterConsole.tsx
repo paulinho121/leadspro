@@ -684,6 +684,23 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                             Segurança & Auditoria
                         </h4>
                         <div className="space-y-4">
+                            <button
+                                onClick={async () => {
+                                    if (!confirm('Deseja processar manualmente todas as cadências pendentes agora?')) return;
+                                    try {
+                                        const { data, error } = await supabase.functions.invoke('automation-worker');
+                                        if (error) throw error;
+                                        alert(`Processamento concluído: ${data.processed} ações executadas.`);
+                                        fetchData();
+                                    } catch (err: any) {
+                                        alert('Erro ao disparar worker: ' + err.message);
+                                    }
+                                }}
+                                className="w-full py-4 bg-primary/10 hover:bg-primary text-primary hover:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-primary/20 transition-all flex items-center justify-center gap-2 mb-4"
+                            >
+                                <Zap size={14} /> Disparar Automation Worker
+                            </button>
+
                             <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-3">
                                 <ShieldAlert size={14} className="text-amber-500 shrink-0 mt-0.5" />
                                 <div>

@@ -47,20 +47,11 @@ O comprador terá acesso a um painel mestre de administração para criar e gere
 ### 🧬 Deep Intelligence Enrichment
 Uso de IA (Gemini) para validar e enriquecer os dados encontrados. O sistema busca e-mails, redes sociais e analisa o perfil da empresa para sugerir o melhor script de vendas.
 
-### 📱 WhatsApp Scout v1
-Localizador de grupos de WhatsApp por nicho. Permite entrar em comunidades segmentadas e capturar leads altamente qualificados.
-*   *Diferencial:* Sistema de **Multidisparo Semi-Automático** integrado para abordagem inicial sem banimento.
+
 
 ---
 
-## 4. ROADMAP: RADAR DE GRUPOS (Futura Implementação) ☄️
-*A evolução do WhatsApp Scout.*
 
-O **Radar de Grupos 2.0** será uma funcionalidade de monitoramento passivo e ativo:
-*   **Monitoramento em Tempo Real**: Alerta quando novos grupos de um nicho específico são criados ou divulgados na web.
-*   **Extração Neural de Membros**: Técnica de "headless scouting" para extrair contatos de integrantes sem a necessidade de entrada manual no grupo.
-*   **Integração com CRM Externo**: Sincronização automática dos membros extraídos com funis de venda.
-*   **Análise de Sentimento**: IA monitorando o volume de mensagens para identificar os grupos mais "quentes" para publicidade.
 
 ---
 

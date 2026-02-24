@@ -146,8 +146,9 @@ export class ApiGatewayService {
                   - O campo "ads_status" deve ser: "Ativo", "Provável" ou "Não detectado". Baseie em pixels de rastreamento ou landing pages.
                   - O campo "instagram_status" deve ser: "Ativo", "Pouco ativo", "Inativo" ou "Não encontrado".
                   - O campo "digital_maturity" deve ser: "Muito Alta", "Alta", "Média", "Baixa" ou "Muito Baixa".
+                  - O campo "p2c_score": Probabilidade de fechamento (0.00 a 1.00). Analise o fôlego financeiro, nicho e presença digital.
                   - O campo "commercial_score" (0-10).
-                  - O campo "strategic_insight" (max 3 linhas).
+                  - O campo "strategic_insight": Focado em como gerar receita imediata (max 3 linhas).
 
                   RETORNE APENAS JSON no formato:
                   {
@@ -155,6 +156,7 @@ export class ApiGatewayService {
                     "ads_status": "",
                     "instagram_status": "",
                     "digital_maturity": "",
+                    "p2c_score": 0.0,
                     "commercial_score": 0,
                     "strategic_insight": ""
                   }`
