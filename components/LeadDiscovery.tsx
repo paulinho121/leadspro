@@ -15,6 +15,19 @@ interface LeadDiscoveryProps {
   apiKeys?: any;
 }
 
+// Fallback estratégico para varredura se APIs falharem no online
+const CITY_FALLBACK_SEED: Record<string, string[]> = {
+  'CE': ['Fortaleza', 'Caucaia', 'Juazeiro do Norte', 'Maracanaú', 'Sobral', 'Itapipoca', 'Quixadá'],
+  'SP': ['São Paulo', 'Campinas', 'Guarulhos', 'São Bernardo do Campo', 'Santo André', 'Osasco', 'Ribeirão Preto'],
+  'RJ': ['Rio de Janeiro', 'São Gonçalo', 'Duque de Caxias', 'Nova Iguaçu', 'Niterói', 'Belford Roxo'],
+  'MG': ['Belo Horizonte', 'Uberlândia', 'Contagem', 'Juiz de Fora', 'Betim', 'Montes Claros'],
+  'BA': ['Salvador', 'Feira de Santana', 'Vitória da Conquista', 'Camaçari', 'Itabuna', 'Ilhéus'],
+  'PR': ['Curitiba', 'Londrina', 'Maringá', 'Ponta Grossa', 'Cascavel', 'São José dos Pinhais'],
+  'RS': ['Porto Alegre', 'Caxias do Sul', 'Canoas', 'Pelotas', 'Santa Maria', 'Gravataí'],
+  'SC': ['Joinville', 'Florianópolis', 'Blumenau', 'São José', 'Chapecó', 'Itajaí'],
+  'PE': ['Recife', 'Jaboatão dos Guararapes', 'Olinda', 'Caruaru', 'Petrolina', 'Paulista'],
+};
+
 const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEnrichment, apiKeys }) => {
   const { config } = useBranding();
   const [mode, setMode] = useState<'MAPS' | 'CNPJ' | 'ENRICH' | 'SHERLOCK'>('MAPS');
@@ -45,19 +58,24 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
       const fetchCities = async () => {
         setLoadingCities(true);
         try {
-          const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedState}/municipios`);
+          // IBGE pode falhar por CORS na Vercel
+          const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedState}/municipios`, {
+            headers: { 'Accept': 'application/json' }
+          });
           if (!response.ok) throw new Error('IBGE_FAILED');
           const data = await response.json();
           setCities(data.map((c: any) => c.nome).sort());
         } catch (error) {
-          console.error('[Discovery] IBGE falhou, tentando fallback...', error);
+          console.warn('[Discovery] IBGE falhou, tentando BrasilAPI...', error);
           try {
             const response = await fetch(`https://brasilapi.com.br/api/ibge/municipios/v1/${selectedState}`);
+            if (!response.ok) throw new Error('BRASIL_API_FAILED');
             const data = await response.json();
             setCities(data.map((c: any) => c.nome).sort());
           } catch (err2) {
-            console.error('[Discovery] Todas as APIs de cidades falharam.');
-            setCities([]);
+            console.error('[Discovery] API Digital falhou no Online. Ativando Seed de Fallback.');
+            // Se tudo falhar, usamos nosso Seed local para não travar a varredura
+            setCities(CITY_FALLBACK_SEED[selectedState] || []);
           }
         } finally {
           setLoadingCities(false);
@@ -149,16 +167,18 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
 
           // LOGICA DE VARREDURA MASSIVA ESTADUAL
           if (selectedCity === 'TODO_ESTADO' && cities.length > 0) {
-            // Se varrer estado, percorre cada cidade.
-            // Incrementa a página apenas quando rodar todas as cidades do estado.
             const targetCity = cities[cityIndex];
             currentSearchLocation = `${targetCity}, ${selectedState}`;
+            console.log(`[Neural Loop] Ciclo de Varredura: ${targetCity} (${cityIndex + 1}/${cities.length})`);
 
             cityIndex++;
             if (cityIndex >= cities.length) {
               cityIndex = 0;
               currentPage++;
             }
+          } else if (selectedCity === 'TODO_ESTADO' && cities.length === 0) {
+            // Prevenção contra travamento no online se sem cidades
+            currentSearchLocation = `${selectedState}, Brasil`;
           }
 
           if (isStoppingRef.current) break;
