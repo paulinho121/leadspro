@@ -11,9 +11,11 @@ import { SdrService } from '../services/sdrService';
 import { SequenceService } from '../services/sequenceService';
 import { useBranding } from './BrandingProvider';
 import { OutreachSequence } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface PipelineViewProps {
     tenantId: string;
+    userId?: string;
     apiKeys?: any;
 }
 
@@ -26,7 +28,7 @@ const STAGES = [
     { id: DealStage.LOST, label: 'Perdido', color: '#ef4444' }
 ];
 
-const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, apiKeys }) => {
+const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }) => {
     const { config } = useBranding();
     const [deals, setDeals] = useState<Deal[]>([]);
     const [stats, setStats] = useState({ total: 0, weighted: 0 });
@@ -34,16 +36,13 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, apiKeys }) => {
     const [sequences, setSequences] = useState<OutreachSequence[]>([]);
     const [selectedDealForAi, setSelectedDealForAi] = useState<{ deal: Deal, message: string } | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [draggingDealId, setDraggingDealId] = useState<string | null>(null);
 
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const { data } = await (RevenueService as any).supabase
-                .from('deals')
-                .select('*, lead:leads(*)')
-                .eq('tenant_id', tenantId);
-
-            if (data) setDeals(data);
+            const data = await RevenueService.getDeals(tenantId);
+            setDeals(data || []);
 
             const pipelineStats = await RevenueService.getPipelineValue(tenantId);
             setStats(pipelineStats);
@@ -86,6 +85,41 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, apiKeys }) => {
     };
 
     const getDealsByStage = (stage: DealStage) => deals.filter(d => d.stage === stage);
+
+    const handleDragStart = (e: React.DragEvent, dealId: string) => {
+        setDraggingDealId(dealId);
+        e.dataTransfer.setData('dealId', dealId);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleDrop = async (e: React.DragEvent, newStage: DealStage) => {
+        e.preventDefault();
+        const dealId = draggingDealId || e.dataTransfer.getData('dealId');
+        if (!dealId) return;
+
+        // Otimismo visual: atualiza o estado local imediatamente
+        const updatedDeals = deals.map(d =>
+            d.id === dealId ? { ...d, stage: newStage } : d
+        );
+        setDeals(updatedDeals);
+        setDraggingDealId(null);
+
+        try {
+            await RevenueService.updateDealStage(dealId, newStage, userId);
+            // Recarregar estatísticas após mudança de estágio
+            const pipelineStats = await RevenueService.getPipelineValue(tenantId);
+            setStats(pipelineStats);
+        } catch (err) {
+            console.error('Erro ao mover lead:', err);
+            // Reverter se falhar
+            loadData();
+        }
+    };
 
     return (
         <div className="p-6 md:p-10 space-y-8 animate-fade-in overflow-x-auto custom-scrollbar h-full flex flex-col relative">
@@ -136,14 +170,19 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, apiKeys }) => {
                             </div>
                         </div>
 
-                        <div className="flex-1 bg-white/[0.02] border border-white/5 rounded-[2rem] p-4 space-y-4 overflow-y-auto custom-scrollbar">
-                            {getDealsByStage(stage.id).map(deal => (
+                        <div
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, stage.id as DealStage)}
+                            className={`flex-1 bg-white/[0.02] border border-white/5 rounded-[2rem] p-4 space-y-4 overflow-y-auto custom-scrollbar transition-colors ${draggingDealId ? 'ring-2 ring-primary/20 bg-primary/5' : ''}`}
+                        >
+                            {getDealsByStage(stage.id as DealStage).map(deal => (
                                 <DealCard
                                     key={deal.id}
                                     deal={deal}
                                     color={stage.color}
                                     onAiClick={() => handleGenerateAiMessage(deal)}
                                     isGenerating={isGenerating}
+                                    onDragStart={(e) => handleDragStart(e, deal.id)}
                                 />
                             ))}
                         </div>
@@ -223,10 +262,15 @@ interface DealCardProps {
     color: string;
     onAiClick: () => void;
     isGenerating: boolean;
+    onDragStart: (e: React.DragEvent) => void;
 }
 
-const DealCard = ({ deal, color, onAiClick, isGenerating }: DealCardProps) => (
-    <div className="glass-strong p-5 rounded-3xl border border-white/5 hover:border-white/20 transition-all group cursor-pointer premium-card relative overflow-hidden">
+const DealCard = ({ deal, color, onAiClick, isGenerating, onDragStart }: DealCardProps) => (
+    <div
+        draggable
+        onDragStart={onDragStart}
+        className="glass-strong p-5 rounded-3xl border border-white/5 hover:border-white/20 transition-all group cursor-grab active:cursor-grabbing premium-card relative overflow-hidden"
+    >
         {deal.probability_to_close > 0.7 && (
             <div className="absolute top-0 right-0 w-16 h-16 bg-primary/10 blur-2xl -mr-8 -mt-8 pointer-events-none"></div>
         )}

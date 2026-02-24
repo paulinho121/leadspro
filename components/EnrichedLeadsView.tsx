@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
-import { Download, Search, CheckCircle, ExternalLink, Filter, MapPin, Phone, MessageCircle } from 'lucide-react';
+import { Download, Search, CheckCircle, ExternalLink, Filter, MapPin, Phone, MessageCircle, TrendingUp, Rocket } from 'lucide-react';
 import { Lead, LeadStatus } from '../types';
 import { ExportService, CRMFormat } from '../services/exportService';
 
 interface EnrichedLeadsViewProps {
     leads: Lead[];
+    onConvertToDeal?: (leadId: string) => void;
 }
 
 const CRMMenuItem = ({ label, icon, onClick }: { label: string, icon: React.ReactNode, onClick: () => void }) => (
@@ -18,7 +19,7 @@ const CRMMenuItem = ({ label, icon, onClick }: { label: string, icon: React.Reac
     </button>
 );
 
-const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
+const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertToDeal }) => {
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const [selectedIndustry, setSelectedIndustry] = useState<string>('todos');
 
@@ -203,8 +204,19 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
                                         <a href={lead.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-400 text-xs hover:underline flex items-center gap-1">LinkedIn</a>
                                     )}
                                 </div>
-                                <div className="text-[10px] uppercase font-bold text-slate-600">
-                                    Enriquecido em: {new Date(lead.lastUpdated || Date.now()).toLocaleDateString()}
+                                <div className="flex items-center gap-4">
+                                    {onConvertToDeal && (
+                                        <button
+                                            onClick={() => onConvertToDeal(lead.id)}
+                                            className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-slate-900 transition-all flex items-center gap-2 group/btn"
+                                        >
+                                            <Rocket size={14} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+                                            Mover para Pipeline
+                                        </button>
+                                    )}
+                                    <div className="text-[10px] uppercase font-bold text-slate-600">
+                                        Enriquecido em: {new Date(lead.lastUpdated || Date.now()).toLocaleDateString()}
+                                    </div>
                                 </div>
                             </div>
                         </div>

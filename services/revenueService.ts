@@ -18,6 +18,20 @@ export class RevenueService {
     }
 
     /**
+     * Busca todos os Deals do Tenant com dados dos Leads
+     */
+    static async getDeals(tenantId: string): Promise<Deal[]> {
+        const { data, error } = await supabase
+            .from('deals')
+            .select('*, lead:leads(*)')
+            .eq('tenant_id', tenantId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+    }
+
+    /**
      * Cria um novo Deal (Oportunidade) a partir de um Lead
      */
     static async createDeal(tenantId: string, leadId: string, campaignId?: string, estimatedValue: number = 0): Promise<Deal> {
@@ -29,7 +43,8 @@ export class RevenueService {
                 campaign_id: campaignId,
                 estimated_value: estimatedValue,
                 probability_to_close: 0.10, // Default inicial
-                stage: DealStage.DISCOVERY
+                stage: DealStage.DISCOVERY,
+                status: 'open'
             }])
             .select()
             .single();

@@ -605,7 +605,7 @@ const App: React.FC = () => {
           userTenantId={userTenantId}
         />;
       case 'enriched':
-        return <EnrichedLeadsView leads={filteredLeads} />;
+        return <EnrichedLeadsView leads={filteredLeads} onConvertToDeal={handleConvertToDeal} />;
       case 'partner':
         return <WhiteLabelAdmin initialTab="api" />;
       case 'master':
@@ -614,7 +614,7 @@ const App: React.FC = () => {
         return <ActivityHistory tenantId={userTenantId} isMaster={isMaster} />;
 
       case 'pipeline':
-        return <PipelineView tenantId={userTenantId} apiKeys={tenantSecrets} />;
+        return <PipelineView tenantId={userTenantId} userId={session?.user?.id} apiKeys={tenantSecrets} />;
       case 'automation':
         return <AutomationView tenantId={userTenantId} apiKeys={tenantSecrets} />;
       default:
