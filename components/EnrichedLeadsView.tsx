@@ -151,9 +151,15 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertT
                             </div>
 
                             <div className="flex items-start gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center text-emerald-400 font-bold text-lg border border-emerald-500/20">
-                                    {lead.name.substring(0, 2).toUpperCase()}
-                                </div>
+                                {lead.details?.placeImage ? (
+                                    <div className="w-12 h-12 rounded-xl border border-white/10 overflow-hidden shadow-2xl">
+                                        <img src={lead.details.placeImage} alt="Fachada" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                    </div>
+                                ) : (
+                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center text-emerald-400 font-bold text-lg border border-emerald-500/20">
+                                        {lead.name.substring(0, 2).toUpperCase()}
+                                    </div>
+                                )}
                                 <div className="flex-1">
                                     <h3 className="text-lg font-bold text-white mb-1 group-hover:text-emerald-400 transition-colors">
                                         {lead.name}

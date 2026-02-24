@@ -328,16 +328,33 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                   <tr key={lead.id} className="group hover:bg-white/[0.02] transition-all relative">
                     <td className="px-8 lg:px-12 py-6 align-middle">
                       <div className="flex items-center gap-5">
-                        <div className="relative shrink-0">
-                          <div
-                            className={`w-3 h-3 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all duration-700 ${lead.status === LeadStatus.ENRICHED ? 'animate-pulse scale-125' : ''}`}
-                            style={{
-                              backgroundColor: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
-                              boxShadow: lead.status === LeadStatus.ENRICHED ? '0 0 15px var(--color-primary)' : '0 0 10px var(--color-secondary)',
-                            }}
-                          ></div>
-                          {lead.status === LeadStatus.ENRICHED && (
-                            <div className="absolute inset-0 w-3 h-3 rounded-full animate-ping bg-primary opacity-30"></div>
+                        <div className="relative shrink-0 group/thumb">
+                          {lead.details?.placeImage ? (
+                            <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 shadow-2xl relative">
+                              <img
+                                src={lead.details.placeImage}
+                                alt="Fachada"
+                                className="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform duration-500"
+                              />
+                              <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0f172a] shadow-lg`}
+                                style={{
+                                  backgroundColor: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
+                                }}
+                              ></div>
+                            </div>
+                          ) : (
+                            <>
+                              <div
+                                className={`w-3 h-3 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all duration-700 ${lead.status === LeadStatus.ENRICHED ? 'animate-pulse scale-125' : ''}`}
+                                style={{
+                                  backgroundColor: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
+                                  boxShadow: lead.status === LeadStatus.ENRICHED ? '0 0 15px var(--color-primary)' : '0 0 10px var(--color-secondary)',
+                                }}
+                              ></div>
+                              {lead.status === LeadStatus.ENRICHED && (
+                                <div className="absolute inset-0 w-3 h-3 rounded-full animate-ping bg-primary opacity-30"></div>
+                              )}
+                            </>
                           )}
                         </div>
                         <div className="min-w-0">

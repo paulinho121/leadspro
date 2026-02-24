@@ -20,6 +20,12 @@ export class EnrichmentService {
         // 2. Presença Digital (Busca Real Google)
         const socialData = await this.discoverSocialPresence(lead, apiKeys);
 
+        // 2.1. Foto do Local (Fachada)
+        let placeImage = lead.details?.placeImage;
+        if (!placeImage) {
+            placeImage = await this.discoverPlaceImage(lead, apiKeys);
+        }
+
         // 3. Análise Neural via Gemini (Análise Comercial Completa)
         let insights = '';
         let aiScore = 50;
@@ -63,7 +69,8 @@ export class EnrichmentService {
             tradeName: officialData.tradeName || lead.name,
             foundedDate: officialData.foundedDate || 'Não identificado',
             size: officialData.size || 'Pequeno Porte',
-            real_email: socialData.realEmail
+            real_email: socialData.realEmail,
+            placeImage: placeImage
         };
 
         return {
@@ -185,5 +192,26 @@ export class EnrichmentService {
             website: lead.website || '',
             realEmail: ''
         };
+    }
+
+    private static async discoverPlaceImage(lead: Lead, apiKeys?: any): Promise<string | undefined> {
+        try {
+            console.log(`[Neural Image Discovery] Searching facade for: ${lead.name}`);
+            const response: any = await ApiGatewayService.callApi(
+                'maps',
+                'search',
+                { q: `${lead.name} ${lead.location}`, page: 1 },
+                { apiKeys, ttl: 86400 * 30 }
+            );
+
+            if (response && response.places && response.places.length > 0) {
+                // Tenta encontrar o lugar mais relevante que tenha uma imagem
+                const place = response.places[0];
+                return place.thumbnailUrl;
+            }
+        } catch (error) {
+            console.warn('[Image Discovery] Falha ao buscar imagem do local:', error);
+        }
+        return undefined;
     }
 }

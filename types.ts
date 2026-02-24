@@ -28,6 +28,7 @@ export interface CompanyDetails {
   reviews?: number;
   ai_score?: number;
   email?: string; // Email governamental/oficial
+  placeImage?: string;
 }
 
 export interface Lead {

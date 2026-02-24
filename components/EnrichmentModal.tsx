@@ -55,6 +55,22 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
             <div className="p-5 sm:p-6 bg-white/[0.03] rounded-[1.5rem] border border-white/5 space-y-4">
               <div className="flex justify-between items-start gap-4">
                 <div className="max-w-[70%]">
+                  {details.placeImage && (
+                    <div className="mb-4 relative group/facade h-48 lg:h-56 w-full rounded-[1.5rem] overflow-hidden border border-white/5 shadow-2xl">
+                      <img
+                        src={details.placeImage}
+                        alt="Fachada do Local"
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover/facade:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+                      <div className="absolute bottom-4 left-4 flex items-center gap-2">
+                        <div className="p-1.5 bg-primary/20 backdrop-blur-md rounded-lg border border-primary/30">
+                          <MapPin size={12} className="text-primary" />
+                        </div>
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest shadow-sm">Vista da Fachada</span>
+                      </div>
+                    </div>
+                  )}
                   <h3 className="text-xl sm:text-2xl font-black text-white mb-1 tracking-tighter truncate" title={details.tradeName || lead.name}>
                     {details.tradeName || lead.name}
                   </h3>

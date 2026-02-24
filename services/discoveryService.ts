@@ -42,7 +42,8 @@ export class DiscoveryService {
                             address: place.address,
                             tradeName: place.title,
                             rating: place.rating,
-                            reviews: place.ratingCount
+                            reviews: place.ratingCount,
+                            placeImage: place.thumbnailUrl
                         },
                         socialLinks: {
                             map_link: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.title + ' ' + place.address)}`,
