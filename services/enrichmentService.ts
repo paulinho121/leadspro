@@ -3,13 +3,25 @@ import { GeminiService } from './geminiService';
 import { ApiGatewayService } from './apiGatewayService';
 import { DiscoveryService } from './discoveryService';
 import { Lead } from '../types';
+import { BillingService } from './billingService';
 
 export class EnrichmentService {
     /**
      * Enriquece um lead individualmente buscando dados em múltiplas fontes
      */
-    static async enrichLead(lead: Lead, apiKeys?: any): Promise<{ insights: string, details: any, socialData: any, realEmail?: string }> {
+    static async enrichLead(lead: Lead, apiKeys?: any, tenantId?: string): Promise<{ insights: string, details: any, socialData: any, realEmail?: string }> {
         console.log(`[Neural Enrichment] Processing: ${lead.name}`);
+
+        // Enterprise Scaling: Validação de Créditos
+        if (tenantId) {
+            const hasCredits = await BillingService.useCredits(
+                tenantId,
+                10,
+                'gemini',
+                `Neural Enrichment: ${lead.name}`
+            );
+            if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");
+        }
 
         // 1. Dados Governamentais (Se houver CNPJ)
         let officialData: any = {};

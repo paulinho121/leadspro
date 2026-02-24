@@ -33,6 +33,7 @@ export interface CompanyDetails {
 
 export interface Lead {
   id: string;
+  tenant_id?: string;
   name: string;
   website: string;
   phone: string;
@@ -57,6 +58,7 @@ export interface Lead {
 
 export interface Campaign {
   id: string;
+  tenant_id: string;
   name: string;
   description?: string;
   status: 'active' | 'paused' | 'completed';
@@ -67,6 +69,7 @@ export interface Campaign {
 
 export interface Deal {
   id: string;
+  tenant_id: string;
   lead_id: string;
   campaign_id?: string;
   estimated_value: number;

@@ -25,23 +25,33 @@ import { SecretService, TenantSecrets } from './services/secretService';
 import { ActivityService } from './services/activityService';
 import { IntegrationService } from './services/IntegrationService';
 import { RevenueService } from './services/revenueService';
+import { BillingService } from './services/billingService';
+import { QueueService } from './services/queueService';
 import { Lead, LeadStatus } from './types';
+import { useStore } from './store/useStore';
+import { useLeads } from './hooks/useLeads';
+import { useWallet } from './hooks/useWallet';
 import { useBranding } from './components/BrandingProvider';
 import { supabase } from './lib/supabase';
 import { Megaphone, Send as SendIcon, CheckCircle, Info, AlertTriangle as AlertIcon, DollarSign as MoneyIcon } from 'lucide-react';
 
 const App: React.FC = () => {
-  const { config, isLoading } = useBranding();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched' | 'master' | 'history' | 'pipeline' | 'automation'>('dashboard');
+  const { config, isLoading: brandingLoading } = useBranding();
+
+  // Zustand Store
+  const {
+    activeTab, setActiveTab,
+    isSidebarOpen, setSidebarOpen,
+    userTenantId, setUserTenantId,
+    creditBalance
+  } = useStore();
+
   const [isMaster, setIsMaster] = useState(false);
-  const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [isSidebarOpen, setSidebarOpen] = useState(true); // true = Expandida por padrão
   const [isEnriching, setIsEnriching] = useState(false);
   const [session, setSession] = useState<any>(null);
   const [showAccountCard, setShowAccountCard] = useState(false);
   const [userName, setUserName] = useState('Administrador');
-  const [userTenantId, setUserTenantId] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,6 +59,10 @@ const App: React.FC = () => {
   const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
   const [supportForm, setSupportForm] = useState({ subject: '', message: '', category: 'technical' });
   const [tenantSecrets, setTenantSecrets] = useState<TenantSecrets>({});
+
+  // React Query Hooks
+  const { data: leads = [], refetch: refetchLeads, isLoading: leadsLoading } = useLeads(userTenantId, activeTab);
+  const { data: walletBalance } = useWallet(userTenantId);
 
   // Leads filtrados pela busca
   const filteredLeads = React.useMemo(() => {
@@ -123,7 +137,7 @@ const App: React.FC = () => {
         },
         (payload) => {
           console.log('[Realtime] Mudança detectada nos leads:', payload.eventType);
-          fetchLeads();
+          refetchLeads();
         }
       )
       .subscribe();
@@ -270,9 +284,6 @@ const App: React.FC = () => {
         }
 
         console.log('✅ BOOTSTRAP READY');
-        if (config.tenantId !== 'default') {
-          fetchLeads();
-        }
       } catch (err) {
         console.error('[Bootstrap] Erro:', err);
       }
@@ -281,67 +292,6 @@ const App: React.FC = () => {
     bootstrap();
   }, [config.tenantId]);
 
-  const fetchLeads = async () => {
-    // 1. Identificar o Tenant Real do Usuário via Session/Profile
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-
-    const { data: profile } = await supabase.from('profiles').select('tenant_id, is_master_admin').eq('id', session.user.id).single();
-    const userTenantId = profile?.tenant_id;
-    const activeTenantId = userTenantId || (config.tenantId !== 'default' ? config.tenantId : null);
-
-    if (!activeTenantId) {
-      console.warn('[Fetch] Nenhum Tenant ID válido encontrado. Ignorando fetch.');
-      setLeads([]);
-      return;
-    }
-
-    let query = supabase.from('leads').select('*');
-
-    // SEGURANÇA: No modo normal, SEMPRE filtrar pelo Tenant ID real do Perfil do usuário
-    if (activeTab !== 'master') {
-      query = query.eq('tenant_id', activeTenantId);
-    }
-
-    const { data, error } = await query.order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Erro ao buscar leads:', error);
-    } else if (data) {
-      const formattedLeads: Lead[] = data.map(dbLead => ({
-        id: dbLead.id,
-        name: dbLead.name,
-        website: dbLead.website,
-        phone: dbLead.phone,
-        industry: dbLead.industry,
-        location: dbLead.location,
-        status: dbLead.status as LeadStatus,
-        details: dbLead.details,
-        ai_insights: dbLead.ai_insights,
-        socialLinks: dbLead.social_links,
-        lastUpdated: dbLead.updated_at
-      }));
-
-      // AUTO-CLEANUP: Remove duplicatas visuais
-      const seen = new Set();
-      const uniqueLeads = formattedLeads.filter(lead => {
-        const key = lead.name.toLowerCase().trim() + '|' + (lead.location || '').toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-
-      setLeads(uniqueLeads);
-    }
-  };
-
-  // Re-fetch leads when changing tabs to ensure correct isolation/context
-  useEffect(() => {
-    if (activeTab !== 'master') {
-      setLeads([]); // Limpa para evitar vazamento visual antes do novo fetch
-    }
-    fetchLeads();
-  }, [activeTab, config.tenantId]);
 
   const handleAddLeads = async (newLeads: any[]) => {
     // Deduplicação Inteligente: Evita adicionar leads com o mesmo nome que já estão na lista
@@ -413,10 +363,8 @@ const App: React.FC = () => {
 
     if (error) {
       console.error('Erro ao salvar novos leads:', error);
-      const localFormatted = uniqueNewLeads.map(l => ({ ...l, id: Math.random().toString(), status: LeadStatus.NEW }));
-      setLeads(prev => [...localFormatted, ...prev]);
     } else {
-      fetchLeads();
+      refetchLeads();
       setActiveTab('lab');
     }
   };
@@ -430,6 +378,20 @@ const App: React.FC = () => {
     if (targets.length === 0) {
       alert('Nenhum lead novo encontrado para enriquecer neste escopo.');
       return;
+    }
+
+    // Enterprise Logic: Se forem muitos leads, enviar para a fila em background
+    if (targets.length > 5 && userTenantId) {
+      try {
+        await QueueService.submitTask(userTenantId, 'ENRICH_BATCH', {
+          leads_ids: targets.map(l => l.id),
+          total_count: targets.length
+        });
+        alert(`🚀 Lote de ${targets.length} leads enviado para processamento neural em segundo plano. Você será notificado quando terminar.`);
+        return;
+      } catch (err) {
+        console.error('Erro ao enviar para fila:', err);
+      }
     }
 
     setActiveTab('lab');
@@ -446,8 +408,7 @@ const App: React.FC = () => {
         console.log(`[AI] Motor de Enriquecimento Ativado: ${lead.name}`);
 
         try {
-          const { insights, details, socialData } = await EnrichmentService.enrichLead(lead, tenantSecrets);
-
+          const { insights, details, socialData } = await EnrichmentService.enrichLead(lead, tenantSecrets, userTenantId);
           await handleEnrichComplete(lead.id, insights, details, socialData);
         } catch (err) {
           console.error(`Erro ao enriquecer ${lead.name}:`, err);
@@ -492,7 +453,7 @@ const App: React.FC = () => {
           lead_name: leads.find(l => l.id === id)?.name
         });
       }
-      fetchLeads();
+      refetchLeads();
     }
   };
 
@@ -528,9 +489,6 @@ const App: React.FC = () => {
   };
 
   const handleDeleteLead = async (leadId: string) => {
-    // Optimistic Update
-    setLeads(prev => prev.filter(l => l.id !== leadId));
-
     try {
       const { error } = await supabase
         .from('leads')
@@ -546,15 +504,12 @@ const App: React.FC = () => {
 
     } catch (err) {
       console.error('Erro ao excluir lead:', err);
-      fetchLeads(); // Revert on error
+      refetchLeads(); // Revert on error
       alert('Erro ao excluir lead. Tente novamente.');
     }
   };
 
   const handleBulkDelete = async (leadIds: string[]) => {
-    // Optimistic Update
-    setLeads(prev => prev.filter(l => !leadIds.includes(l.id)));
-
     try {
       const { error } = await supabase
         .from('leads')
@@ -569,7 +524,7 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error('Erro na exclusão em massa:', err);
-      fetchLeads(); // Revert
+      refetchLeads(); // Revert
       alert('Erro ao excluir leads.');
     }
   };
@@ -625,7 +580,7 @@ const App: React.FC = () => {
   // Verificação de Chaves de API Ausentes
   const missingKeys = !tenantSecrets?.serper || (!tenantSecrets?.gemini && !tenantSecrets?.openai);
 
-  if (isLoading) {
+  if (brandingLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-6">
@@ -855,9 +810,21 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 md:gap-6">
+            {/* Neural Wallet Status */}
+            <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-primary/10 rounded-2xl border border-primary/20 transition-all hover:bg-primary/20 group/wallet" title="Créditos Neurais Disponíveis">
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-black text-primary uppercase tracking-tighter leading-none">Matrix Balance</span>
+                <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest mt-1">Créditos Ativos</span>
+              </div>
+              <div className="bg-primary/10 px-3 py-1 rounded-lg border border-primary/20 flex items-center gap-2">
+                <MoneyIcon size={14} className="text-primary animate-pulse" />
+                <span className="text-sm font-black text-white">{creditBalance.toLocaleString()}</span>
+              </div>
+            </div>
+
             <div
               onClick={() => {
-                fetchLeads();
+                refetchLeads();
                 if (session?.user) {
                   ActivityService.log(userTenantId, session.user.id, 'SYSTEM_SYNC', 'Sincronização manual de leads executada.');
                 }
@@ -987,14 +954,16 @@ const App: React.FC = () => {
       </main>
 
       {/* Overlays */}
-      {selectedLead && (
-        <EnrichmentModal
-          lead={selectedLead}
-          onClose={() => setSelectedLead(null)}
-          onEnrichComplete={handleEnrichComplete}
-        />
-      )}
-    </div>
+      {
+        selectedLead && (
+          <EnrichmentModal
+            lead={selectedLead}
+            onClose={() => setSelectedLead(null)}
+            onEnrichComplete={handleEnrichComplete}
+          />
+        )
+      }
+    </div >
   );
 };
 

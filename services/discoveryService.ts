@@ -1,6 +1,7 @@
 
 import { ApiGatewayService } from './apiGatewayService';
 import { Lead, LeadStatus } from '../types';
+import { BillingService } from './billingService';
 
 export class DiscoveryService {
     private static businessAdjectives = ['Inovação', 'Premium', 'Soluções', 'Group', 'Matrix', 'Advanced', 'Global', 'Digital', 'Elite', 'Prime', 'Smart', 'Nexus'];
@@ -13,6 +14,17 @@ export class DiscoveryService {
         console.log(`[Neural Discovery] Calling Live Engine for: ${keyword} "${location}" (Pág: ${page})`);
 
         try {
+            // Enterprise Scaling: Validação de Créditos
+            if (tenantId) {
+                const hasCredits = await BillingService.useCredits(
+                    tenantId,
+                    5,
+                    'serper',
+                    `Neural Discovery: ${keyword} em ${location} (Pág: ${page})`
+                );
+                if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");
+            }
+
             const response: any = await ApiGatewayService.callApi(
                 'maps',
                 'search',
@@ -111,6 +123,17 @@ export class DiscoveryService {
                 { q: query, page: page, num: 20 },
                 { tenantId, apiKeys }
             );
+
+            // Enterprise Scaling: Validação de Créditos para CNPJ Massivo
+            if (tenantId) {
+                const hasCredits = await BillingService.useCredits(
+                    tenantId,
+                    10,
+                    'serper',
+                    `CNPJ Mass Scan: ${keyword} em ${location} (Pág: ${page})`
+                );
+                if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");
+            }
 
             // Fallback: Se não encontrar nada nos diretórios específicos, tentamos uma busca aberta
             if (!searchResponse || !searchResponse.organic || searchResponse.organic.length === 0) {
@@ -314,6 +337,17 @@ export class DiscoveryService {
                 { q: finalQuery, page: page, num: 15 },
                 { tenantId, apiKeys }
             );
+
+            // Enterprise Scaling: Validação de Créditos para Sherlock
+            if (tenantId) {
+                const hasCredits = await BillingService.useCredits(
+                    tenantId,
+                    15,
+                    'serper',
+                    `Sherlock Hunter: ${competitorInput} em ${location}`
+                );
+                if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");
+            }
 
             if (searchResponse && searchResponse.organic) {
                 return searchResponse.organic.map((result: any): Lead | null => {

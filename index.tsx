@@ -5,6 +5,16 @@ import App from './App';
 
 import { BrandingProvider } from './components/BrandingProvider';
 import { Analytics } from "@vercel/analytics/react";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutos
+      retry: 1,
+    },
+  },
+});
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -14,9 +24,11 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <BrandingProvider>
-      <App />
-      <Analytics />
-    </BrandingProvider>
+    <QueryClientProvider client={queryClient}>
+      <BrandingProvider>
+        <App />
+        <Analytics />
+      </BrandingProvider>
+    </QueryClientProvider>
   </React.StrictMode>
 );

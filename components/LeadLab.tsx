@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   FlaskConical, Search, Filter, Mail, Phone, ExternalLink,
   MoreHorizontal, ChevronDown, CheckCircle, Database, Sparkles,
   Zap, Globe, Download, LayoutList, Trash2, MapPin, MessageCircle, Layers, Loader2, Square, BrainCircuit, Cpu, Atom, TrendingUp
 } from 'lucide-react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import LiquidBattery from './LiquidBattery';
 import { Lead, LeadStatus } from '../types';
 import { ActivityService } from '../services/activityService';
@@ -22,6 +23,136 @@ interface LeadLabProps {
   userTenantId?: string;
 }
 
+const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToDeal }: {
+  lead: Lead;
+  virtualRow: any;
+  onEnrich: any;
+  onDelete: any;
+  onConvertToDeal: any;
+}) => {
+  return (
+    <tr
+      className="group hover:bg-white/[0.02] transition-all absolute top-0 left-0 w-full"
+      style={{
+        height: `${virtualRow.size}px`,
+        transform: `translateY(${virtualRow.start}px)`,
+      }}
+    >
+      <td className="px-8 lg:px-12 py-4 align-middle w-1/3">
+        <div className="flex items-center gap-5">
+          <div className="relative shrink-0 group/thumb">
+            {lead.details?.placeImage ? (
+              <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 shadow-2xl relative">
+                <img
+                  src={lead.details.placeImage}
+                  alt="Fachada"
+                  className="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform duration-500"
+                />
+                <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0f172a] shadow-lg`}
+                  style={{
+                    backgroundColor: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
+                  }}
+                ></div>
+              </div>
+            ) : (
+              <div
+                className={`w-3 h-3 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all duration-700 ${lead.status === LeadStatus.ENRICHED ? 'animate-pulse scale-125' : ''}`}
+                style={{
+                  backgroundColor: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
+                  boxShadow: lead.status === LeadStatus.ENRICHED ? '0 0 15px var(--color-primary)' : '0 0 10px var(--color-secondary)',
+                }}
+              ></div>
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="font-bold text-white text-sm lg:text-[15px] group-hover:text-primary transition-all duration-300 leading-none mb-1.5 truncate">
+              {lead.details?.tradeName || lead.name}
+            </div>
+            <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2 tracking-wider">
+              <span className="px-1.5 py-0.5 bg-white/5 rounded border border-white/5 uppercase">UUID</span>
+              {lead.id.slice(0, 8).toUpperCase()}
+            </div>
+          </div>
+        </div>
+      </td>
+      <td className="px-8 lg:px-12 py-4 align-middle w-1/4">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 text-slate-200 font-bold text-xs tracking-tight truncate max-w-[200px]">
+            <MapPin size={12} className="text-slate-500" />
+            {lead.location}
+          </div>
+          <div className="text-[10px] text-slate-500 font-semibold flex items-center gap-2 uppercase tracking-widest pl-5 truncate">
+            {lead.industry}
+          </div>
+        </div>
+      </td>
+      <td className="px-8 lg:px-12 py-4 text-center align-middle w-1/6">
+        <span
+          className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[2px] border-2 transition-all shadow-lg shadow-black/20`}
+          style={{
+            borderColor: lead.status === LeadStatus.ENRICHED ? 'rgba(var(--color-primary-rgb), 0.3)' : 'rgba(var(--color-secondary-rgb), 0.3)',
+            backgroundColor: lead.status === LeadStatus.ENRICHED ? 'rgba(var(--color-primary-rgb), 0.15)' : 'rgba(var(--color-secondary-rgb), 0.15)',
+            color: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
+          }}
+        >
+          {lead.status === LeadStatus.ENRICHED ? 'Enriquecido' : 'Novo Lab'}
+        </span>
+      </td>
+      <td className="px-8 lg:px-12 py-4 text-center align-middle w-1/6">
+        <div className="flex flex-col items-center">
+          <span className="text-[11px] text-white font-black tracking-tighter">{new Date(lead.lastUpdated).toLocaleDateString()}</span>
+          <span className="text-[9px] text-slate-600 font-mono uppercase tracking-widest mt-0.5">Capturado</span>
+        </div>
+      </td>
+      <td className="px-8 lg:px-12 py-4 text-right align-middle w-1/6">
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={() => {
+              const clean = lead.phone?.replace(/\D/g, '');
+              if (!clean) return;
+              const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
+              const company = lead.details?.tradeName || lead.name;
+              const city = lead.location.split(',')[0];
+              const message = `Olá! Vi que a ${company} atua em ${city}. Gostaria de conversar.`;
+              window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
+            }}
+            className="p-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl transition-all active:scale-95"
+            title="WhatsApp Scout"
+          >
+            <MessageCircle size={14} />
+          </button>
+
+          <button
+            onClick={() => onEnrich(lead)}
+            className="p-2 bg-primary/10 text-primary hover:bg-primary hover:text-slate-900 rounded-xl transition-all active:scale-95"
+            title="Análise Neural"
+          >
+            <FlaskConical size={14} />
+          </button>
+
+          {lead.status === LeadStatus.ENRICHED && onConvertToDeal && (
+            <button
+              onClick={() => onConvertToDeal(lead.id)}
+              className="p-2 bg-violet-500/10 text-violet-500 hover:bg-violet-500 hover:text-white rounded-xl transition-all active:scale-95"
+              title="Mover para Pipeline"
+            >
+              <TrendingUp size={14} />
+            </button>
+          )}
+
+          <button
+            onClick={() => onDelete(lead.id)}
+            className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all active:scale-95"
+            title="Descartar"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+});
+
 const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnriching = false, onStopEnrichment, onDelete, onBulkDelete, onConvertToDeal, userTenantId }) => {
   const { config } = useBranding();
   const [selectedNiche, setSelectedNiche] = useState<string | null>(null);
@@ -30,11 +161,20 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
   const [isEnrichMenuOpen, setIsEnrichMenuOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  const filteredLeads = leads.filter(l => {
+  const filteredLeads = useMemo(() => leads.filter(l => {
     const matchesStatus = filterStatus === 'ALL' || l.status === filterStatus;
     const matchesNiche = !selectedNiche || l.industry === selectedNiche;
     const matchesLocation = !selectedLocation || (l.location && l.location.includes(selectedLocation));
     return matchesStatus && matchesNiche && matchesLocation;
+  }), [leads, filterStatus, selectedNiche, selectedLocation]);
+
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: filteredLeads.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 90,
+    overscan: 10,
   });
 
   return (
@@ -312,9 +452,12 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
           {isEnriching && (
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-scan z-30"></div>
           )}
-          <div className="overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
+          <div
+            ref={parentRef}
+            className="overflow-x-auto overflow-y-auto custom-scrollbar flex-1 relative"
+          >
             <table className="w-full text-left border-separate border-spacing-0 min-w-[800px]">
-              <thead className="sticky top-0 z-20 bg-[#0f172a]/80 backdrop-blur-xl">
+              <thead className="sticky top-0 z-20 bg-[#0f172a]/95 backdrop-blur-xl">
                 <tr className="text-slate-500 font-black text-[10px] uppercase tracking-[0.25em]">
                   <th className="px-8 lg:px-12 py-6 border-b border-white/5">Razão Social</th>
                   <th className="px-8 lg:px-12 py-6 border-b border-white/5">Localização & Nicho</th>
@@ -323,131 +466,26 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                   <th className="px-8 lg:px-12 py-6 border-b border-white/5 text-right">Controles</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.04]">
-                {filteredLeads.map((lead) => (
-                  <tr key={lead.id} className="group hover:bg-white/[0.02] transition-all relative">
-                    <td className="px-8 lg:px-12 py-6 align-middle">
-                      <div className="flex items-center gap-5">
-                        <div className="relative shrink-0 group/thumb">
-                          {lead.details?.placeImage ? (
-                            <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 shadow-2xl relative">
-                              <img
-                                src={lead.details.placeImage}
-                                alt="Fachada"
-                                className="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform duration-500"
-                              />
-                              <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0f172a] shadow-lg`}
-                                style={{
-                                  backgroundColor: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
-                                }}
-                              ></div>
-                            </div>
-                          ) : (
-                            <>
-                              <div
-                                className={`w-3 h-3 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all duration-700 ${lead.status === LeadStatus.ENRICHED ? 'animate-pulse scale-125' : ''}`}
-                                style={{
-                                  backgroundColor: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
-                                  boxShadow: lead.status === LeadStatus.ENRICHED ? '0 0 15px var(--color-primary)' : '0 0 10px var(--color-secondary)',
-                                }}
-                              ></div>
-                              {lead.status === LeadStatus.ENRICHED && (
-                                <div className="absolute inset-0 w-3 h-3 rounded-full animate-ping bg-primary opacity-30"></div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-bold text-white text-sm lg:text-[15px] group-hover:text-primary transition-all duration-300 leading-none mb-1.5 truncate">
-                            {lead.details?.tradeName || lead.name}
-                          </div>
-                          <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2 tracking-wider">
-                            <span className="px-1.5 py-0.5 bg-white/5 rounded border border-white/5 uppercase">UUID</span>
-                            {lead.id.slice(0, 8).toUpperCase()}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 lg:px-12 py-6 align-middle">
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-2 text-slate-200 font-bold text-xs tracking-tight">
-                          <MapPin size={12} className="text-slate-500" />
-                          {lead.location}
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-semibold flex items-center gap-2 uppercase tracking-widest pl-5">
-                          <div className="w-1 h-1 rounded-full bg-slate-700"></div>
-                          {lead.industry}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 lg:px-12 py-6 text-center align-middle">
-                      <span
-                        className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[2px] border-2 transition-all shadow-lg shadow-black/20`}
-                        style={{
-                          borderColor: lead.status === LeadStatus.ENRICHED ? 'rgba(var(--color-primary-rgb), 0.3)' : 'rgba(var(--color-secondary-rgb), 0.3)',
-                          backgroundColor: lead.status === LeadStatus.ENRICHED ? 'rgba(var(--color-primary-rgb), 0.15)' : 'rgba(var(--color-secondary-rgb), 0.15)',
-                          color: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : 'var(--color-secondary)',
-                        }}
-                      >
-                        {lead.status === LeadStatus.ENRICHED ? 'Enriquecido' : 'Novo Lab'}
-                      </span>
-                    </td>
-                    <td className="px-8 lg:px-12 py-6 text-center align-middle">
-                      <div className="flex flex-col items-center">
-                        <span className="text-[11px] text-white font-black tracking-tighter">{new Date(lead.lastUpdated).toLocaleDateString()}</span>
-                        <span className="text-[9px] text-slate-600 font-mono uppercase tracking-widest mt-0.5">Capturado</span>
-                      </div>
-                    </td>
-                    <td className="px-8 lg:px-12 py-6 text-right align-middle">
-                      <div className="flex items-center justify-end gap-3">
-                        <button
-                          onClick={() => {
-                            const clean = lead.phone?.replace(/\D/g, '');
-                            if (!clean) return;
-                            const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
-                            const company = lead.details?.tradeName || lead.name;
-                            const city = lead.location.split(',')[0];
-                            const message = `Olá! Vi que a ${company} atua em ${city}. Gostaria de conversar.`;
-                            window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
-                          }}
-                          className="p-3 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-2xl transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-90"
-                          title="WhatsApp Scout"
-                        >
-                          <MessageCircle size={15} />
-                        </button>
-                        {onConvertToDeal && lead.status === LeadStatus.ENRICHED && (
-                          <button
-                            onClick={() => onConvertToDeal(lead.id)}
-                            className="p-3 bg-violet-500/10 text-violet-500 hover:bg-violet-500 hover:text-white rounded-2xl transition-all shadow-lg hover:shadow-violet-500/20 active:scale-90"
-                            title="Mover para Pipeline"
-                          >
-                            <TrendingUp size={15} />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => onEnrich(lead)}
-                          className="p-3 bg-primary/10 text-primary hover:bg-primary hover:text-slate-900 rounded-2xl transition-all shadow-lg hover:shadow-primary/20 active:scale-90"
-                          title="Análise Neural"
-                        >
-                          <FlaskConical size={15} />
-                        </button>
-                        {onDelete && (
-                          <button
-                            onClick={() => {
-                              if (window.confirm('Tem certeza que deseja excluir este lead?')) {
-                                onDelete(lead.id);
-                              }
-                            }}
-                            className="p-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-2xl transition-all shadow-lg hover:shadow-red-500/20 active:scale-90"
-                            title="Descartar"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+              <tbody
+                className="relative"
+                style={{
+                  height: `${rowVirtualizer.getTotalSize()}px`,
+                }}
+              >
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const lead = filteredLeads[virtualRow.index];
+                  if (!lead) return null;
+                  return (
+                    <LeadRow
+                      key={lead.id}
+                      lead={lead}
+                      virtualRow={virtualRow}
+                      onEnrich={onEnrich}
+                      onDelete={onDelete}
+                      onConvertToDeal={onConvertToDeal}
+                    />
+                  );
+                })}
               </tbody>
             </table>
           </div>
