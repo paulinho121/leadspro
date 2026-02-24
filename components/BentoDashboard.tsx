@@ -70,7 +70,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
   const consumptionPercent = Math.min(100, (totalLeads * 0.5));
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6 max-w-7xl mx-auto animate-fade-in pb-10">
+    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6 max-w-7xl mx-auto animate-fade-in pb-20 md:pb-10">
 
       {/* 1. Main Performance - Fluxo de Leads */}
       <div className="col-span-1 md:col-span-4 lg:col-span-4 glass rounded-[2rem] p-6 md:p-8 premium-card relative overflow-hidden">
@@ -99,7 +99,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
           </div>
         </div>
 
-        <div className="h-[240px] w-full mt-4">
+        <div className="h-[180px] md:h-[240px] w-full mt-4">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
               <defs>
@@ -203,35 +203,35 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
       </div>
 
       {/* 4 & 5. Vertical Stack for Map and Quick Action */}
-      <div className="col-span-1 md:col-span-2 lg:col-span-2 flex flex-col gap-6">
-        <div className="flex gap-6 flex-1">
+      <div className="col-span-1 md:col-span-2 lg:col-span-2 flex flex-col gap-4 md:gap-6">
+        <div className="grid grid-cols-2 gap-4 md:gap-6 flex-1">
           {/* Geographic Pulse */}
           <div
             onClick={() => onNavigate('discovery')}
-            className="flex-1 glass rounded-[2rem] p-8 flex flex-col premium-card group cursor-pointer border-white/5 hover:border-primary/30"
+            className="glass rounded-[2rem] p-6 md:p-8 flex flex-col premium-card group cursor-pointer border-white/5 hover:border-primary/30"
           >
-            <div className="bg-primary/10 w-12 h-12 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform mx-auto">
-              <MapIcon size={24} />
+            <div className="bg-primary/10 w-10 md:w-12 h-10 md:h-12 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform mx-auto">
+              <MapIcon size={20} />
             </div>
             <div className="mt-auto text-center">
-              <h4 className="text-white font-bold mb-1">Mapa Térmico</h4>
-              <p className="text-slate-400 text-[10px] leading-tight mx-auto max-w-[120px]">Concentração máxima em SP e Curitiba.</p>
+              <h4 className="text-white text-xs md:text-sm font-bold mb-1">Mapa</h4>
+              <p className="hidden md:block text-slate-400 text-[10px] leading-tight mx-auto max-w-[120px]">Concentração em SP e Curitiba.</p>
             </div>
           </div>
 
           {/* Quick Action - CTA */}
           <div
             onClick={() => onNavigate('discovery')}
-            className="flex-1 liquid-gradient rounded-[2rem] p-8 flex flex-col justify-between group cursor-pointer shadow-2xl shadow-primary/20 hover:scale-[1.02] transition-all"
+            className="liquid-gradient rounded-[2rem] p-6 md:p-8 flex flex-col justify-between group cursor-pointer shadow-2xl shadow-primary/20 active-scale"
           >
             <div className="flex justify-between items-start">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white">
-                <Zap size={24} fill="white" />
+              <div className="w-10 md:w-12 h-10 md:h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white">
+                <Zap size={20} fill="white" />
               </div>
             </div>
             <div className="mt-auto">
-              <h4 className="text-white font-bold text-lg mb-1 leading-tight">Extração Massa</h4>
-              <p className="text-white/70 text-[10px] leading-tight">500 leads/clique.</p>
+              <h4 className="text-white font-bold text-sm md:text-lg mb-1 leading-tight text-center md:text-left">Extração</h4>
+              <p className="hidden md:block text-white/70 text-[10px] leading-tight">500 leads/clique.</p>
             </div>
           </div>
         </div>

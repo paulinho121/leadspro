@@ -379,24 +379,9 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
 
     return (
         <div className="max-w-6xl mx-auto animate-in fade-in duration-500">
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">White Label Management</h1>
-                    <p className="text-slate-400">Customize your platform instance and manage your own clients.</p>
-                </div>
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="bg-primary hover:opacity-90 text-slate-900 px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all disabled:opacity-50"
-                >
-                    {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                    Salvar Alterações
-                </button>
-            </div>
-
-            <div className="flex gap-8">
-                {/* Navigation Sidebar */}
-                <div className="w-64 space-y-2">
+            <div className="flex flex-col lg:flex-row gap-8">
+                {/* Navigation - Horizontal on Mobile, Sidebar on Desktop */}
+                <div className="flex lg:flex-col overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 gap-2 no-scrollbar lg:w-64 shrink-0 px-2 lg:px-0">
                     <SettingsTab
                         icon={<Palette size={18} />}
                         label="Visual Identity"
@@ -430,14 +415,26 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 glass p-8 rounded-3xl space-y-8">
+                <div className="flex-1 glass p-6 md:p-8 rounded-3xl space-y-8 min-w-0">
+                    <div className="flex items-center justify-between mb-4 md:mb-0">
+                        <h2 className="text-xl md:text-2xl font-bold text-white">Configurar Platform</h2>
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="bg-primary hover:opacity-90 text-slate-900 px-4 md:px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all disabled:opacity-50 text-xs md:text-base active-scale"
+                        >
+                            {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
+                            <span className="hidden md:inline">Salvar Alterações</span>
+                            <span className="md:hidden">Salvar</span>
+                        </button>
+                    </div>
                     {activeSettingsTab === 'branding' && (
                         <div className="space-y-6">
                             <section>
                                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                                     <Layout className="text-primary" /> Branding Basics
                                 </h3>
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-slate-400">Nome da Plataforma</label>
                                         <input
@@ -841,11 +838,11 @@ interface SettingsTabProps {
 const SettingsTab: React.FC<SettingsTabProps> = ({ icon, label, active, onClick }) => (
     <button
         onClick={onClick}
-        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${active ? 'bg-primary text-slate-900 font-bold' : 'text-slate-400 hover:text-white hover:bg-white/5'
+        className={`flex-shrink-0 flex items-center gap-3 px-6 lg:px-4 py-3 rounded-xl transition-all whitespace-nowrap active-scale ${active ? 'bg-primary text-slate-900 font-bold' : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
     >
         {icon}
-        <span>{label}</span>
+        <span className="text-sm">{label}</span>
     </button>
 );
 

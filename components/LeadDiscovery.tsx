@@ -299,23 +299,23 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
       <div className="flex flex-col gap-10 relative z-10">
 
         {/* HARMONIOUS HEADER: Title & Stats */}
-        <div className="flex flex-col lg:flex-row items-end justify-between gap-8 border-b border-white/5 pb-8">
-          <div className="space-y-6 flex-1">
-            <div className="flex items-center gap-5">
-              <div className={`relative p-4 rounded-2xl transition-all shrink-0 ${isScanning ? 'bg-primary shadow-[0_0_30px_rgba(34,197,94,0.6)]' : 'bg-primary/10'} text-primary overflow-hidden group/neural`}>
+        <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-6 border-b border-white/5 pb-8">
+          <div className="space-y-4 lg:space-y-6 flex-1">
+            <div className="flex items-center gap-4 lg:gap-5">
+              <div className={`relative p-3 lg:p-4 rounded-2xl transition-all shrink-0 ${isScanning ? 'bg-primary shadow-[0_0_30px_rgba(249,115,22,0.6)]' : 'bg-primary/10'} text-primary overflow-hidden group/neural`}>
                 <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover/neural:opacity-100 transition-opacity ${isScanning ? 'opacity-100 animate-spin-slow' : ''}`}></div>
-                {mode === 'MAPS' ? <Cpu size={28} className={isScanning ? 'animate-neural' : ''} /> :
-                  mode === 'CNPJ' ? <Building2 size={28} /> :
-                    mode === 'SHERLOCK' ? <Crosshair size={28} className={isScanning ? 'animate-pulse text-red-500' : ''} /> :
-                      <BrainCircuit size={28} className={isScanning ? 'animate-neural' : ''} />}
+                {mode === 'MAPS' ? <Cpu size={24} className={isScanning ? 'animate-neural' : ''} /> :
+                  mode === 'CNPJ' ? <Building2 size={24} /> :
+                    mode === 'SHERLOCK' ? <Crosshair size={24} className={isScanning ? 'animate-pulse text-red-500' : ''} /> :
+                      <BrainCircuit size={24} className={isScanning ? 'animate-neural' : ''} />}
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[9px] font-black text-primary/60 uppercase tracking-[0.3em] font-mono">Neural_Scanner</span>
+                  <span className="text-[8px] lg:text-[9px] font-black text-primary/60 uppercase tracking-[0.3em] font-mono">Neural_Scanner</span>
                   <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] font-mono">V2.0</span>
+                  <span className="text-[8px] lg:text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] font-mono">V2.0</span>
                 </div>
-                <h3 className="text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight">
+                <h3 className="text-xl lg:text-3xl font-black text-white tracking-tight leading-tight">
                   {mode === 'MAPS' ? 'Neural Extractor' :
                     mode === 'CNPJ' ? 'Empresas Gov' :
                       mode === 'SHERLOCK' ? 'Hunter Protocol' :
@@ -324,29 +324,29 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
               </div>
             </div>
 
-            <p className="text-slate-400 text-sm lg:text-base leading-relaxed max-w-2xl">
+            <p className="text-slate-400 text-xs lg:text-base leading-relaxed max-w-2xl">
               {mode === 'MAPS'
-                ? 'Localize leads qualificados com inteligência neural profunda e geolocalização.'
+                ? 'Localize leads qualificados com inteligência neural profunda.'
                 : mode === 'CNPJ'
-                  ? 'Acesse a base oficial de empresas brasileiras com alta precisão e dados da Receita.'
+                  ? 'Acesse a base oficial de empresas brasileiras com alta precisão.'
                   : mode === 'SHERLOCK'
-                    ? 'Localize clientes insatisfeitos e interações públicas de seus concorrentes nas redes.'
-                    : 'Enriqueça dados de um CNPJ individual com IA e consulta em múltiplas APIs publicas.'}
+                    ? 'Localize clientes insatisfeitos e interações públicas.'
+                    : 'Enriqueça dados de um CNPJ individual com IA.'}
             </p>
           </div>
 
           {/* Stats Group */}
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="flex flex-col gap-2">
-              <FeatureTag icon={<Atom size={12} className="animate-spin-slow" />} label={mode === 'MAPS' ? 'Geospatial' : mode === 'SHERLOCK' ? 'Social Intel' : 'Public Data'} />
-              <FeatureTag icon={<Zap size={12} className="animate-pulse" />} label={mode === 'ENRICH' ? 'Direct Hit' : 'Deep Scan'} />
+          <div className="flex items-center gap-4 shrink-0 w-full lg:w-auto justify-between lg:justify-start">
+            <div className="flex flex-row lg:flex-col gap-2">
+              <FeatureTag icon={<Atom size={12} className="animate-spin-slow" />} label={mode === 'MAPS' ? 'Geo' : mode === 'SHERLOCK' ? 'Social' : 'Public'} />
+              <FeatureTag icon={<Zap size={12} className="animate-pulse" />} label={mode === 'ENRICH' ? 'Direct' : 'Deep'} />
             </div>
-            <div className="w-[140px] h-[70px]">
+            <div className="w-[120px] lg:w-[140px] h-[60px] lg:h-[70px]">
               <LiquidBattery
                 percentage={scanProgress}
                 isScanning={isScanning}
-                label={isScanning ? "VARRENDO..." : "DETECTADOS"}
-                subLabel={`${leadsFound} LEADS`}
+                label={isScanning ? "SCAN..." : "LEADS"}
+                subLabel={`${leadsFound} FOUND`}
               />
             </div>
           </div>
@@ -645,7 +645,7 @@ const ModeButton = ({ active, onClick, disabled, label }: any) => (
   <button
     onClick={onClick}
     disabled={disabled}
-    className={`px-6 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${active
+    className={`px-4 lg:px-6 py-2.5 lg:py-3 rounded-xl text-[9px] lg:text-[11px] font-black uppercase tracking-widest transition-all active-scale ${active
       ? 'bg-primary text-slate-900 shadow-lg scale-[1.05]'
       : 'text-slate-500 hover:text-white hover:bg-white/5'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}

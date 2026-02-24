@@ -765,6 +765,15 @@ const App: React.FC = () => {
         </button>
       </aside>
 
+      {/* Mobile Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-slate-900/80 backdrop-blur-xl border-t border-white/5 flex items-center justify-around z-50 md:hidden pb-safe">
+        <MobileNavItem icon={<LayoutDashboard size={20} />} label="Home" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+        <MobileNavItem icon={<Search size={20} />} label="Busca" active={activeTab === 'discovery'} onClick={() => setActiveTab('discovery')} />
+        <MobileNavItem icon={<Database size={20} />} label="Lab" active={activeTab === 'lab'} onClick={() => setActiveTab('lab')} />
+        <MobileNavItem icon={<TrendingUp size={20} />} label="Vendas" active={activeTab === 'pipeline'} onClick={() => setActiveTab('pipeline')} />
+        <MobileNavItem icon={<Menu size={20} />} label="Menu" active={isSidebarOpen} onClick={() => setSidebarOpen(true)} />
+      </nav>
+
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 relative overflow-hidden bg-slate-950">
         {/* Subtle Ambient Glow */}
@@ -772,181 +781,62 @@ const App: React.FC = () => {
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] opacity-[0.07] pointer-events-none blur-[120px] rounded-full"
           style={{ background: `radial-gradient(circle, var(--color-primary) 0%, transparent 70%)` }}
         ></div>
-        <header className="h-20 md:h-24 border-b border-white/5 flex items-center justify-between px-6 md:px-10 relative z-40 backdrop-blur-xl shrink-0">
-          <div className="flex items-center gap-4 md:gap-6 ml-8 md:ml-0">
-            <h2 className="text-lg md:text-xl font-bold text-white tracking-tight flex items-center gap-3">
+        <header className="h-16 md:h-24 border-b border-white/5 flex items-center justify-between px-4 md:px-10 relative z-40 backdrop-blur-xl shrink-0">
+          <div className="flex items-center gap-4 md:gap-6">
+            {/* Hamburger for mobile - if we want more options */}
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="p-2 bg-white/5 rounded-xl md:hidden text-slate-400"
+            >
+              <Menu size={20} />
+            </button>
+            <h2 className="text-base md:text-xl font-bold text-white tracking-tight flex items-center gap-3">
               {activeTab === 'dashboard' && 'Dashboard'}
               {activeTab === 'discovery' && 'Extração'}
               {activeTab === 'lab' && 'Laboratório'}
               {activeTab === 'enriched' && 'Comercial'}
               {activeTab === 'partner' && 'Branding'}
               {activeTab === 'master' && 'Master'}
-              {activeTab === 'history' && 'Logs de Auditoria'}
+              {activeTab === 'history' && 'Logs'}
             </h2>
           </div>
 
-          {/* Search Bar */}
-          <div className="hidden lg:flex items-center flex-1 max-w-md mx-6">
-            <div className="relative w-full group">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                <Search size={16} className={`${searchTerm ? 'text-primary' : 'text-slate-500'} group-focus-within:text-primary transition-colors`} />
-              </div>
-              <input
-                type="text"
-                placeholder="Pesquisar leads, setores ou locais..."
-                className="w-full bg-white/5 border border-white/5 focus:border-primary/30 rounded-2xl py-2.5 pl-12 pr-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all focus:bg-white/10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute inset-y-0 right-4 flex items-center text-slate-500 hover:text-white transition-colors"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 md:gap-6">
-            {/* Neural Wallet Status */}
-            <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-primary/10 rounded-2xl border border-primary/20 transition-all hover:bg-primary/20 group/wallet" title="Créditos Neurais Disponíveis">
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-black text-primary uppercase tracking-tighter leading-none">Matrix Balance</span>
-                <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest mt-1">Créditos Ativos</span>
-              </div>
-              <div className="bg-primary/10 px-3 py-1 rounded-lg border border-primary/20 flex items-center gap-2">
-                <MoneyIcon size={14} className="text-primary animate-pulse" />
-                <span className="text-sm font-black text-white">{creditBalance.toLocaleString()}</span>
-              </div>
-            </div>
-
-            <div
-              onClick={() => {
-                refetchLeads();
-                if (session?.user) {
-                  ActivityService.log(userTenantId, session.user.id, 'SYSTEM_SYNC', 'Sincronização manual de leads executada.');
-                }
-              }}
-              className="hidden sm:flex items-center gap-3 px-4 py-2 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 transition-all hover:bg-emerald-500/20 active:scale-95 cursor-pointer group/sync"
-              title="Clique para Sincronizar Agora"
-            >
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-black text-white uppercase tracking-tighter leading-none group-hover/sync:text-primary transition-colors">{userName.split(' ')[0]}</span>
-                <span className="text-[9px] font-bold text-emerald-500/70 uppercase tracking-widest mt-1">Conectado</span>
-              </div>
-              <div className="relative">
-                <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-                <div className="absolute inset-0 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping opacity-20"></div>
-              </div>
+          <div className="flex items-center gap-2 md:gap-6">
+            {/* Neural Wallet Status - Minimal on mobile */}
+            <div className="flex items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 bg-primary/10 rounded-xl border border-primary/20 transition-all">
+              <MoneyIcon size={12} className="text-primary animate-pulse" />
+              <span className="text-xs font-black text-white">{creditBalance.toLocaleString()}</span>
             </div>
 
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className={`relative group p-2.5 rounded-2xl transition-all border ${showNotifications ? 'bg-primary/10 border-primary/30' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
+              className={`relative group p-2 rounded-xl transition-all border ${showNotifications ? 'bg-primary/10 border-primary/30' : 'bg-white/5 border-white/5'}`}
             >
-              <Bell size={18} className={showNotifications ? 'text-primary' : 'text-slate-400 group-hover:text-white transition-colors'} />
+              <Bell size={16} className={showNotifications ? 'text-primary' : 'text-slate-400'} />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary text-slate-900 text-[10px] font-black flex items-center justify-center rounded-full ring-4 ring-slate-950 animate-in zoom-in duration-300">
-                  {unreadCount}
-                </span>
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full ring-2 ring-slate-950 animate-pulse" />
               )}
             </button>
-
-            {/* Support / Contact Button (LifeBuoy) */}
-            <div className="relative">
-              <button
-                onClick={() => setShowSupport(!showSupport)}
-                className={`group p-2.5 rounded-2xl transition-all border ${showSupport ? 'bg-primary/10 border-primary/30' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
-                title="Relatar Problema Técnico"
-              >
-                <LifeBuoy size={18} className={showSupport ? 'text-primary' : 'text-slate-400 group-hover:text-white transition-colors'} />
-              </button>
-
-              {showSupport && (
-                <div className="absolute top-14 right-0 w-80 md:w-96 glass-strong rounded-3xl border border-white/10 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-300 p-6 overflow-hidden">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/20 rounded-xl">
-                        <LifeBuoy className="text-primary" size={18} />
-                      </div>
-                      <h3 className="text-xs font-black text-white tracking-widest uppercase">Relatar Problema</h3>
-                    </div>
-                    <button onClick={() => setShowSupport(false)} className="text-slate-500 hover:text-white">
-                      <X size={18} />
-                    </button>
-                  </div>
-
-                  <div className="space-y-4">
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                      Descreva qualquer falha técnica ou dúvida para que nossa equipe Master possa te auxiliar.
-                    </p>
-
-                    <div className="space-y-3">
-                      <input
-                        type="text"
-                        placeholder="O que está acontecendo?"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-primary/50 transition-all font-bold"
-                        value={supportForm.subject}
-                        onChange={(e) => setSupportForm({ ...supportForm, subject: e.target.value })}
-                      />
-
-                      <select
-                        className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-xs text-slate-400 outline-none focus:border-primary/50 transition-all font-bold"
-                        value={supportForm.category}
-                        onChange={(e) => setSupportForm({ ...supportForm, category: e.target.value })}
-                      >
-                        <option value="technical">🔧 Falha Técnica / Bug</option>
-                        <option value="billing">💰 Assinatura / Pagamentos</option>
-                        <option value="feature_request">💡 Sugestão de Melhoria</option>
-                        <option value="other">❓ Outros Assuntos</option>
-                      </select>
-
-                      <textarea
-                        placeholder="Descreva detalhadamente o ocorrido..."
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-primary/50 transition-all min-h-[120px] resize-none"
-                        value={supportForm.message}
-                        onChange={(e) => setSupportForm({ ...supportForm, message: e.target.value })}
-                      />
-
-                      <button
-                        onClick={handleSendTicket}
-                        disabled={isSubmittingTicket}
-                        className="w-full bg-primary text-slate-900 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
-                      >
-                        {isSubmittingTicket ? 'ENVIANDO RELATO...' : <><MessageSquare size={14} /> ENVIAR CHAMADO TÉCNICO</>}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {showNotifications && (
-              <NotificationsList onClose={() => setShowNotifications(false)} tenantId={userTenantId} />
-            )}
           </div>
         </header>
 
         {/* ALERTA DE CONFIGURAÇÃO PENDENTE */}
         {missingKeys && activeTab !== 'partner' && (
-          <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-6 md:px-10 py-3 flex items-center justify-between animate-fade-in-down shrink-0">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="text-yellow-500 shrink-0" size={18} />
-              <p className="text-xs text-slate-400 hidden sm:block">Chaves de API pendentes. <span className="text-white font-bold">Configure para extrair.</span></p>
-              <p className="text-xs text-white font-bold sm:hidden">Configurar APIs</p>
+          <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-6 md:px-10 py-2.5 flex items-center justify-between animate-fade-in-down shrink-0">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="text-yellow-500 shrink-0" size={14} />
+              <p className="text-[10px] text-white font-bold">Configuração Pendente</p>
             </div>
             <button
               onClick={() => setActiveTab('partner')}
-              className="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border border-white/10"
+              className="bg-white/10 text-white px-2 py-1 rounded-md text-[9px] font-black uppercase"
             >
-              Configure Setup
+              Fix
             </button>
           </div>
         )}
 
-        <section className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
+        <section className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar pb-24 md:pb-10 no-scrollbar">
           <div className="max-w-7xl mx-auto">
             {renderActiveSection()}
           </div>
@@ -995,18 +885,25 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active, expanded, primar
         {label}
       </span>
     )}
-    {active && (
+    {active && expanded && (
       <div
         className="absolute left-0 w-1 h-8 bg-primary rounded-r-full"
         style={{ boxShadow: `0 0 15px ${primaryColor}` }}
       ></div>
     )}
-    {!expanded && active && (
-      <div
-        className="absolute right-2 w-1.5 h-1.5 bg-primary rounded-full"
-        style={{ boxShadow: `0 0 10px ${primaryColor}` }}
-      ></div>
-    )}
+  </button>
+);
+
+const MobileNavItem: React.FC<{ icon: React.ReactNode; label: string; active: boolean; onClick: () => void }> = ({ icon, label, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active-scale ${active ? 'text-primary' : 'text-slate-500'}`}
+  >
+    <div className={`transition-all duration-300 ${active ? 'scale-110' : ''}`}>
+      {icon}
+    </div>
+    <span className="text-[10px] font-bold tracking-tight">{label}</span>
+    {active && <div className="absolute top-0 w-8 h-1 bg-primary rounded-b-full shadow-[0_4px_10px_var(--color-primary)] animate-in slide-in-from-top-1" />}
   </button>
 );
 

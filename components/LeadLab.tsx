@@ -32,7 +32,7 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
 }) => {
   return (
     <tr
-      className="group hover:bg-white/[0.03] transition-all absolute top-0 left-0 w-full border-b border-white/[0.02] flex items-center"
+      className="group hover:bg-white/[0.03] transition-all absolute top-0 left-0 w-full border-b border-white/[0.02] hidden lg:flex items-center"
       style={{
         height: `${virtualRow.size}px`,
         transform: `translateY(${virtualRow.start}px)`,
@@ -163,6 +163,45 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
     </tr>
   );
 });
+
+const MobileLeadCard = ({ lead, onEnrich, onDelete, onConvertToDeal }: any) => (
+  <div className="mobile-card flex flex-col gap-4 mb-4 active:scale-[0.98] transition-all">
+    <div className="flex items-center gap-4">
+      {lead.details?.placeImage ? (
+        <img src={lead.details.placeImage} className="w-12 h-12 rounded-xl object-cover" />
+      ) : (
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+          <Database size={20} />
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <h4 className="text-sm font-bold text-white truncate">{lead.details?.tradeName || lead.name}</h4>
+        <div className="flex items-center gap-2 mt-0.5">
+          <MapPin size={10} className="text-primary/60" />
+          <span className="text-[10px] text-slate-400 truncate">{lead.location}</span>
+        </div>
+      </div>
+      <div className={`w-2 h-2 rounded-full ${lead.status === LeadStatus.ENRICHED ? 'bg-primary shadow-[0_0_8px_var(--color-primary)]' : 'bg-slate-700'}`} />
+    </div>
+
+    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{lead.industry}</span>
+      <div className="flex items-center gap-2">
+        <button onClick={() => onEnrich(lead)} className="p-2 bg-primary/10 text-primary rounded-lg active:bg-primary active:text-slate-900 transition-colors">
+          <Zap size={14} />
+        </button>
+        {lead.status === LeadStatus.ENRICHED && onConvertToDeal && (
+          <button onClick={() => onConvertToDeal(lead.id)} className="p-2 bg-violet-500/10 text-violet-500 rounded-lg">
+            <TrendingUp size={14} />
+          </button>
+        )}
+        <button onClick={() => onDelete(lead.id)} className="p-2 bg-red-500/10 text-red-500 rounded-lg">
+          <Trash2 size={14} />
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 const LeadLab: React.FC<LeadLabProps> = ({
   leads, onEnrich, onBulkEnrich, isEnriching = false,
@@ -415,6 +454,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                 </tr>
               </thead>
               <tbody className="relative" style={{ height: `${rowVirtualizer.getTotalSize()}px` }}>
+                {/* Desktop Table Rendering */}
                 {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                   const lead = filteredLeads[virtualRow.index];
                   if (!lead) return null;
@@ -431,6 +471,19 @@ const LeadLab: React.FC<LeadLabProps> = ({
                 })}
               </tbody>
             </table>
+
+            {/* Mobile Card Rendering */}
+            <div className="lg:hidden p-2">
+              {filteredLeads.map(lead => (
+                <MobileLeadCard
+                  key={lead.id}
+                  lead={lead}
+                  onEnrich={onEnrich}
+                  onDelete={onDelete}
+                  onConvertToDeal={onConvertToDeal}
+                />
+              ))}
+            </div>
 
             {filteredLeads.length === 0 && (
               <div className="flex-1 flex flex-col items-center justify-center py-32 text-center">

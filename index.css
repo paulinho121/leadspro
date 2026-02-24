@@ -6,7 +6,8 @@
   --color-surface: #0f172a;
   --color-sidebar: rgba(2, 6, 23, 0.95);
   --glass-bg: rgba(15, 23, 42, 0.7);
-  --glass-border: rgba(34, 197, 94, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 * {
@@ -259,10 +260,22 @@ body {
   animation: glow-intense 2s ease-in-out infinite;
 }
 
-/* Responsiveness Utilities */
+/* Native Mobile Enhancements */
 @media (max-width: 768px) {
   .body-no-scroll {
     overflow: hidden !important;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .active-scale:active {
+    transform: scale(0.96);
   }
 }
 
