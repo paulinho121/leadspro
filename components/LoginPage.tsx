@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useBranding } from './BrandingProvider';
-import { Lock, Mail, ChevronRight, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, ChevronRight, Loader2, AlertCircle, ShieldCheck, TrendingUp } from 'lucide-react';
 
 interface LoginPageProps {
     onLoginSuccess: (session: any) => void;
@@ -114,11 +114,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             {/* Card */}
             <div className="w-full max-w-md p-8 rounded-3xl glass border border-white/10 relative z-10 shadow-2xl backdrop-blur-xl animate-fade-in-up">
                 <div className="text-center mb-10">
-                    <div className="w-20 h-20 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(6,182,212,0.3)]">
+                    <div className="w-20 h-20 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
                         {config.logoUrl ? (
                             <img src={config.logoUrl} alt="Logo" className="w-12 h-12 object-contain" />
                         ) : (
-                            <ShieldCheck size={40} className="text-primary" />
+                            <TrendingUp size={40} className="text-primary" />
                         )}
                     </div>
                     <h1 className="text-2xl font-black text-white tracking-tight mb-2">

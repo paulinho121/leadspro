@@ -266,7 +266,7 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
                         <div className="absolute inset-0 bg-black/20 animate-scan pointer-events-none" />
                       </>
                     ) : (
-                      <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-cyan-500 opacity-90 group-hover/enrich:opacity-100 transition-opacity" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent opacity-90 group-hover/enrich:opacity-100 transition-opacity" />
                     )}
 
                     <div className="relative z-10 flex items-center gap-3">
@@ -449,7 +449,7 @@ const LeadLab: React.FC<LeadLabProps> = ({ leads, onEnrich, onBulkEnrich, isEnri
 };
 
 
-const FilterOption = ({ active, onClick, label, count, icon, color = 'cyan' }: any) => (
+const FilterOption = ({ active, onClick, label, count, icon, color = 'primary' }: any) => (
   <button
     onClick={onClick}
     className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border ${active

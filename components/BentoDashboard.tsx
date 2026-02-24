@@ -20,7 +20,7 @@ interface BentoDashboardProps {
 
 const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavigate }) => {
   const { config } = useBranding();
-  const primaryColor = config.colors.primary || '#06b6d4';
+  const primaryColor = config.colors.primary;
 
   // Gerar dados do gráfico baseados nos leads reais (últimos 7 dias)
   const chartData = React.useMemo(() => {
@@ -222,7 +222,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
           {/* Quick Action - CTA */}
           <div
             onClick={() => onNavigate('discovery')}
-            className="flex-1 liquid-gradient rounded-[2rem] p-8 flex flex-col justify-between group cursor-pointer shadow-2xl shadow-cyan-500/20 hover:scale-[1.02] transition-all"
+            className="flex-1 liquid-gradient rounded-[2rem] p-8 flex flex-col justify-between group cursor-pointer shadow-2xl shadow-primary/20 hover:scale-[1.02] transition-all"
           >
             <div className="flex justify-between items-start">
               <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white">

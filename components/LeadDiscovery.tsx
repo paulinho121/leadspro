@@ -99,7 +99,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
     // INTELIGÊNCIA ARTIFICIAL: Se detectar padrão de CNAE no modo MAPS, redireciona para modo CNPJ automaticamente
     // Usamos uma regex mais flexível para capturar o padrão mesmo com espaços ou variações sutis
     if (searchMode === 'MAPS' && /\d{4}-\d\/\d{2}/.test(cleanKeyword)) {
-      console.log('%c[Neural IA] Padrão CNAE detectado no modo MAPS. Redirecionando para motor de Varredura Governamental.', 'color: #06b6d4; font-weight: bold;');
+      console.log('%c[Neural IA] Padrão CNAE detectado no modo MAPS. Redirecionando para motor de Varredura Governamental.', 'color: #f97316; font-weight: bold;');
       setMode('CNPJ');
       searchMode = 'CNPJ';
     }
@@ -282,7 +282,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
         <div className="flex flex-col lg:flex-row items-end justify-between gap-8 border-b border-white/5 pb-8">
           <div className="space-y-6 flex-1">
             <div className="flex items-center gap-5">
-              <div className={`relative p-4 rounded-2xl transition-all shrink-0 ${isScanning ? 'bg-primary shadow-[0_0_30px_rgba(6,182,212,0.6)]' : 'bg-primary/10'} text-primary overflow-hidden group/neural`}>
+              <div className={`relative p-4 rounded-2xl transition-all shrink-0 ${isScanning ? 'bg-primary shadow-[0_0_30px_rgba(34,197,94,0.6)]' : 'bg-primary/10'} text-primary overflow-hidden group/neural`}>
                 <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover/neural:opacity-100 transition-opacity ${isScanning ? 'opacity-100 animate-spin-slow' : ''}`}></div>
                 {mode === 'MAPS' ? <Cpu size={28} className={isScanning ? 'animate-neural' : ''} /> :
                   mode === 'CNPJ' ? <Building2 size={28} /> :

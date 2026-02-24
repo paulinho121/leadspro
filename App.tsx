@@ -671,7 +671,10 @@ const App: React.FC = () => {
             )}
           </div>
           <div className={`transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 md:hidden invisible'}`}>
-            <h1 className="text-xl font-black text-white tracking-tighter leading-none">{config.platformName.split(' ')[0]}<span className="text-primary italic">{config.platformName.split(' ')[1] || 'Pro'}</span></h1>
+            <h1 className="text-xl font-black tracking-tighter leading-none flex items-center">
+              <span className="text-white">Lead</span>
+              <span className="text-primary">Pro</span>
+            </h1>
             <p className="text-[9px] font-black text-primary/60 uppercase tracking-[0.3em] mt-1">Matrix v3.5</p>
           </div>
         </div>

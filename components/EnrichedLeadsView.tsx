@@ -104,7 +104,7 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads }) => {
                         onClick={() => setSelectedIndustry(industry)}
                         className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0
                             ${selectedIndustry === industry
-                                ? 'bg-primary text-slate-900 border-primary shadow-[0_5px_15px_rgba(6,182,212,0.3)]'
+                                ? 'bg-primary text-slate-900 border-primary shadow-[0_5px_15px_var(--color-primary)]'
                                 : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/10 hover:bg-white/[0.08]'}`}
                     >
                         {industry === 'todos' ? '🎯 Todos os Tipos' : industry}

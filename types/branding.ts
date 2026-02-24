@@ -20,13 +20,13 @@ export interface BrandingConfig {
 export const DEFAULT_BRANDING: BrandingConfig = {
     id: 'default',
     tenantId: 'default',
-    platformName: 'LeadFlow Neural',
-    logoUrl: '',
+    platformName: 'LeadPro',
+    logoUrl: 'https://paulinho121.github.io/leadspro/logo.png',
     colors: {
-        primary: '#06b6d4', // cyan-500
-        secondary: '#3b82f6', // blue-500
-        accent: '#06b6d4',
-        background: '#0f172a',
-        sidebar: 'rgba(30, 41, 59, 0.7)',
+        primary: '#22c55e', // Verde Neon inspirado na nova logo
+        secondary: '#0f172a', // Navy profundo
+        accent: '#4ade80', // Verde claro
+        background: '#020617', // Fundo ultra dark (Deep Navy)
+        sidebar: 'rgba(2, 6, 23, 0.95)',
     }
 };
