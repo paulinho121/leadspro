@@ -77,66 +77,101 @@ export class EnrichmentService {
     private static async discoverSocialPresence(lead: Lead, apiKeys?: any) {
         try {
             const hasKey = apiKeys?.serper || import.meta.env.VITE_SERPER_API_KEY;
+            if (!hasKey) return { instagram: '', facebook: '', linkedin: '', website: lead.website || '', realEmail: '' };
 
-            if (hasKey) {
-                console.log(`[Social Discovery] Buscando dados reais para: ${lead.name}`);
+            console.log(`[Neural Social Discovery] Deep search for: ${lead.name}`);
 
-                // Busca ampliada para encontrar contato e email real
-                const searchResults: any = await ApiGatewayService.callApi(
+            // 1. Encontrar Website primeiro (se não houver)
+            let website = lead.website || '';
+            if (!website) {
+                const webSearch: any = await ApiGatewayService.callApi(
                     'google-search',
                     'search',
-                    { q: `${lead.name} ${lead.location} "email" "contato" site instagram facebook` },
-                    { apiKeys, ttl: 86400 * 7 }
+                    { q: `${lead.name} ${lead.location} site oficial`, num: 3 },
+                    { apiKeys, ttl: 86400 * 30 }
+                );
+                website = webSearch.organic?.find((r: any) => {
+                    const l = r.link || '';
+                    return !l.includes('instagram.com') && !l.includes('facebook.com') && !l.includes('linkedin.com') && !l.includes('yelp') && !l.includes('tripadvisor');
+                })?.link || '';
+            }
+
+            // 2. BUSCA MULTI-DORK (Específica para Redes Sociais)
+            // Usamos o domínio do site (se existir) para vinculação forte
+            const domain = website ? new URL(website.startsWith('http') ? website : `https://${website}`).hostname.replace('www.', '') : '';
+
+            const queries = [
+                { type: 'instagram', q: domain ? `site:instagram.com "${domain}"` : `site:instagram.com "${lead.name}" "${lead.location}"` },
+                { type: 'facebook', q: domain ? `site:facebook.com "${domain}"` : `site:facebook.com "${lead.name}" "${lead.location}"` },
+                { type: 'email', q: `"${lead.name}" "${lead.location}" (email OR contato OR "@")` }
+            ];
+
+            // Executar buscas em paralelo para performance
+            const searchPromises = queries.map(query =>
+                ApiGatewayService.callApi('google-search', 'search', { q: query.q, num: 5 }, { apiKeys, ttl: 86400 * 7 })
+            );
+
+            const [instaResults, fbResults, emailResults]: any = await Promise.all(searchPromises);
+
+            // 3. VALIDAÇÃO NEURAL DOS LINKS (Evita falsos positivos como Sage Networks)
+            const allSnippets = [
+                ...(instaResults.organic || []),
+                ...(fbResults.organic || []),
+                ...(emailResults.organic || [])
+            ].map(r => `Link: ${r.link} | Título: ${r.title} | Snippet: ${r.snippet}`).join('\n');
+
+            const validationPrompt = `Você é um detetive digital. Analise os resultados de busca e identifique as redes sociais REAIS da empresa abaixo:
+            EMPRESA ALVO: ${lead.name}
+            LOCALIZAÇÃO: ${lead.location}
+            SITE OFICIAL: ${website}
+
+            RESULTADOS DE BUSCA:
+            ${allSnippets}
+
+            REGRAS:
+            - Ignore resultados de empresas com nomes parecidos mas cidades diferentes.
+            - O Instagram deve refletir o negócio (ex: vila_mosquito). Ignore se for de um concorrente ou agência.
+            - Extraia o e-mail se houver.
+
+            RETORNE APENAS JSON:
+            {
+              "instagram": "URL completa ou null",
+              "facebook": "URL completa ou null",
+              "realEmail": "email ou null"
+            }`;
+
+            try {
+                const validatedData = await ApiGatewayService.callApi<any>(
+                    'gemini-1.5-flash',
+                    'custom-prompt',
+                    { prompt: validationPrompt },
+                    { apiKeys, ttl: 86400 }
                 );
 
-                const organic = searchResults.organic || [];
-                const findLink = (domain: string) => organic.find((r: any) => r.link && r.link.includes(domain))?.link;
-
-                // Capturar todos os snippets para extração de email via IA
-                const snippets = organic.map((r: any) => r.snippet).join(' | ');
-
-                // Tenta extrair email real via IA se houver snippets
-                let realEmail = '';
-                try {
-                    const prompt = `Analise os seguintes textos de resultados de busca e extraia o EMAIL REAL de contato da empresa "${lead.name}". 
-                    IGNORE e-mails terminados em @gmail.com, @hotmail.com ou emails de contabilidade (ex: contabil, adm, fiscal) a menos que sejam os únicos disponíveis. 
-                    Dê preferência para emails com o domínio da empresa. 
-                    Retorne APENAS o email puro ou "NÃO ENCONTRADO".
-                    Textos: ${snippets}`;
-
-                    const extracted = await ApiGatewayService.callApi<string>(
-                        'gemini-1.5-flash',
-                        'custom-prompt',
-                        { prompt },
-                        { apiKeys, ttl: 86400 }
-                    );
-
-                    if (extracted && extracted.includes('@') && !extracted.includes(' ')) {
-                        realEmail = extracted.toLowerCase().trim();
-                        console.log(`[Neural Email] Email Real detectado: ${realEmail}`);
-                    }
-                } catch (emailErr) {
-                    console.warn('Erro ao extrair email via IA:', emailErr);
-                }
-
-                const websiteRaw = organic.find((r: any) => {
-                    const l = r.link || '';
-                    return !l.includes('instagram.com') &&
-                        !l.includes('facebook.com') &&
-                        !l.includes('linkedin.com') &&
-                        !l.includes('tripadvisor') &&
-                        !l.includes('ifood') &&
-                        !l.includes('solutudo') &&
-                        !l.includes('cnpj.biz') &&
-                        !l.includes('maps.google');
-                })?.link;
+                // Se a IA retornar como string (acontece às vezes), tentamos parsear
+                const finalData = typeof validatedData === 'string'
+                    ? JSON.parse(validatedData.replace(/```json|```/g, '').trim())
+                    : validatedData;
 
                 return {
-                    instagram: findLink('instagram.com') || '',
-                    facebook: findLink('facebook.com') || '',
-                    linkedin: findLink('linkedin.com') || '',
-                    website: lead.website || websiteRaw || '',
-                    realEmail: realEmail
+                    instagram: finalData.instagram || '',
+                    facebook: finalData.facebook || '',
+                    linkedin: '',
+                    website: website,
+                    realEmail: finalData.realEmail || ''
+                };
+
+            } catch (err) {
+                console.warn('[Social Validation] IA falhou na validação, usando extrator básico.', err);
+                const findInsta = instaResults.organic?.find((r: any) => r.link?.includes('instagram.com'))?.link;
+                const findFB = fbResults.organic?.find((r: any) => r.link?.includes('facebook.com'))?.link;
+
+                return {
+                    instagram: findInsta || '',
+                    facebook: findFB || '',
+                    linkedin: '',
+                    website: website,
+                    realEmail: ''
                 };
             }
         } catch (e) {

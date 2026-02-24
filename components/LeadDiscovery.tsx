@@ -33,6 +33,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
   const [cities, setCities] = useState<string[]>([]);
   const [selectedCity, setSelectedCity] = useState('');
   const [loadingCities, setLoadingCities] = useState(false);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
 
   const [neuralError, setNeuralError] = useState<{ type: 'MISSING' | 'INVALID' | 'CREDITS' | 'GENERIC', message: string } | null>(null);
 
@@ -74,6 +75,8 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
         setFilters(prev => ({ ...prev, location: `${selectedState}, Brasil` }));
       } else if (selectedCity) {
         setFilters(prev => ({ ...prev, location: `${selectedCity}, ${selectedState}` }));
+      } else {
+        setFilters(prev => ({ ...prev, location: `${selectedState}, Brasil` }));
       }
     }
   }, [selectedCity, selectedState]);
@@ -426,51 +429,70 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Cidade</label>
                   <div className="relative group/input">
-                    {loadingCities ? (
-                      <Loader2 className="absolute left-5 top-5 w-5 h-5 text-primary animate-spin" />
-                    ) : (
-                      <MapPin className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
-                    )}
+                    {/* INPUT HÍBRIDO AUTOCOMPLETE: Sempre permite digitar, mas sugere se a API carregar. */}
+                    <input
+                      type="text"
+                      disabled={isScanning || !selectedState}
+                      onFocus={() => setShowCitySuggestions(true)}
+                      placeholder={!selectedState ? "Selecione o Estado primeiro" : "Busque ou digite a cidade..."}
+                      className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
+                      value={selectedCity === 'TODO_ESTADO' ? `★ VARRER TODO O ESTADO (${selectedState})` : selectedCity}
+                      onChange={(e) => {
+                        setSelectedCity(e.target.value);
+                        setShowCitySuggestions(true);
+                      }}
+                      onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)}
+                    />
 
-                    {/* INPUT HÍBRIDO: Se não tem cidades (Erro API), permite digitar. Se tem, funciona como seletor buscador. */}
-                    {cities.length > 0 ? (
-                      <>
-                        <select
-                          disabled={isScanning || !selectedState}
-                          className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-12 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
-                          value={selectedCity}
-                          onChange={(e) => setSelectedCity(e.target.value)}
+                    {/* Sugestões do Autocomplete */}
+                    {showCitySuggestions && selectedState && !isScanning && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-2 glass-strong rounded-2xl border border-white/10 shadow-2xl overflow-hidden max-h-[300px] overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-300">
+                        {/* Opção Especial: Todo o Estado */}
+                        <div
+                          onClick={() => { setSelectedCity('TODO_ESTADO'); setShowCitySuggestions(false); }}
+                          className="p-4 flex items-center gap-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 cursor-pointer border-b border-white/5 transition-colors group"
                         >
-                          <option value="" className="bg-slate-900 text-slate-500">Selecione a Cidade (Opcional)</option>
-                          <option value="TODO_ESTADO" className="bg-emerald-900 text-emerald-400 font-bold">★ VARRER TODO O ESTADO ({selectedState})</option>
-                          {cities.map(city => (
-                            <option key={city} value={city} className="bg-slate-900 text-white">{city}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-5 top-5.5 w-5 h-5 text-slate-500 pointer-events-none" />
-                      </>
-                    ) : (
-                      <input
-                        type="text"
-                        disabled={isScanning || !selectedState}
-                        placeholder={!selectedState ? "Selecione o Estado primeiro" : "Digite o nome da cidade..."}
-                        className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
-                        value={selectedCity === 'TODO_ESTADO' ? '' : selectedCity}
-                        onChange={(e) => setSelectedCity(e.target.value)}
-                        onBlur={() => {
-                          if (!selectedCity && selectedState) {
-                            // Fallback se o usuário limpar
-                          }
-                        }}
-                      />
+                          <Zap size={16} className="text-emerald-500 group-hover:scale-110 transition-transform" />
+                          <div className="flex flex-col">
+                            <span className="text-xs font-black uppercase tracking-widest">Varrer todo o Estado</span>
+                            <span className="text-[10px] text-emerald-500/60 font-mono">Busca sequencial por todas as cidades de {selectedState}</span>
+                          </div>
+                        </div>
+
+                        {/* Lista de Cidades (Filtrada) */}
+                        {loadingCities ? (
+                          <div className="p-8 text-center text-slate-500 flex flex-col items-center gap-2">
+                            <Loader2 size={24} className="animate-spin text-primary" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Sincronizando cidades...</span>
+                          </div>
+                        ) : cities.length > 0 ? (
+                          cities
+                            .filter(c => c.toLowerCase().includes(selectedCity.toLowerCase()) && selectedCity !== 'TODO_ESTADO')
+                            .slice(0, 50)
+                            .map(city => (
+                              <div
+                                key={city}
+                                onClick={() => { setSelectedCity(city); setShowCitySuggestions(false); }}
+                                className="p-4 hover:bg-white/10 text-white text-sm cursor-pointer border-b border-white/5 last:border-0 transition-colors flex items-center gap-3"
+                              >
+                                <MapPin size={14} className="text-slate-600" />
+                                {city}
+                              </div>
+                            ))
+                        ) : (
+                          <div className="p-6 text-center text-slate-500 text-[10px] font-black uppercase tracking-widest">
+                            {selectedCity ? 'Digite para usar nome manual' : 'Nenhuma cidade encontrada'}
+                          </div>
+                        )}
+                      </div>
                     )}
 
-                    {/* Dica de Varredura Estadual se a API falhar */}
+                    {/* Dica de Status */}
                     {!loadingCities && selectedState && cities.length === 0 && (
                       <div className="absolute -bottom-6 left-2 flex items-center gap-2">
-                        <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span className="text-[8px] font-bold text-emerald-500/80 uppercase tracking-widest leading-none">
-                          APIs Lentas: Você pode digitar a cidade manualmente acima.
+                        <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse"></span>
+                        <span className="text-[8px] font-bold text-amber-500/80 uppercase tracking-widest leading-none">
+                          API Offline: Digite o nome da cidade manualmente.
                         </span>
                       </div>
                     )}
