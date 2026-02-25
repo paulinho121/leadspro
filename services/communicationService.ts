@@ -11,25 +11,35 @@ export interface MessagePayload {
 
 export class CommunicationService {
     /**
-     * Envia uma mensagem via WhatsApp (Evolution API)
+     * Envia uma mensagem via WhatsApp (Suporta Evolution, Z-API, Duilio)
      */
     static async sendWhatsApp(payload: MessagePayload) {
         try {
-            // 1. Buscar configurações do Tenant
+            // 1. Buscar qualquer configuração de WhatsApp ativa do Tenant
             const { data: settings } = await supabase
                 .from('communication_settings')
                 .select('*')
                 .eq('tenant_id', payload.tenantId)
-                .eq('provider_type', 'whatsapp_evolution')
+                .in('provider_type', ['whatsapp_evolution', 'whatsapp_zapi', 'whatsapp_duilio'])
+                .eq('is_active', true)
+                .limit(1)
                 .single();
 
-            if (!settings) throw new Error('Configurações de WhatsApp não encontradas');
+            if (!settings) throw new Error('Configuração de WhatsApp ativa não encontrada');
 
-            // 2. Disparo para Evolution API
-            // Implementação real seria um fetch para settings.api_url
-            console.log(`[WhatsApp] Enviando para ${payload.leadId}: ${payload.content.substring(0, 30)}...`);
+            // 2. Disparo baseado no Provedor
+            console.log(`[WhatsApp] [${settings.provider_type}] Enviando para ${payload.leadId}: ${payload.content.substring(0, 30)}...`);
 
-            // 3. Registrar no histórico de interações (ai_sdr_interactions)
+            // Simulação de implementação por provedor
+            if (settings.provider_type === 'whatsapp_zapi') {
+                console.log(`[Z-API] Usando Instância: ${settings.instance_name}`);
+            } else if (settings.provider_type === 'whatsapp_duilio') {
+                console.log(`[Duílio] Usando Token: ${settings.api_key?.substring(0, 5)}...`);
+            } else {
+                console.log(`[Evolution] Usando Endpoint: ${settings.api_url}`);
+            }
+
+            // 3. Registrar no histórico de interações
             await supabase.from('ai_sdr_interactions').insert({
                 tenant_id: payload.tenantId,
                 lead_id: payload.leadId,

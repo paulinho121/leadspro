@@ -4,7 +4,8 @@ import {
     Settings, Save, Smartphone, Mail,
     Shield, CheckCircle2, AlertCircle,
     Terminal, Globe, Key, Zap,
-    Activity, Lock, Cpu, Server
+    Activity, Lock, Cpu, Server,
+    ChevronDown
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -12,36 +13,53 @@ interface CommunicationSettingsViewProps {
     tenantId: string;
 }
 
+type WhatsAppProvider = 'whatsapp_evolution' | 'whatsapp_zapi' | 'whatsapp_duilio';
+
 const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ tenantId }) => {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [settings, setSettings] = useState({
-        whatsapp_url: '',
-        whatsapp_key: '',
-        whatsapp_instance: '',
-        email_resend_key: '',
+    const [selectedWaProvider, setSelectedWaProvider] = useState<WhatsAppProvider>('whatsapp_evolution');
+
+    const [waSettings, setWaSettings] = useState({
+        apiUrl: '',
+        apiKey: '',
+        instanceName: '',
+    });
+
+    const [emailSettings, setEmailSettings] = useState({
+        resendKey: '',
     });
 
     useEffect(() => {
         const loadSettings = async () => {
             try {
-                const { data, error } = await supabase
+                const { data } = await supabase
                     .from('communication_settings')
                     .select('*')
                     .eq('tenant_id', tenantId);
 
                 if (data) {
-                    const whatsapp = data.find(s => s.provider_type === 'whatsapp_evolution');
-                    const email = data.find(s => s.provider_type === 'email_resend');
+                    // Find active WhatsApp provider or fallback to evolution
+                    const activeWa = data.find(s => s.provider_type.startsWith('whatsapp_') && s.is_active) ||
+                        data.find(s => s.provider_type === 'whatsapp_evolution');
 
-                    setSettings({
-                        whatsapp_url: whatsapp?.api_url || '',
-                        whatsapp_key: whatsapp?.api_key || '',
-                        whatsapp_instance: whatsapp?.instance_name || '',
-                        email_resend_key: email?.api_key || '',
-                    });
+                    if (activeWa) {
+                        setSelectedWaProvider(activeWa.provider_type as WhatsAppProvider);
+                        setWaSettings({
+                            apiUrl: activeWa.api_url || '',
+                            apiKey: activeWa.api_key || '',
+                            instanceName: activeWa.instance_name || '',
+                        });
+                    }
+
+                    const email = data.find(s => s.provider_type === 'email_resend');
+                    if (email) {
+                        setEmailSettings({
+                            resendKey: email.api_key || '',
+                        });
+                    }
                 }
             } catch (err) {
                 console.error('Erro ao carregar configurações:', err);
@@ -51,37 +69,71 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
         if (tenantId) loadSettings();
     }, [tenantId]);
 
+    // Handle provider change: load its existing settings if any
+    const handleProviderChange = async (provider: WhatsAppProvider) => {
+        setSelectedWaProvider(provider);
+        try {
+            const { data } = await supabase
+                .from('communication_settings')
+                .select('*')
+                .eq('tenant_id', tenantId)
+                .eq('provider_type', provider)
+                .single();
+
+            if (data) {
+                setWaSettings({
+                    apiUrl: data.api_url || '',
+                    apiKey: data.api_key || '',
+                    instanceName: data.instance_name || '',
+                });
+            } else {
+                setWaSettings({ apiUrl: '', apiKey: '', instanceName: '' });
+            }
+        } catch (err) {
+            setWaSettings({ apiUrl: '', apiKey: '', instanceName: '' });
+        }
+    };
+
     const handleSave = async () => {
         setLoading(true);
         setError(null);
         setSuccess(false);
 
         try {
-            // Salvar WhatsApp
+            // 1. Deactivate all other WhatsApp providers for this tenant first
+            await supabase
+                .from('communication_settings')
+                .update({ is_active: false })
+                .eq('tenant_id', tenantId)
+                .ilike('provider_type', 'whatsapp_%');
+
+            // 2. Upsert selected WhatsApp provider as active
             const { error: waError } = await supabase
                 .from('communication_settings')
                 .upsert({
                     tenant_id: tenantId,
-                    provider_type: 'whatsapp_evolution',
-                    api_url: settings.whatsapp_url,
-                    api_key: settings.whatsapp_key,
-                    instance_name: settings.whatsapp_instance,
+                    provider_type: selectedWaProvider,
+                    api_url: waSettings.apiUrl,
+                    api_key: waSettings.apiKey,
+                    instance_name: waSettings.instanceName,
                     is_active: true
                 }, { onConflict: 'tenant_id,provider_type' });
 
             if (waError) throw waError;
 
-            // Salvar Email
-            const { error: mailError } = await supabase
-                .from('communication_settings')
-                .upsert({
-                    tenant_id: tenantId,
-                    provider_type: 'email_resend',
-                    api_key: settings.email_resend_key,
-                    is_active: true
-                }, { onConflict: 'tenant_id,provider_type' });
+            // 3. Salvar Email
+            if (emailSettings.resendKey) {
+                const { error: mailError } = await supabase
+                    .from('communication_settings')
+                    .upsert({
+                        tenant_id: tenantId,
+                        provider_type: 'email_resend',
+                        api_key: emailSettings.resendKey,
+                        is_active: true
+                    }, { onConflict: 'tenant_id,provider_type' });
 
-            if (mailError) throw mailError;
+                if (mailError) throw mailError;
+            }
 
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);
@@ -122,51 +174,66 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                         <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20 shadow-xl transition-all group-hover:scale-110">
                             <Smartphone className="text-emerald-500" size={28} />
                         </div>
-                        <div className="text-right">
-                            <span className="text-[8px] text-slate-600 font-mono uppercase tracking-widest block mb-1">WhatsApp Business</span>
-                            <h3 className="text-lg font-black text-white italic uppercase tracking-tighter">Evolution API</h3>
+                        <div className="text-right flex flex-col items-end">
+                            <span className="text-[8px] text-slate-600 font-mono uppercase tracking-widest block mb-1">WhatsApp Provider</span>
+                            <div className="relative">
+                                <select
+                                    className="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white text-[10px] font-black uppercase tracking-widest appearance-none pr-10 cursor-pointer hover:bg-black/60 transition-all"
+                                    value={selectedWaProvider}
+                                    onChange={(e) => handleProviderChange(e.target.value as WhatsAppProvider)}
+                                >
+                                    <option value="whatsapp_evolution">Evolution API</option>
+                                    <option value="whatsapp_zapi">Z-API</option>
+                                    <option value="whatsapp_duilio">Duílio</option>
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={12} />
+                            </div>
                         </div>
                     </div>
 
                     <p className="text-xs text-slate-500 leading-relaxed mb-8 font-medium">
-                        Conecte seu servidor de comunicação para habilitar disparos massivos via WhatsApp automáticos.
+                        Selecione seu provedor preferencial e conecte sua infraestrutura para disparos automáticos.
                     </p>
 
                     <div className="space-y-6 flex-grow">
+                        {/* Fields vary slightly by provider, but we map them to the same columns for simplicity */}
                         <div className="space-y-3">
                             <label className="flex items-center gap-3 text-[9px] font-black text-slate-500 uppercase tracking-widest ml-4 italic">
-                                <Globe size={12} className="text-emerald-500/40" /> Endpoint da API
+                                <Globe size={12} className="text-emerald-500/40" />
+                                {selectedWaProvider === 'whatsapp_zapi' ? 'Endpoint Opcional' : 'Endpoint da API'}
                             </label>
                             <input
                                 className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-emerald-500/30 text-xs font-mono placeholder:text-slate-800 transition-all"
-                                placeholder="https://api.seuserver.com"
-                                value={settings.whatsapp_url}
-                                onChange={e => setSettings({ ...settings, whatsapp_url: e.target.value })}
+                                placeholder={selectedWaProvider === 'whatsapp_zapi' ? 'https://api.z-api.io' : 'https://api.seuserver.com'}
+                                value={waSettings.apiUrl}
+                                onChange={e => setWaSettings({ ...waSettings, apiUrl: e.target.value })}
                             />
                         </div>
 
                         <div className="space-y-3">
                             <label className="flex items-center gap-3 text-[9px] font-black text-slate-500 uppercase tracking-widest ml-4 italic">
-                                <Key size={12} className="text-emerald-500/40" /> Chave de Acesso
+                                <Key size={12} className="text-emerald-500/40" />
+                                {selectedWaProvider === 'whatsapp_zapi' ? 'Token (Z-API)' : 'Chave de Acesso'}
                             </label>
                             <input
                                 type="password"
                                 className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-emerald-500/30 text-xs font-mono placeholder:text-slate-800 transition-all"
                                 placeholder="••••••••••••••••"
-                                value={settings.whatsapp_key}
-                                onChange={e => setSettings({ ...settings, whatsapp_key: e.target.value })}
+                                value={waSettings.apiKey}
+                                onChange={e => setWaSettings({ ...waSettings, apiKey: e.target.value })}
                             />
                         </div>
 
                         <div className="space-y-3">
                             <label className="flex items-center gap-3 text-[9px] font-black text-slate-500 uppercase tracking-widest ml-4 italic">
-                                <Terminal size={12} className="text-emerald-500/40" /> Nome da Instância
+                                <Terminal size={12} className="text-emerald-500/40" />
+                                {selectedWaProvider === 'whatsapp_zapi' ? 'Instância ID' : 'Nome da Instância'}
                             </label>
                             <input
                                 className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-emerald-500/30 text-xs font-mono placeholder:text-slate-800 transition-all uppercase"
-                                placeholder="EX: MATRIZ_SP"
-                                value={settings.whatsapp_instance}
-                                onChange={e => setSettings({ ...settings, whatsapp_instance: e.target.value })}
+                                placeholder={selectedWaProvider === 'whatsapp_zapi' ? '3B...D0' : 'EX: MATRIZ_SP'}
+                                value={waSettings.instanceName}
+                                onChange={e => setWaSettings({ ...waSettings, instanceName: e.target.value })}
                             />
                         </div>
                     </div>
@@ -197,8 +264,8 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                                 type="password"
                                 className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-blue-500/30 text-xs font-mono placeholder:text-slate-800 transition-all"
                                 placeholder="re_••••••••••••••••"
-                                value={settings.email_resend_key}
-                                onChange={e => setSettings({ ...settings, email_resend_key: e.target.value })}
+                                value={emailSettings.resendKey}
+                                onChange={e => setEmailSettings({ ...emailSettings, resendKey: e.target.value })}
                             />
                         </div>
 
