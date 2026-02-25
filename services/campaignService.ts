@@ -94,4 +94,24 @@ export class CampaignService {
             .eq('campaign_id', campaignId)
             .eq('status', 'pending');
     }
+
+    /**
+     * Exclui uma campanha e limpa a fila de mensagens associada
+     */
+    static async deleteCampaign(campaignId: string) {
+        // 1. Limpar fila de mensagens
+        await supabase
+            .from('message_queue')
+            .delete()
+            .eq('campaign_id', campaignId);
+
+        // 2. Excluir a campanha
+        const { error } = await supabase
+            .from('outreach_campaigns')
+            .delete()
+            .eq('id', campaignId);
+
+        if (error) throw error;
+        return { success: true };
+    }
 }

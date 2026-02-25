@@ -7,7 +7,7 @@ import {
     X, Layout, Zap, AlertTriangle,
     ShieldCheck, BarChart3, Fingerprint,
     MessageCircle, Globe, Terminal,
-    Sparkles, Activity, Mail
+    Sparkles, Activity, Mail, Edit2, Trash2, MoreVertical
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { OutreachCampaign, Lead } from '../types';
@@ -22,6 +22,7 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [hasInfrastructure, setHasInfrastructure] = useState(false);
+    const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
     const [newCampaign, setNewCampaign] = useState({
         name: '',
         channel: 'whatsapp' as 'whatsapp' | 'email',
@@ -56,39 +57,89 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
         if (tenantId) loadCampaigns();
     }, [tenantId]);
 
-    const handleCreateCampaign = async () => {
+    const handleSaveCampaign = async () => {
         if (!newCampaign.name || !newCampaign.template_content) return;
 
         try {
-            const { data: campaign, error } = await supabase
-                .from('outreach_campaigns')
-                .insert([{
-                    tenant_id: tenantId,
-                    name: newCampaign.name,
-                    channel: newCampaign.channel,
-                    template_content: newCampaign.template_content,
-                    status: 'draft'
-                }])
-                .select()
-                .single();
+            if (editingCampaignId) {
+                // UPDATE
+                const { error } = await supabase
+                    .from('outreach_campaigns')
+                    .update({
+                        name: newCampaign.name,
+                        channel: newCampaign.channel,
+                        template_content: newCampaign.template_content
+                    })
+                    .eq('id', editingCampaignId);
 
-            if (error) throw error;
+                if (error) throw error;
+            } else {
+                // CREATE
+                const { data: campaign, error } = await supabase
+                    .from('outreach_campaigns')
+                    .insert([{
+                        tenant_id: tenantId,
+                        name: newCampaign.name,
+                        channel: newCampaign.channel,
+                        template_content: newCampaign.template_content,
+                        status: 'draft'
+                    }])
+                    .select()
+                    .single();
 
-            const { data: leads } = await supabase
-                .from('leads')
-                .select('id')
-                .eq('tenant_id', tenantId)
-                .eq('status', newCampaign.target_status);
+                if (error) throw error;
 
-            if (leads && leads.length > 0) {
-                await CampaignService.startCampaign(tenantId, campaign.id, leads.map(l => l.id));
+                const { data: leads } = await supabase
+                    .from('leads')
+                    .select('id')
+                    .eq('tenant_id', tenantId)
+                    .eq('status', newCampaign.target_status);
+
+                if (leads && leads.length > 0) {
+                    await CampaignService.startCampaign(tenantId, campaign.id, leads.map(l => l.id));
+                }
             }
 
             setShowModal(false);
+            setEditingCampaignId(null);
             loadCampaigns();
         } catch (err) {
             console.error('Erro ao processar campanha:', err);
         }
+    };
+
+    const handleDeleteCampaign = async (id: string) => {
+        if (!confirm('Deseja realmente excluir esta campanha? Esta ação não pode ser desfeita.')) return;
+
+        try {
+            await CampaignService.deleteCampaign(id);
+            loadCampaigns();
+        } catch (err) {
+            console.error('Erro ao excluir campanha:', err);
+            alert('Erro ao excluir campanha.');
+        }
+    };
+
+    const openEditModal = (camp: OutreachCampaign) => {
+        setEditingCampaignId(camp.id);
+        setNewCampaign({
+            name: camp.name,
+            channel: camp.channel,
+            template_content: camp.template_content,
+            target_status: 'ENRICHED' // Default, as it might not be relevant for edit
+        });
+        setShowModal(true);
+    };
+
+    const openCreateModal = () => {
+        setEditingCampaignId(null);
+        setNewCampaign({
+            name: '',
+            channel: 'whatsapp',
+            template_content: '',
+            target_status: 'ENRICHED'
+        });
+        setShowModal(true);
     };
 
     return (
@@ -116,7 +167,7 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                         </span>
                     </div>
                     <button
-                        onClick={() => setShowModal(true)}
+                        onClick={openCreateModal}
                         className="group flex items-center gap-3 px-8 py-4 bg-primary text-slate-900 font-black text-xs uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20"
                     >
                         <Plus size={18} /> Nova Campanha
@@ -140,15 +191,29 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                             {/* Card Header */}
                             <div className="flex justify-between items-start mb-8">
                                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-xl ${camp.channel === 'whatsapp'
-                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
-                                        : 'bg-blue-500/10 border-blue-500/20 text-blue-500'
+                                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                                    : 'bg-blue-500/10 border-blue-500/20 text-blue-500'
                                     }`}>
                                     {camp.channel === 'whatsapp' ? <MessageCircle size={24} /> : <Mail size={24} />}
                                 </div>
-                                <div className="text-right">
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => openEditModal(camp)}
+                                        className="p-2 bg-white/5 rounded-xl hover:bg-primary/20 hover:text-primary transition-all text-slate-500"
+                                        title="Editar Campanha"
+                                    >
+                                        <Edit2 size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteCampaign(camp.id)}
+                                        className="p-2 bg-white/5 rounded-xl hover:bg-red-500/20 hover:text-red-500 transition-all text-slate-500"
+                                        title="Excluir Campanha"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
                                     <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${camp.status === 'running' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 animate-pulse' :
-                                            camp.status === 'completed' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                                                'bg-white/5 text-slate-500 border-white/10'
+                                        camp.status === 'completed' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                            'bg-white/5 text-slate-500 border-white/10'
                                         }`}>
                                         {camp.status === 'running' ? 'Executando' :
                                             camp.status === 'completed' ? 'Finalizado' : 'Rascunho'}
@@ -199,8 +264,12 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                     <div className="my-auto bg-slate-900 max-w-2xl w-full p-8 sm:p-12 rounded-[3.5rem] border border-white/10 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-500">
                         <div className="flex justify-between items-start mb-10 relative z-10">
                             <div>
-                                <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Nova Campanha</h3>
-                                <p className="text-[9px] text-slate-500 font-mono tracking-widest mt-2 uppercase">Configuração de Disparo Massivo</p>
+                                <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">
+                                    {editingCampaignId ? 'Editar Campanha' : 'Nova Campanha'}
+                                </h3>
+                                <p className="text-[9px] text-slate-500 font-mono tracking-widest mt-2 uppercase">
+                                    {editingCampaignId ? 'Ajustar Configurações de Disparo' : 'Configuração de Disparo Massivo'}
+                                </p>
                             </div>
                             <button
                                 onClick={() => setShowModal(false)}
@@ -238,8 +307,8 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                                         <button
                                             onClick={() => setNewCampaign({ ...newCampaign, channel: 'whatsapp' })}
                                             className={`flex-1 py-4 rounded-xl text-[9px] font-black uppercase transition-all flex items-center justify-center gap-3 ${newCampaign.channel === 'whatsapp'
-                                                    ? 'bg-emerald-600 text-white shadow-lg'
-                                                    : 'text-slate-500 hover:text-slate-300'
+                                                ? 'bg-emerald-600 text-white shadow-lg'
+                                                : 'text-slate-500 hover:text-slate-300'
                                                 }`}
                                         >
                                             <MessageCircle size={14} /> WhatsApp
@@ -247,8 +316,8 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                                         <button
                                             onClick={() => setNewCampaign({ ...newCampaign, channel: 'email' })}
                                             className={`flex-1 py-4 rounded-xl text-[9px] font-black uppercase transition-all flex items-center justify-center gap-3 ${newCampaign.channel === 'email'
-                                                    ? 'bg-blue-600 text-white shadow-lg'
-                                                    : 'text-slate-500 hover:text-slate-300'
+                                                ? 'bg-blue-600 text-white shadow-lg'
+                                                : 'text-slate-500 hover:text-slate-300'
                                                 }`}
                                         >
                                             <Mail size={14} /> E-mail
@@ -256,17 +325,19 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                                     </div>
                                 </div>
 
-                                <div className="space-y-3">
-                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-6">Público Alvo</label>
-                                    <select
-                                        className="w-full bg-black/40 border border-white/5 rounded-2xl px-8 py-5 text-white focus:outline-none focus:border-primary/30 text-[10px] appearance-none cursor-pointer font-bold uppercase tracking-widest"
-                                        value={newCampaign.target_status}
-                                        onChange={e => setNewCampaign({ ...newCampaign, target_status: e.target.value })}
-                                    >
-                                        <option value="ENRICHED">Leads Enriquecidos</option>
-                                        <option value="NEW">Leads Novos</option>
-                                    </select>
-                                </div>
+                                {!editingCampaignId && (
+                                    <div className="space-y-3">
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-6">Público Alvo</label>
+                                        <select
+                                            className="w-full bg-black/40 border border-white/5 rounded-2xl px-8 py-5 text-white focus:outline-none focus:border-primary/30 text-[10px] appearance-none cursor-pointer font-bold uppercase tracking-widest"
+                                            value={newCampaign.target_status}
+                                            onChange={e => setNewCampaign({ ...newCampaign, target_status: e.target.value })}
+                                        >
+                                            <option value="ENRICHED">Leads Enriquecidos</option>
+                                            <option value="NEW">Leads Novos</option>
+                                        </select>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="space-y-4">
@@ -291,12 +362,12 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                                     className="flex-1 py-5 bg-white/5 text-slate-500 font-bold text-[10px] uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all order-2 sm:order-1"
                                 >Cancelar</button>
                                 <button
-                                    onClick={handleCreateCampaign}
+                                    onClick={handleSaveCampaign}
                                     disabled={!hasInfrastructure || !newCampaign.name || !newCampaign.template_content}
                                     className="flex-[2] py-5 bg-primary text-slate-900 font-black text-[10px] uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-primary/20 order-1 sm:order-2 disabled:opacity-20 flex items-center justify-center gap-3 italic"
                                 >
-                                    <Send size={16} />
-                                    <span>Iniciar Disparos</span>
+                                    {editingCampaignId ? <Edit2 size={16} /> : <Send size={16} />}
+                                    <span>{editingCampaignId ? 'Salvar Alterações' : 'Iniciar Disparos'}</span>
                                 </button>
                             </div>
                         </div>
