@@ -66,13 +66,36 @@ ALTER TABLE message_queue ENABLE ROW LEVEL SECURITY;
 ALTER TABLE automation_rules ENABLE ROW LEVEL SECURITY;
 
 -- Políticas de Isolamento por Tenant
+DROP POLICY IF EXISTS "Comm Settings: isolation" ON communication_settings;
 CREATE POLICY "Comm Settings: isolation" ON communication_settings FOR ALL USING (tenant_id = get_auth_tenant());
+
+DROP POLICY IF EXISTS "Campaigns: isolation" ON outreach_campaigns;
 CREATE POLICY "Campaigns: isolation" ON outreach_campaigns FOR ALL USING (tenant_id = get_auth_tenant());
+
+DROP POLICY IF EXISTS "Message Queue: isolation" ON message_queue;
 CREATE POLICY "Message Queue: isolation" ON message_queue FOR ALL USING (tenant_id = get_auth_tenant());
+
+DROP POLICY IF EXISTS "Automation Rules: isolation" ON automation_rules;
 CREATE POLICY "Automation Rules: isolation" ON automation_rules FOR ALL USING (tenant_id = get_auth_tenant());
 
 -- 6. ÍNDICES PARA PERFORMANCE
-CREATE INDEX idx_msg_queue_status ON message_queue(status) WHERE status = 'pending';
-CREATE INDEX idx_msg_queue_scheduled ON message_queue(scheduled_for);
-CREATE INDEX idx_campaign_tenant ON outreach_campaigns(tenant_id);
-CREATE INDEX idx_rules_tenant ON automation_rules(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_msg_queue_status ON message_queue(status) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_msg_queue_scheduled ON message_queue(scheduled_for);
+CREATE INDEX IF NOT EXISTS idx_campaign_tenant ON outreach_campaigns(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_rules_tenant ON automation_rules(tenant_id);
+
+-- 7. FUNÇÕES AUXILIARES
+CREATE OR REPLACE FUNCTION increment_campaign_processed(campaign_id UUID)
+RETURNS void AS $$
+BEGIN
+    UPDATE outreach_campaigns
+    SET processed_leads = processed_leads + 1
+    WHERE id = campaign_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 8. AJUSTES DE SEGURANÇA (PERMITIR ACESSO DO SISTEMA)
+-- Adicionando política para que o sistema (service_role ou worker) possa ler e apagar se necessário
+DROP POLICY IF EXISTS "AI SDR: isolation" ON ai_sdr_interactions;
+CREATE POLICY "AI SDR: isolation" ON ai_sdr_interactions 
+FOR ALL USING (tenant_id = get_auth_tenant() OR tenant_id = '00000000-0000-0000-0000-000000000000');
