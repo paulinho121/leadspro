@@ -249,6 +249,13 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Fechar sidebar automaticamente em telas pequenas no carregamento
+  useEffect(() => {
+    if (window.innerWidth < 768 && isSidebarOpen) {
+      setSidebarOpen(false);
+    }
+  }, []);
+
   // Busca de Segredos após carregamento do Tenant
   useEffect(() => {
     if (userTenantId && userTenantId !== 'default') {
@@ -600,16 +607,16 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen bg-background text-slate-200 flex font-sans selection:bg-primary/30 selection:text-primary overflow-hidden relative">
-      {/* Sidebar Mobile Overlay */}
-      {!isSidebarOpen && (
+      {/* Sidebar Mobile Overlay - Only show when sidebar IS open on mobile */}
+      {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[45] md:hidden animate-fade-in"
-          onClick={() => setSidebarOpen(true)}
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-[90] md:hidden animate-fade-in"
+          onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`glass border-r border-white/5 transition-all duration-500 ease-in-out z-50 flex flex-col 
+      <aside className={`glass border-r border-white/5 transition-all duration-500 ease-in-out z-[100] flex flex-col 
         fixed md:relative inset-y-0 left-0 
         ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0 w-72 md:w-20'}`}>
 
@@ -635,12 +642,12 @@ const App: React.FC = () => {
         </div>
 
         <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto custom-scrollbar">
-          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('dashboard'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-          <NavItem icon={<Search size={20} />} label="Extração" active={activeTab === 'discovery'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('discovery'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-          <NavItem icon={<Database size={20} />} label="Laboratório" active={activeTab === 'lab'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('lab'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-          <NavItem icon={<Rocket size={20} />} label="Enriquecidos" active={activeTab === 'enriched'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-          <NavItem icon={<TrendingUp size={20} />} label="Pipeline" active={activeTab === 'pipeline'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('pipeline'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-          <NavItem icon={<Megaphone size={20} />} label="Automação" active={activeTab === 'automation'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('automation'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('dashboard'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<Search size={20} />} label="Extração" active={activeTab === 'discovery'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('discovery'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<Database size={20} />} label="Laboratório" active={activeTab === 'lab'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('lab'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<Rocket size={20} />} label="Enriquecidos" active={activeTab === 'enriched'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<TrendingUp size={20} />} label="Pipeline" active={activeTab === 'pipeline'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('pipeline'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<Megaphone size={20} />} label="Automação" active={activeTab === 'automation'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('automation'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
 
 
           <div className="pt-8 pb-4">
@@ -648,12 +655,12 @@ const App: React.FC = () => {
             <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mx-4 mb-4"></div>
           </div>
 
-          <NavItem icon={<ShieldCheck size={20} />} label="Branding" active={activeTab === 'partner'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+          <NavItem icon={<ShieldCheck size={20} />} label="Branding" active={activeTab === 'partner'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
 
           {isMaster && (
             <>
-              <NavItem icon={<Activity size={20} />} label="Histórico" active={activeTab === 'history'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('history'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
-              <NavItem icon={<ShieldCheck className="text-primary" size={20} />} label="Master" active={activeTab === 'master'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('master'); if (window.innerWidth < 768) setSidebarOpen(true); }} />
+              <NavItem icon={<Activity size={20} />} label="Histórico" active={activeTab === 'history'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('history'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+              <NavItem icon={<ShieldCheck className="text-primary" size={20} />} label="Master" active={activeTab === 'master'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('master'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
             </>
           )}
         </nav>
@@ -759,19 +766,19 @@ const App: React.FC = () => {
 
         <button
           onClick={() => setSidebarOpen(!isSidebarOpen)}
-          className="absolute -right-3 top-24 bg-primary text-slate-900 p-2 rounded-full shadow-2xl hover:scale-110 transition-all duration-500 z-[60] flex"
+          className="absolute -right-3 top-24 bg-primary text-slate-900 p-2 rounded-full shadow-2xl hover:scale-110 transition-all duration-500 z-[110] flex"
         >
           {isSidebarOpen ? <X size={14} /> : <Menu size={14} />}
         </button>
       </aside>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-slate-900/80 backdrop-blur-xl border-t border-white/5 flex items-center justify-around z-50 md:hidden pb-safe">
-        <MobileNavItem icon={<LayoutDashboard size={20} />} label="Home" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-        <MobileNavItem icon={<Search size={20} />} label="Busca" active={activeTab === 'discovery'} onClick={() => setActiveTab('discovery')} />
-        <MobileNavItem icon={<Database size={20} />} label="Lab" active={activeTab === 'lab'} onClick={() => setActiveTab('lab')} />
-        <MobileNavItem icon={<TrendingUp size={20} />} label="Vendas" active={activeTab === 'pipeline'} onClick={() => setActiveTab('pipeline')} />
-        <MobileNavItem icon={<Menu size={20} />} label="Menu" active={isSidebarOpen} onClick={() => setSidebarOpen(true)} />
+      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-slate-900/90 backdrop-blur-2xl border-t border-white/5 flex items-center justify-around z-50 md:hidden pb-safe px-4">
+        <MobileNavItem icon={<LayoutDashboard size={22} />} label="Home" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setSidebarOpen(false); }} />
+        <MobileNavItem icon={<Search size={22} />} label="Busca" active={activeTab === 'discovery'} onClick={() => { setActiveTab('discovery'); setSidebarOpen(false); }} />
+        <MobileNavItem icon={<Database size={22} />} label="Lab" active={activeTab === 'lab'} onClick={() => { setActiveTab('lab'); setSidebarOpen(false); }} />
+        <MobileNavItem icon={<TrendingUp size={22} />} label="Vendas" active={activeTab === 'pipeline'} onClick={() => { setActiveTab('pipeline'); setSidebarOpen(false); }} />
+        <MobileNavItem icon={<Menu size={22} />} label="Menu" active={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} />
       </nav>
 
       {/* Main Content */}
@@ -783,10 +790,9 @@ const App: React.FC = () => {
         ></div>
         <header className="h-16 md:h-24 border-b border-white/5 flex items-center justify-between px-4 md:px-10 relative z-40 backdrop-blur-xl shrink-0">
           <div className="flex items-center gap-4 md:gap-6">
-            {/* Hamburger for mobile - if we want more options */}
             <button
-              onClick={() => setSidebarOpen(false)}
-              className="p-2 bg-white/5 rounded-xl md:hidden text-slate-400"
+              onClick={() => setSidebarOpen(true)}
+              className="p-3 bg-white/5 rounded-2xl md:hidden text-slate-300 active:scale-95 transition-all"
             >
               <Menu size={20} />
             </button>

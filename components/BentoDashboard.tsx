@@ -273,7 +273,7 @@ const InsightLog = ({ status, msg, time, type = 'normal', color = 'primary' }: {
         >{status}</span>
         <span className="text-[9px] text-slate-600 font-mono">{time}</span>
       </div>
-      <p className="text-slate-300 text-sm truncate group-hover:text-white transition-colors">{msg}</p>
+      <p className="text-slate-300 text-sm leading-snug group-hover:text-white transition-colors">{msg}</p>
     </div>
   </div>
 );
