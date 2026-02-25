@@ -104,3 +104,29 @@ export interface OutreachSequence {
   is_active: boolean;
   created_at: string;
 }
+
+export interface OutreachCampaign {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description?: string;
+  status: 'draft' | 'scheduled' | 'running' | 'paused' | 'completed';
+  channel: 'whatsapp' | 'email';
+  template_content: string;
+  scheduled_at?: string;
+  total_leads: number;
+  processed_leads: number;
+  created_at: string;
+}
+
+export interface AutomationRule {
+  id: string;
+  tenant_id: string;
+  name: string;
+  trigger_type: 'incoming_message' | 'lead_enriched' | 'status_changed';
+  conditions: any;
+  action_type: 'send_reply' | 'move_stage' | 'notify_admin';
+  action_payload: any;
+  is_active: boolean;
+  created_at: string;
+}

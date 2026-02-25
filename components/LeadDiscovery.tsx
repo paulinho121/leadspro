@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, MapPin, Building2, Filter, Loader2, Target, Globe, Crosshair, Sparkles, Zap, Square, ChevronDown, Cpu, BrainCircuit, Atom } from 'lucide-react';
+import { Search, MapPin, Building2, Filter, Loader2, Target, Globe, Crosshair, Sparkles, Zap, Square, ChevronDown, Cpu, BrainCircuit, Atom, FileDown } from 'lucide-react';
+import LeadImporter from './LeadImporter';
 import LiquidBattery from './LiquidBattery';
 import { CNAE_LIST } from '../constants';
 import { SearchFilters } from '../types';
@@ -30,7 +31,7 @@ const CITY_FALLBACK_SEED: Record<string, string[]> = {
 
 const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEnrichment, apiKeys }) => {
   const { config } = useBranding();
-  const [mode, setMode] = useState<'MAPS' | 'CNPJ' | 'ENRICH' | 'SHERLOCK' | 'B2C_HUNTER'>('MAPS');
+  const [mode, setMode] = useState<'MAPS' | 'CNPJ' | 'ENRICH' | 'SHERLOCK' | 'B2C_HUNTER' | 'IMPORT'>('MAPS');
   const [filters, setFilters] = useState<SearchFilters>({
     keyword: '',
     location: '',
@@ -311,7 +312,8 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                   mode === 'CNPJ' ? <Building2 size={24} /> :
                     mode === 'SHERLOCK' ? <Crosshair size={24} className={isScanning ? 'animate-pulse text-red-500' : ''} /> :
                       mode === 'B2C_HUNTER' ? <Target size={24} className={isScanning ? 'animate-bounce text-emerald-500' : ''} /> :
-                        <BrainCircuit size={24} className={isScanning ? 'animate-neural' : ''} />}
+                        mode === 'IMPORT' ? <FileDown size={24} /> :
+                          <BrainCircuit size={24} className={isScanning ? 'animate-neural' : ''} />}
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -324,7 +326,8 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                     mode === 'CNPJ' ? 'Empresas Gov' :
                       mode === 'SHERLOCK' ? 'Hunter Protocol' :
                         mode === 'B2C_HUNTER' ? 'B2C Intent Hunter' :
-                          'Deep Enrich'}
+                          mode === 'IMPORT' ? 'Excel Import' :
+                            'Deep Enrich'}
                 </h3>
               </div>
             </div>
@@ -338,7 +341,9 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                     ? 'Localize clientes insatisfeitos e interações públicas.'
                     : mode === 'B2C_HUNTER'
                       ? 'Capture pessoas físicas com intenção real de compra em fóruns e redes.'
-                      : 'Enriqueça dados de um CNPJ individual com IA.'}
+                      : mode === 'IMPORT'
+                        ? 'Adicione sua própria base de contatos para prospecção em massa.'
+                        : 'Enriqueça dados de um CNPJ individual com IA.'}
             </p>
           </div>
 
@@ -396,210 +401,228 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                 disabled={isScanning}
                 label="Enriquecer Individual"
               />
+              <ModeButton
+                active={mode === 'IMPORT'}
+                onClick={() => { setMode('IMPORT'); console.log('[LeadDiscovery] Mode changed to IMPORT'); }}
+                disabled={isScanning}
+                label="Importar Excel"
+              />
             </div>
           </div>
 
-          {/* 2. Inputs Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-1">
-            <div className={`${mode === 'ENRICH' ? 'md:col-span-2' : ''} space-y-3`}>
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">
-                {mode === 'MAPS' ? 'Nicho ou Atividade' :
-                  mode === 'CNPJ' ? 'CNAE ou Palavra-chave' :
-                    mode === 'SHERLOCK' ? 'Alvo / Concorrente' :
-                      mode === 'B2C_HUNTER' ? 'O que o lead procura? (Ex: Plano de Saúde)' :
-                        'Número do CNPJ'}
-              </label>
-              <div className="relative group/input">
-                <Search className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
-                <input
-                  type="text"
-                  disabled={isScanning}
-                  placeholder={mode === 'MAPS' ? "Ex: Academias, Restaurantes..." : mode === 'CNPJ' ? "Ex: 6201-5/00 ou Tecnologia" : mode === 'SHERLOCK' ? "Link Instagram/Site ou Nome do Concorrente" : mode === 'B2C_HUNTER' ? "Ex: valor plano de saúde, casas para alugar..." : "00.000.000/0001-00"}
-                  className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white text-lg focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
-                  value={filters.keyword}
-                  onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {mode === 'SHERLOCK' && (
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Filtro de Contexto (Opcional)</label>
+          {mode === 'IMPORT' ? (
+            <LeadImporter
+              tenantId={config.tenantId}
+              onImportComplete={() => {
+                console.log('[Import] Notificando App sobre novos leads');
+                // Trigger reload se necessário ou mostrar toast
+              }}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-1">
+              {/* Conteúdo original do Inputs Grid permanece aqui */}
+              <div className={`${mode === 'ENRICH' ? 'md:col-span-2' : ''} space-y-3`}>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">
+                  {mode === 'MAPS' ? 'Nicho ou Atividade' :
+                    mode === 'CNPJ' ? 'CNAE ou Palavra-chave' :
+                      mode === 'SHERLOCK' ? 'Alvo / Concorrente' :
+                        mode === 'B2C_HUNTER' ? 'O que o lead procura? (Ex: Plano de Saúde)' :
+                          'Número do CNPJ'}
+                </label>
                 <div className="relative group/input">
-                  <Filter className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
+                  <Search className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
                   <input
                     type="text"
                     disabled={isScanning}
-                    placeholder="Ex: insatisfeito, reclamação, preço, defeito..."
+                    placeholder={mode === 'MAPS' ? "Ex: Academias, Restaurantes..." : mode === 'CNPJ' ? "Ex: 6201-5/00 ou Tecnologia" : mode === 'SHERLOCK' ? "Link Instagram/Site ou Nome do Concorrente" : mode === 'B2C_HUNTER' ? "Ex: valor plano de saúde, casas para alugar..." : "00.000.000/0001-00"}
                     className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white text-lg focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
-                    value={filters.industry}
-                    onChange={(e) => setFilters({ ...filters, industry: e.target.value })}
+                    value={filters.keyword}
+                    onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
                   />
                 </div>
               </div>
-            )}
 
-            {mode !== 'ENRICH' && mode !== 'SHERLOCK' && (
-              <>
+              {mode === 'SHERLOCK' && (
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Estado (UF)</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Filtro de Contexto (Opcional)</label>
                   <div className="relative group/input">
-                    <MapPin className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
-                    <select
-                      disabled={isScanning}
-                      className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
-                      value={selectedState}
-                      onChange={(e) => setSelectedState(e.target.value)}
-                    >
-                      <option value="" className="bg-slate-900 text-slate-500">Selecione o Estado</option>
-                      {states.map(uf => (
-                        <option key={uf} value={uf} className="bg-slate-900 text-white">{uf}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-5 top-5.5 w-5 h-5 text-slate-500 pointer-events-none" />
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Cidade</label>
-                  <div className="relative group/input">
-                    {/* INPUT HÍBRIDO AUTOCOMPLETE: Sempre permite digitar, mas sugere se a API carregar. */}
+                    <Filter className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
                     <input
                       type="text"
-                      disabled={isScanning || !selectedState}
-                      onFocus={() => setShowCitySuggestions(true)}
-                      placeholder={!selectedState ? "Selecione o Estado primeiro" : "Busque ou digite a cidade..."}
-                      className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
-                      value={selectedCity === 'TODO_ESTADO' ? `★ VARRER TODO O ESTADO (${selectedState})` : selectedCity}
-                      onChange={(e) => {
-                        setSelectedCity(e.target.value);
-                        setShowCitySuggestions(true);
-                      }}
-                      onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)}
-                    />
-
-                    {/* Sugestões do Autocomplete */}
-                    {showCitySuggestions && selectedState && !isScanning && (
-                      <div className="absolute top-full left-0 right-0 z-50 mt-2 glass-strong rounded-2xl border border-white/10 shadow-2xl overflow-hidden max-h-[300px] overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-300">
-                        {/* Opção Especial: Todo o Estado */}
-                        <div
-                          onClick={() => { setSelectedCity('TODO_ESTADO'); setShowCitySuggestions(false); }}
-                          className="p-4 flex items-center gap-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 cursor-pointer border-b border-white/5 transition-colors group"
-                        >
-                          <Zap size={16} className="text-emerald-500 group-hover:scale-110 transition-transform" />
-                          <div className="flex flex-col">
-                            <span className="text-xs font-black uppercase tracking-widest">Varrer todo o Estado</span>
-                            <span className="text-[10px] text-emerald-500/60 font-mono">Busca sequencial por todas as cidades de {selectedState}</span>
-                          </div>
-                        </div>
-
-                        {/* Lista de Cidades (Filtrada) */}
-                        {loadingCities ? (
-                          <div className="p-8 text-center text-slate-500 flex flex-col items-center gap-2">
-                            <Loader2 size={24} className="animate-spin text-primary" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Sincronizando cidades...</span>
-                          </div>
-                        ) : cities.length > 0 ? (
-                          cities
-                            .filter(c => c.toLowerCase().includes(selectedCity.toLowerCase()) && selectedCity !== 'TODO_ESTADO')
-                            .slice(0, 50)
-                            .map(city => (
-                              <div
-                                key={city}
-                                onClick={() => { setSelectedCity(city); setShowCitySuggestions(false); }}
-                                className="p-4 hover:bg-white/10 text-white text-sm cursor-pointer border-b border-white/5 last:border-0 transition-colors flex items-center gap-3"
-                              >
-                                <MapPin size={14} className="text-slate-600" />
-                                {city}
-                              </div>
-                            ))
-                        ) : (
-                          <div className="p-6 text-center text-slate-500 text-[10px] font-black uppercase tracking-widest">
-                            {selectedCity ? 'Digite para usar nome manual' : 'Nenhuma cidade encontrada'}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Dica de Status */}
-                    {!loadingCities && selectedState && cities.length === 0 && (
-                      <div className="absolute -bottom-6 left-2 flex items-center gap-2">
-                        <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse"></span>
-                        <span className="text-[8px] font-bold text-amber-500/80 uppercase tracking-widest leading-none">
-                          API Offline: Digite o nome da cidade manualmente.
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Qtd. Leads Almejada</label>
-                  <div className="relative group/input">
-                    <Target className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
-                    <input
-                      type="number"
                       disabled={isScanning}
-                      min="1"
-                      placeholder="Ex: 30"
-                      className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white text-lg focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      value={filters.limit || ''}
-                      onChange={(e) => setFilters({ ...filters, limit: parseInt(e.target.value) || 0 })}
+                      placeholder="Ex: insatisfeito, reclamação, preço, defeito..."
+                      className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white text-lg focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
+                      value={filters.industry}
+                      onChange={(e) => setFilters({ ...filters, industry: e.target.value })}
                     />
-                    <span className="absolute right-5 top-5 text-[10px] font-black text-slate-600 uppercase">LEADS</span>
                   </div>
                 </div>
-              </>
-            )}
-          </div>
+              )}
 
-          {/* 3. Global Action Button */}
-          <div className="space-y-6 pt-2">
-            <button
-              onClick={handleSearch}
-              disabled={(!isScanning && (!filters.keyword || (mode !== 'ENRICH' && mode !== 'SHERLOCK' && !filters.location))) || (isScanning && stopSignal)}
-              className={`w-full py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 transition-all relative overflow-hidden group/btn shadow-2xl ${isScanning
-                ? 'bg-red-600 text-white border-red-400 shadow-red-900/40 hover:bg-red-700 animate-pulse'
-                : 'bg-primary text-slate-900 shadow-primary/20 hover:scale-[1.01] active:scale-[0.99]'
-                }`}
-            >
-              {isScanning ? (
+              {mode !== 'ENRICH' && mode !== 'SHERLOCK' && (
                 <>
-                  <div className="absolute inset-0 bg-black/20 animate-scan pointer-events-none"></div>
-                  {stopSignal ? (
-                    <><Loader2 size={28} className="animate-spin" /><span>FINALIZANDO CICLO...</span></>
-                  ) : (
-                    <><Square size={28} fill="currentColor" className="animate-pulse" /><span>PARAR VARREDURA AGORA ({leadsFound})</span></>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-white/40 blur-lg rounded-full animate-pulse group-hover/btn:blur-xl transition-all"></div>
-                    <Zap size={28} fill="currentColor" className="relative z-10 group-hover/btn:rotate-12 transition-transform" />
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Estado (UF)</label>
+                    <div className="relative group/input">
+                      <MapPin className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
+                      <select
+                        disabled={isScanning}
+                        className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
+                        value={selectedState}
+                        onChange={(e) => setSelectedState(e.target.value)}
+                      >
+                        <option value="" className="bg-slate-900 text-slate-500">Selecione o Estado</option>
+                        {states.map(uf => (
+                          <option key={uf} value={uf} className="bg-slate-900 text-white">{uf}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-5 top-5.5 w-5 h-5 text-slate-500 pointer-events-none" />
+                    </div>
                   </div>
-                  <span className="relative z-10">{mode === 'ENRICH' ? 'ENRIQUECER CNPJ AGORA' : 'INICIAR NEURAL EXTRACTION'}</span>
+
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Cidade</label>
+                    <div className="relative group/input">
+                      {/* INPUT HÍBRIDO AUTOCOMPLETE: Sempre permite digitar, mas sugere se a API carregar. */}
+                      <input
+                        type="text"
+                        disabled={isScanning || !selectedState}
+                        onFocus={() => setShowCitySuggestions(true)}
+                        placeholder={!selectedState ? "Selecione o Estado primeiro" : "Busque ou digite a cidade..."}
+                        className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
+                        value={selectedCity === 'TODO_ESTADO' ? `★ VARRER TODO O ESTADO (${selectedState})` : selectedCity}
+                        onChange={(e) => {
+                          setSelectedCity(e.target.value);
+                          setShowCitySuggestions(true);
+                        }}
+                        onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)}
+                      />
+
+                      {/* Sugestões do Autocomplete */}
+                      {showCitySuggestions && selectedState && !isScanning && (
+                        <div className="absolute top-full left-0 right-0 z-50 mt-2 glass-strong rounded-2xl border border-white/10 shadow-2xl overflow-hidden max-h-[300px] overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-300">
+                          {/* Opção Especial: Todo o Estado */}
+                          <div
+                            onClick={() => { setSelectedCity('TODO_ESTADO'); setShowCitySuggestions(false); }}
+                            className="p-4 flex items-center gap-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 cursor-pointer border-b border-white/5 transition-colors group"
+                          >
+                            <Zap size={16} className="text-emerald-500 group-hover:scale-110 transition-transform" />
+                            <div className="flex flex-col">
+                              <span className="text-xs font-black uppercase tracking-widest">Varrer todo o Estado</span>
+                              <span className="text-[10px] text-emerald-500/60 font-mono">Busca sequencial por todas as cidades de {selectedState}</span>
+                            </div>
+                          </div>
+
+                          {/* Lista de Cidades (Filtrada) */}
+                          {loadingCities ? (
+                            <div className="p-8 text-center text-slate-500 flex flex-col items-center gap-2">
+                              <Loader2 size={24} className="animate-spin text-primary" />
+                              <span className="text-[10px] font-black uppercase tracking-widest">Sincronizando cidades...</span>
+                            </div>
+                          ) : cities.length > 0 ? (
+                            cities
+                              .filter(c => c.toLowerCase().includes(selectedCity.toLowerCase()) && selectedCity !== 'TODO_ESTADO')
+                              .slice(0, 50)
+                              .map(city => (
+                                <div
+                                  key={city}
+                                  onClick={() => { setSelectedCity(city); setShowCitySuggestions(false); }}
+                                  className="p-4 hover:bg-white/10 text-white text-sm cursor-pointer border-b border-white/5 last:border-0 transition-colors flex items-center gap-3"
+                                >
+                                  <MapPin size={14} className="text-slate-600" />
+                                  {city}
+                                </div>
+                              ))
+                          ) : (
+                            <div className="p-6 text-center text-slate-500 text-[10px] font-black uppercase tracking-widest">
+                              {selectedCity ? 'Digite para usar nome manual' : 'Nenhuma cidade encontrada'}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Dica de Status */}
+                      {!loadingCities && selectedState && cities.length === 0 && (
+                        <div className="absolute -bottom-6 left-2 flex items-center gap-2">
+                          <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse"></span>
+                          <span className="text-[8px] font-bold text-amber-500/80 uppercase tracking-widest leading-none">
+                            API Offline: Digite o nome da cidade manualmente.
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Qtd. Leads Almejada</label>
+                    <div className="relative group/input">
+                      <Target className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
+                      <input
+                        type="number"
+                        disabled={isScanning}
+                        min="1"
+                        placeholder="Ex: 30"
+                        className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white text-lg focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        value={filters.limit || ''}
+                        onChange={(e) => setFilters({ ...filters, limit: parseInt(e.target.value) || 0 })}
+                      />
+                      <span className="absolute right-5 top-5 text-[10px] font-black text-slate-600 uppercase">LEADS</span>
+                    </div>
+                  </div>
                 </>
               )}
-            </button>
+            </div>
+          )}
 
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4">
-              <div className="flex items-center gap-3">
-                <div className={`w-2 h-2 rounded-full ${isScanning ? 'bg-red-500 animate-pulse' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'}`}></div>
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                  {isScanning ? 'Motor de Varredura em Alta Performance' : 'Sistemas Prontos para Operação'}
-                </span>
-              </div>
-              <div className="flex items-center gap-6">
-                {hasFinished && leadsFound > 0 && (
-                  <button onClick={onStartEnrichment} className="text-primary text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:opacity-80 transition-opacity">
-                    <Sparkles size={14} /> Processar Amostras
-                  </button>
+          {/* 3. Global Action Button (Apenas se não for IMPORT) */}
+          {mode !== 'IMPORT' && (
+            <div className="space-y-6 pt-2">
+              <button
+                onClick={handleSearch}
+                disabled={(!isScanning && (!filters.keyword || (mode !== 'ENRICH' && mode !== 'SHERLOCK' && !filters.location))) || (isScanning && stopSignal)}
+                className={`w-full py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 transition-all relative overflow-hidden group/btn shadow-2xl ${isScanning
+                  ? 'bg-red-600 text-white border-red-400 shadow-red-900/40 hover:bg-red-700 animate-pulse'
+                  : 'bg-primary text-slate-900 shadow-primary/20 hover:scale-[1.01] active:scale-[0.99]'
+                  }`}
+              >
+                {isScanning ? (
+                  <>
+                    <div className="absolute inset-0 bg-black/20 animate-scan pointer-events-none"></div>
+                    {stopSignal ? (
+                      <><Loader2 size={28} className="animate-spin" /><span>FINALIZANDO CICLO...</span></>
+                    ) : (
+                      <><Square size={28} fill="currentColor" className="animate-pulse" /><span>PARAR VARREDURA AGORA ({leadsFound})</span></>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-white/40 blur-lg rounded-full animate-pulse group-hover/btn:blur-xl transition-all"></div>
+                      <Zap size={28} fill="currentColor" className="relative z-10 group-hover/btn:rotate-12 transition-transform" />
+                    </div>
+                    <span className="relative z-10">{mode === 'ENRICH' ? 'ENRIQUECER CNPJ AGORA' : 'INICIAR NEURAL EXTRACTION'}</span>
+                  </>
                 )}
-                <span className="text-[10px] font-bold text-slate-600 italic">Ciclo: {mode === 'ENRICH' ? 'Instantâneo' : '3.0s'}</span>
+              </button>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full ${isScanning ? 'bg-red-500 animate-pulse' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'}`}></div>
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    {isScanning ? 'Motor de Varredura em Alta Performance' : 'Sistemas Prontos para Operação'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-6">
+                  {hasFinished && leadsFound > 0 && (
+                    <button onClick={onStartEnrichment} className="text-primary text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:opacity-80 transition-opacity">
+                      <Sparkles size={14} /> Processar Amostras
+                    </button>
+                  )}
+                  <span className="text-[10px] font-bold text-slate-600 italic">Ciclo: {mode === 'ENRICH' ? 'Instantâneo' : '3.0s'}</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
