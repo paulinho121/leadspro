@@ -67,7 +67,7 @@ export class DiscoveryService {
             }
         } catch (error) {
             console.error('[Neural Discovery] Erro durante deep scan:', error);
-            return [];
+            throw error; // Propagate error to trigger UI modal
         }
 
         return [];
@@ -217,6 +217,7 @@ export class DiscoveryService {
             }
         } catch (error) {
             console.error('[CNPJ Mass Scan] Erro durante a varredura:', error);
+            throw error; // Propagate error
         }
 
         return [];
@@ -407,7 +408,7 @@ export class DiscoveryService {
 
         } catch (error) {
             console.error('[Sherlock Scan] Erro fatal:', error);
-            return [];
+            throw error; // Propagate error
         }
 
         return [];

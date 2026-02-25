@@ -277,7 +277,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
         type: 'INVALID',
         message: 'Chave de API inválida ou expirada. Verifique se copiou a chave corretamente no painel do provedor.'
       });
-    } else if (msg.includes('429') || msg.includes('rate limit') || msg.includes('quota')) {
+    } else if (msg.includes('429') || msg.includes('rate limit') || msg.includes('quota') || msg.includes('INSUFFICIENT_CREDITS')) {
       setNeuralError({
         type: 'CREDITS',
         message: 'Limite de créditos atingido. Adquira mais créditos ou verifique sua conta no provedor da API.'

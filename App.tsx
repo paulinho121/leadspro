@@ -801,37 +801,58 @@ const App: React.FC = () => {
             </h2>
           </div>
 
-          <div className="flex items-center gap-2 md:gap-6">
-            {/* Neural Wallet Status - Minimal on mobile */}
-            <div className="flex items-center gap-1 md:gap-3 px-2 md:px-4 py-1.5 bg-primary/10 rounded-xl border border-primary/20 transition-all">
-              <MoneyIcon size={12} className="text-primary animate-pulse" />
-              <span className="text-xs font-black text-white">{creditBalance.toLocaleString()}</span>
+          {/* Premium Wallet & Status Group */}
+          <div className="hidden md:flex items-center gap-4">
+            <div className="flex items-center gap-4 px-4 py-2 bg-primary/10 rounded-2xl border border-primary/20 transition-all group/wallet cursor-pointer hover:bg-primary/20 shadow-lg shadow-primary/5">
+              <div className="flex flex-col items-end">
+                <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em] leading-none mb-1">Matrix Balance</span>
+                <span className="text-[7px] text-primary/60 font-bold uppercase tracking-widest leading-none">Créditos Ativos</span>
+              </div>
+              <div className="flex items-center gap-2 bg-slate-900/50 px-3 py-1.5 rounded-xl border border-white/5">
+                <MoneyIcon size={14} className="text-primary animate-pulse" />
+                <span className="text-sm font-black text-white">$ {creditBalance.toLocaleString()}</span>
+              </div>
             </div>
 
+            <div className="flex items-center gap-2 bg-emerald-500/5 border border-emerald-500/10 px-4 py-2 rounded-2xl">
+              <div className="flex flex-col items-end">
+                <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">{userName.split(' ')[0].toUpperCase()}</span>
+                <span className="text-[7px] text-emerald-500/60 font-bold uppercase tracking-[0.2em]">Conectado</span>
+              </div>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse"></div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className={`relative group p-2 rounded-xl transition-all border ${showNotifications ? 'bg-primary/10 border-primary/30' : 'bg-white/5 border-white/5'}`}
+              className={`relative group p-2.5 rounded-xl transition-all border ${showNotifications ? 'bg-primary/10 border-primary/30' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
             >
-              <Bell size={16} className={showNotifications ? 'text-primary' : 'text-slate-400'} />
+              <Bell size={18} className={showNotifications ? 'text-primary' : 'text-slate-400'} />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full ring-2 ring-slate-950 animate-pulse" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full ring-2 ring-slate-950 animate-pulse shadow-lg" />
               )}
             </button>
           </div>
         </header>
 
-        {/* ALERTA DE CONFIGURAÇÃO PENDENTE */}
         {missingKeys && activeTab !== 'partner' && (
-          <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-6 md:px-10 py-2.5 flex items-center justify-between animate-fade-in-down shrink-0">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="text-yellow-500 shrink-0" size={14} />
-              <p className="text-[10px] text-white font-bold">Configuração Pendente</p>
+          <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 md:px-10 py-3 flex items-center justify-between animate-fade-in-down shrink-0 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent pointer-events-none"></div>
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="p-2 bg-amber-500/20 rounded-lg animate-pulse">
+                <AlertTriangle className="text-amber-500 shrink-0" size={16} />
+              </div>
+              <div className="flex flex-col">
+                <p className="text-[11px] text-white font-black uppercase tracking-[0.2em] leading-none mb-1">Chaves de API pendentes</p>
+                <p className="text-[10px] text-amber-500/60 font-medium">Você precisa configurar suas chaves Serper/Gemini para realizar extrações neurais.</p>
+              </div>
             </div>
             <button
               onClick={() => setActiveTab('partner')}
-              className="bg-white/10 text-white px-2 py-1 rounded-md text-[9px] font-black uppercase"
+              className="bg-amber-500 text-slate-900 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-amber-500/20 relative z-10 border border-amber-400/50 active-scale"
             >
-              Fix
+              CONFIGURE SETUP
             </button>
           </div>
         )}
