@@ -72,15 +72,15 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertT
         <div className="space-y-10 animate-fade-in pb-20">
 
             {/* Header Section Premium */}
-            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 bg-white/[0.02] p-8 lg:p-10 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 blur-[120px] -mr-48 -mt-48 pointer-events-none"></div>
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 bg-white/[0.02] p-8 lg:p-12 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-visible">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 blur-[120px] -mr-48 -mt-48 pointer-events-none rounded-full"></div>
 
                 <div className="relative z-10">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/20 shadow-xl shadow-emerald-900/10">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/20 shadow-xl shadow-emerald-900/10 shrink-0">
                             <Rocket size={24} />
                         </div>
-                        <h2 className="text-3xl lg:text-4xl font-black text-white tracking-tighter">
+                        <h2 className="text-3xl lg:text-4xl font-black text-white tracking-tighter italic uppercase">
                             Gerenciamento Comercial
                         </h2>
                     </div>
@@ -89,10 +89,10 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertT
                     </p>
                 </div>
 
-                <div className="relative w-full xl:w-auto z-20">
+                <div className="relative w-full xl:w-auto z-30">
                     <button
                         onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                        className="w-full xl:w-auto px-10 py-5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-2xl font-black flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-emerald-500/20 uppercase text-xs tracking-[0.2em]"
+                        className="w-full xl:w-auto px-10 py-5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-2xl font-black flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-emerald-500/20 uppercase text-xs tracking-[0.2em] italic"
                         disabled={filteredLeads.length === 0}
                     >
                         <Download size={20} />
@@ -100,8 +100,8 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertT
                     </button>
 
                     {isExportMenuOpen && (
-                        <div className="absolute top-full right-0 mt-4 w-80 glass-strong border border-white/10 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.5)] p-4 z-50 animate-in slide-in-from-top-4 duration-300">
-                            <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] px-5 py-3 mb-2 border-b border-white/5">Ecossistema de Integração</div>
+                        <div className="absolute top-full right-0 mt-4 w-full sm:w-80 glass-strong border border-white/10 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.5)] p-4 z-50 animate-in slide-in-from-top-4 duration-300 backdrop-blur-3xl overflow-hidden">
+                            <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] px-5 py-3 mb-2 border-b border-white/5 italic">Ecossistema de Integração</div>
                             <div className="space-y-1">
                                 <CRMMenuItem label="HubSpot CRM" color="bg-orange-500" onClick={() => handleExport('HUBSPOT')} icon={<Zap size={14} fill="white" />} />
                                 <CRMMenuItem label="Pipedrive" color="bg-green-600" onClick={() => handleExport('PIPEDRIVE')} icon={<CheckCircle size={14} />} />
