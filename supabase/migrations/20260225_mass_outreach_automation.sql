@@ -99,3 +99,11 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 DROP POLICY IF EXISTS "AI SDR: isolation" ON ai_sdr_interactions;
 CREATE POLICY "AI SDR: isolation" ON ai_sdr_interactions 
 FOR ALL USING (tenant_id = get_auth_tenant() OR tenant_id = '00000000-0000-0000-0000-000000000000');
+
+-- 9. ADICIONAR COLUNA METADATA SE NÃO EXISTIR
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ai_sdr_interactions' AND column_name = 'metadata') THEN
+        ALTER TABLE ai_sdr_interactions ADD COLUMN metadata JSONB DEFAULT '{}'::jsonb;
+    END IF;
+END $$;

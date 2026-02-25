@@ -27,24 +27,30 @@ export class CommunicationService {
             if (!settings) throw new Error('Provedor de WhatsApp não configurado');
 
             // 2. Disparo Real por Provedor
+            let response;
             if (settings.provider_type === 'whatsapp_evolution') {
-                await fetch(`${settings.api_url}/message/sendText/${settings.instance_name}`, {
+                response = await fetch(`${settings.api_url}/message/sendText/${settings.instance_name}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'apikey': settings.api_key || '' },
                     body: JSON.stringify({ number: payload.leadId, text: payload.content })
                 });
             } else if (settings.provider_type === 'whatsapp_zapi') {
-                await fetch(`https://api.z-api.io/instances/${settings.instance_name}/token/${settings.api_key}/send-text`, {
+                response = await fetch(`https://api.z-api.io/instances/${settings.instance_name}/token/${settings.api_key}/send-text`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phone: payload.leadId, message: payload.content })
                 });
             } else if (settings.provider_type === 'whatsapp_duilio') {
-                await fetch('https://api.duilio.com.br/v1/send', {
+                response = await fetch('https://api.duilio.com.br/v1/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.api_key}` },
                     body: JSON.stringify({ to: payload.leadId, text: payload.content })
                 });
+            }
+
+            if (!response || !response.ok) {
+                const errorData = response ? await response.text() : 'Sem resposta do provedor';
+                throw new Error(`Erro no provedor (${settings.provider_type}): ${errorData}`);
             }
 
             // 3. Registrar Log de Interação
@@ -116,29 +122,47 @@ export class CommunicationService {
         try {
             const { data: pendingMessages } = await supabase
                 .from('message_queue')
-                .select('*')
+                .select(`
+                    *,
+                    leads:lead_id (
+                        id,
+                        name,
+                        phone,
+                        email
+                    )
+                `)
                 .eq('status', 'pending')
                 .lte('scheduled_for', new Date().toISOString())
                 .limit(5);
 
             if (!pendingMessages || pendingMessages.length === 0) return;
 
-            for (const msg of pendingMessages) {
+            for (const msg of pendingMessages as any) {
                 // Prevenir duplo processamento
                 await supabase.from('message_queue').update({ status: 'processing' }).eq('id', msg.id);
 
                 let result;
+                const contactId = msg.channel === 'whatsapp' ? msg.leads?.phone : msg.leads?.email;
+
+                if (!contactId) {
+                    await supabase.from('message_queue').update({
+                        status: 'failed',
+                        error_message: 'Lead sem informação de contato'
+                    }).eq('id', msg.id);
+                    continue;
+                }
+
                 if (msg.channel === 'whatsapp') {
                     result = await this.sendWhatsApp({
                         tenantId: msg.tenant_id,
-                        leadId: msg.lead_id,
+                        leadId: contactId, // Usando o telefone real agora
                         channel: 'whatsapp',
                         content: msg.content
                     });
                 } else {
                     result = await this.sendEmail({
                         tenantId: msg.tenant_id,
-                        leadId: msg.lead_id,
+                        leadId: contactId, // Usando o e-mail real agora
                         channel: 'email',
                         content: msg.content,
                         subject: 'Nova Oportunidade'
