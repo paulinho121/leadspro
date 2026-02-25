@@ -4,13 +4,15 @@ import {
     Play, Pause, Plus, Trash2, Calendar,
     MessageSquare, Mail, ChevronRight, Zap,
     Clock, Target, Sparkles, X, Megaphone,
-    Layout
+    Layout, Activity, Server
 } from 'lucide-react';
 import { OutreachSequence, SequenceStep } from '../types';
 import { supabase } from '../lib/supabase';
 import { useBranding } from './BrandingProvider';
 import AutomationRulesView from './AutomationRulesView';
 import MassOutreachView from './MassOutreachView';
+import CommunicationSettingsView from './CommunicationSettingsView';
+import { Settings } from 'lucide-react';
 
 interface AutomationViewProps {
     tenantId: string;
@@ -22,7 +24,7 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys }) =>
     const [sequences, setSequences] = useState<OutreachSequence[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showNewModal, setShowNewModal] = useState(false);
-    const [activeTab, setActiveTab] = useState<'sequences' | 'rules' | 'campaigns'>('campaigns');
+    const [activeTab, setActiveTab] = useState<'sequences' | 'rules' | 'campaigns' | 'settings'>('campaigns');
     const [newSequence, setNewSequence] = useState({
         name: '',
         steps: [] as SequenceStep[]
@@ -116,13 +118,13 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys }) =>
                         onClick={() => setActiveTab('campaigns')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'campaigns' ? 'bg-primary text-slate-900 shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-white'}`}
                     >
-                        <Megaphone size={14} /> Campanhas
+                        <Zap size={14} /> Painel de Controle
                     </button>
                     <button
                         onClick={() => setActiveTab('rules')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'rules' ? 'bg-primary text-slate-900 shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-white'}`}
                     >
-                        <Zap size={14} /> Automações
+                        <Activity size={14} /> Automações
                     </button>
                     <button
                         onClick={() => setActiveTab('sequences')}
@@ -130,12 +132,19 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys }) =>
                     >
                         <Layout size={14} /> Cadências
                     </button>
+                    <button
+                        onClick={() => setActiveTab('settings')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'settings' ? 'bg-primary text-slate-900 shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-white'}`}
+                    >
+                        <Server size={14} /> Infraestrutura
+                    </button>
                 </div>
             </div>
 
             <div className="mt-8">
                 {activeTab === 'campaigns' && <MassOutreachView tenantId={tenantId} />}
                 {activeTab === 'rules' && <AutomationRulesView tenantId={tenantId} />}
+                {activeTab === 'settings' && <CommunicationSettingsView tenantId={tenantId} />}
 
                 {activeTab === 'sequences' && (
                     <div className="space-y-6">
