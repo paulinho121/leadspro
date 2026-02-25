@@ -4,7 +4,7 @@ import {
     Play, Pause, Plus, Trash2, Calendar,
     MessageSquare, Mail, ChevronRight, Zap,
     Clock, Target, Sparkles, X, Megaphone,
-    Layout, Activity, Server
+    Layout, Activity, Server, Cpu
 } from 'lucide-react';
 import { OutreachSequence, SequenceStep } from '../types';
 import { supabase } from '../lib/supabase';
@@ -12,7 +12,6 @@ import { useBranding } from './BrandingProvider';
 import AutomationRulesView from './AutomationRulesView';
 import MassOutreachView from './MassOutreachView';
 import CommunicationSettingsView from './CommunicationSettingsView';
-import { Settings } from 'lucide-react';
 
 interface AutomationViewProps {
     tenantId: string;
@@ -107,122 +106,139 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys }) =>
     };
 
     return (
-        <div className="p-6 md:p-10 space-y-8 animate-fade-in max-w-7xl mx-auto h-full overflow-y-auto custom-scrollbar">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                    <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic">Centrifugação de Receita</h2>
-                    <p className="text-slate-500 font-mono text-[10px] uppercase tracking-[0.2em] mt-1">Growth_Decision_Center_v5</p>
+        <div className="p-6 md:p-10 space-y-12 animate-fade-in max-w-7xl mx-auto pb-24">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-10">
+                <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 shadow-xl">
+                        <Cpu className="text-primary" size={32} />
+                    </div>
+                    <div>
+                        <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase italic leading-none">Centrifugação de Receita</h2>
+                        <p className="text-slate-500 font-mono text-[10px] uppercase tracking-[0.4em] mt-2 italic shadow-sm">Growth_Decision_Center_v5.Neural</p>
+                    </div>
                 </div>
-                <div className="flex gap-2 p-1 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-xl">
+
+                {/* Dashboard Control Tabs */}
+                <div className="bg-white/[0.02] p-1.5 rounded-[2rem] border border-white/5 backdrop-blur-xl flex flex-wrap md:flex-nowrap gap-1">
                     <button
                         onClick={() => setActiveTab('campaigns')}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'campaigns' ? 'bg-primary text-slate-900 shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-white'}`}
+                        className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all italic ${activeTab === 'campaigns' ? 'bg-primary text-slate-900 shadow-xl shadow-primary/20 scale-[1.02]' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
                     >
-                        <Zap size={14} /> Painel de Controle
+                        <Zap size={14} /> Disparos
                     </button>
                     <button
                         onClick={() => setActiveTab('rules')}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'rules' ? 'bg-primary text-slate-900 shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-white'}`}
+                        className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all italic ${activeTab === 'rules' ? 'bg-primary text-slate-900 shadow-xl shadow-primary/20 scale-[1.02]' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
                     >
                         <Activity size={14} /> Automações
                     </button>
                     <button
                         onClick={() => setActiveTab('sequences')}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'sequences' ? 'bg-primary text-slate-900 shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-white'}`}
+                        className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all italic ${activeTab === 'sequences' ? 'bg-primary text-slate-900 shadow-xl shadow-primary/20 scale-[1.02]' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
                     >
                         <Layout size={14} /> Cadências
                     </button>
                     <button
                         onClick={() => setActiveTab('settings')}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'settings' ? 'bg-primary text-slate-900 shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-white'}`}
+                        className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all italic ${activeTab === 'settings' ? 'bg-primary text-slate-900 shadow-xl shadow-primary/20 scale-[1.02]' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
                     >
-                        <Server size={14} /> Infraestrutura
+                        <Server size={14} /> Integração
                     </button>
                 </div>
             </div>
 
-            <div className="mt-8">
+            <div className="mt-4 min-h-[600px]">
                 {activeTab === 'campaigns' && <MassOutreachView tenantId={tenantId} />}
                 {activeTab === 'rules' && <AutomationRulesView tenantId={tenantId} />}
                 {activeTab === 'settings' && <CommunicationSettingsView tenantId={tenantId} />}
 
                 {activeTab === 'sequences' && (
-                    <div className="space-y-6">
-                        <div className="flex justify-between items-center mb-8">
-                            <div>
-                                <h3 className="text-xl font-bold text-white tracking-tight">Cadências de Abordagem Neural</h3>
-                                <p className="text-xs text-slate-500 font-mono uppercase mt-1">Sequential_Outreach_Engine</p>
+                    <div className="space-y-10 animate-in fade-in duration-500">
+                        <div className="flex flex-col md:flex-row justify-between items-center bg-white/[0.02] p-8 md:p-12 rounded-[3.5rem] border border-white/5 group relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 blur-[120px] -mr-48 -mt-48 pointer-events-none transition-all group-hover:bg-primary/10"></div>
+
+                            <div className="relative z-10 text-center md:text-left">
+                                <h3 className="text-3xl font-black text-white tracking-tighter italic uppercase mb-2">Abordagem Neural</h3>
+                                <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.3em italic leading-relaxed max-w-md">Flujos sequenciais de alta conversão para escala massiva de aquisição.</p>
                             </div>
+
                             <button
                                 onClick={() => setShowNewModal(true)}
-                                className="flex items-center gap-3 px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all border border-white/5"
+                                className="mt-8 md:mt-0 flex items-center gap-4 px-10 py-5 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl transition-all border border-white/5 shadow-xl italic active:scale-95"
                             >
-                                <Plus size={16} /> Nova Cadência
+                                <Plus size={18} className="text-primary" /> Definir Novo Fluxo
                             </button>
                         </div>
 
-                        {/* Grid de Cadências */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* Grid de Cadências Premium */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {sequences.map(seq => (
-                                <div key={seq.id} className="glass-strong p-8 rounded-[2.5rem] border border-white/5 premium-card group relative overflow-hidden transition-all hover:border-primary/20">
-                                    {/* Background Decor */}
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-all"></div>
+                                <div key={seq.id} className="relative group p-10 rounded-[3.5rem] bg-slate-900/40 border border-white/5 hover:border-primary/20 transition-all duration-500 backdrop-blur-xl flex flex-col overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+                                    <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 blur-3xl -mr-24 -mt-24 pointer-events-none group-hover:bg-primary/10 transition-all"></div>
 
-                                    <div className="flex justify-between items-start mb-6 relative z-10">
-                                        <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-                                            <Zap size={24} />
+                                    <div className="flex justify-between items-start mb-10 relative z-10">
+                                        <div className={`p-4 rounded-2xl border transition-all duration-500 ${seq.is_active ? 'bg-primary/10 border-primary/30 text-primary shadow-lg shadow-primary/5' : 'bg-slate-800 border-white/5 text-slate-500'}`}>
+                                            <Zap size={24} className={seq.is_active ? 'animate-pulse' : ''} />
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => toggleStatus(seq.id, seq.is_active)}
-                                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${seq.is_active ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20' : 'bg-slate-500/10 text-slate-500 hover:bg-slate-500/20'}`}
-                                            >
-                                                {seq.is_active ? 'Ativa' : 'Pausada'}
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={() => toggleStatus(seq.id, seq.is_active)}
+                                            className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all italic border ${seq.is_active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-slate-800 text-slate-500 border-white/5'}`}
+                                        >
+                                            {seq.is_active ? 'Operacional' : 'Inativo'}
+                                        </button>
                                     </div>
 
-                                    <h3 className="text-xl font-bold text-white mb-2 tracking-tight relative z-10">{seq.name}</h3>
-                                    <p className="text-xs text-slate-500 mb-8 relative z-10">{seq.steps.length} etapas de abordagem configuradas</p>
+                                    <h3 className="text-xl font-black text-white mb-2 tracking-tighter uppercase italic relative z-10">{seq.name}</h3>
+                                    <p className="text-[10px] text-slate-600 mb-8 font-black uppercase tracking-widest relative z-10">{seq.steps.length} Camadas de Contato</p>
 
-                                    <div className="space-y-3 mb-8 relative z-10">
+                                    <div className="space-y-4 mb-10 flex-grow relative z-10">
                                         {seq.steps.slice(0, 3).map((step, idx) => (
-                                            <div key={idx} className="flex items-center gap-3 text-[10px] text-slate-400 font-mono uppercase">
-                                                <div className="w-1 h-1 rounded-full bg-primary/50"></div>
-                                                <span className="text-primary/70">Dia {step.delay_days}:</span>
-                                                {step.channel === 'whatsapp' ? <MessageSquare size={12} className="text-green-500" /> : <Mail size={12} className="text-blue-500" />}
-                                                <span className="tracking-widest">{step.channel}</span>
+                                            <div key={idx} className="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-white/[0.03] group/step hover:border-white/10 transition-all">
+                                                <div className="w-8 h-8 rounded-xl bg-slate-950 flex items-center justify-center text-[10px] font-black text-primary/60 border border-primary/10">
+                                                    {idx + 1}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-0.5">
+                                                        {step.channel === 'whatsapp' ? <MessageSquare size={10} className="text-emerald-500" /> : <Mail size={10} className="text-blue-500" />}
+                                                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{step.channel}</span>
+                                                    </div>
+                                                    <span className="text-[9px] font-mono text-slate-600 uppercase tracking-tighter leading-none italic font-bold">Aguardar {step.delay_days} {step.delay_days === 1 ? 'Dia' : 'Dias'}</span>
+                                                </div>
                                             </div>
                                         ))}
                                         {seq.steps.length > 3 && (
-                                            <p className="text-[10px] text-slate-600 italic pl-4">+ {seq.steps.length - 3} etapas adicionais</p>
+                                            <div className="px-6 py-2 bg-white/5 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-widest italic w-fit mx-auto mt-2">
+                                                + {seq.steps.length - 3} Etapas Ocultas
+                                            </div>
                                         )}
                                     </div>
 
-                                    <div className="flex gap-2 relative z-10">
-                                        <button className="flex-1 py-4 bg-white/5 hover:bg-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/5">Editar Fluxo</button>
+                                    <div className="flex gap-4 relative z-10">
+                                        <button className="flex-1 py-5 bg-white/5 hover:bg-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-white/5 italic">Modificar</button>
                                         <button
                                             onClick={() => deleteSequence(seq.id)}
-                                            className="p-4 bg-red-500/10 text-red-500/30 hover:text-red-500 rounded-2xl transition-all border border-red-500/10 hover:border-red-500/30"
+                                            className="p-5 bg-red-500/5 text-red-500/20 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all border border-red-500/0 hover:border-red-500/20"
                                         >
-                                            <Trash2 size={16} />
+                                            <Trash2 size={18} />
                                         </button>
                                     </div>
                                 </div>
                             ))}
 
                             {sequences.length === 0 && !isLoading && (
-                                <div className="col-span-full py-28 flex flex-col items-center justify-center glass rounded-[3rem] border-2 border-dashed border-white/5">
-                                    <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-8 text-slate-700">
-                                        <Target size={48} />
+                                <div className="col-span-full py-40 flex flex-col items-center justify-center bg-white/[0.01] border-2 border-dashed border-white/5 rounded-[4rem]">
+                                    <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-8 relative">
+                                        <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-75 animate-pulse"></div>
+                                        <Target className="text-slate-800 relative z-10" size={48} />
                                     </div>
-                                    <h4 className="text-xl font-bold text-white tracking-tight">Nenhuma cadência ativa</h4>
-                                    <p className="text-sm text-slate-500 mt-2 max-w-sm text-center px-6">Crie sua primeira automação para iniciar prospecção em massa e escalar sua receita.</p>
+                                    <h4 className="text-xl font-black text-white tracking-widest uppercase italic">Sequential_Matrix_Offline</h4>
+                                    <p className="text-sm text-slate-500 mt-4 max-w-sm text-center px-10 font-medium leading-relaxed">Engenharia de cadências inativa. Configure um novo roadmap de abordagem para automatizar sua receita.</p>
                                     <button
                                         onClick={() => setShowNewModal(true)}
-                                        className="mt-8 px-8 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/5"
+                                        className="mt-12 px-12 py-5 bg-primary text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all shadow-xl shadow-primary/20 italic hover:scale-105"
                                     >
-                                        Começar agora
+                                        Nova Arquitetura de Cadência
                                     </button>
                                 </div>
                             )}
@@ -231,65 +247,69 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys }) =>
                 )}
             </div>
 
-            {/* Modal de Criação de Cadência */}
+            {/* Premium Sequence Modal */}
             {showNewModal && (
-                <div className="fixed inset-0 z-[120] bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-6">
-                    <div className="glass-strong max-w-2xl w-full p-10 rounded-[3rem] border border-white/10 shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-3xl -mr-32 -mt-32"></div>
+                <div className="fixed inset-0 z-[120] bg-slate-950/90 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in duration-300">
+                    <div className="glass-strong max-w-2xl w-full p-10 md:p-14 rounded-[4rem] border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.6)] relative overflow-hidden animate-in zoom-in-95 duration-500">
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 blur-[120px] -mr-48 -mt-48 pointer-events-none"></div>
 
-                        <div className="flex justify-between items-center mb-10 relative z-10">
+                        <div className="flex justify-between items-start mb-14 relative z-10">
                             <div>
-                                <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic">Nova Cadência</h3>
-                                <p className="text-slate-500 font-mono text-[10px] uppercase tracking-widest mt-1">Automation_Studio_v4</p>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                                    <span className="text-[8px] font-black text-primary uppercase tracking-[0.4em]">Fluxo Neural Studio</span>
+                                </div>
+                                <h3 className="text-3xl font-black text-white tracking-tighter italic uppercase">Arquitetura de Fluxo</h3>
+                                <p className="text-slate-500 text-xs mt-2 font-medium">Desenvolva a jornada sequencial de abordagem para seus leads.</p>
                             </div>
-                            <button onClick={() => setShowNewModal(false)} className="text-slate-500 hover:text-white transition-colors p-2 bg-white/5 rounded-xl hover:bg-white/10">
+                            <button onClick={() => setShowNewModal(false)} className="p-3 bg-white/5 hover:bg-white/10 text-slate-500 hover:text-white rounded-[1.5rem] transition-all border border-white/5">
                                 <X size={24} />
                             </button>
                         </div>
 
-                        <div className="space-y-10 relative z-10">
+                        <div className="space-y-12 relative z-10">
                             <div className="space-y-4">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-6">Nome da Estratégia</label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-8 italic">Nome da Estratégia de Cadência</label>
                                 <input
                                     autoFocus
                                     value={newSequence.name}
                                     onChange={e => setNewSequence(prev => ({ ...prev, name: e.target.value }))}
-                                    placeholder="Ex: Aquisição - Varejo SP"
-                                    className="w-full bg-white/5 border border-white/10 rounded-[1.5rem] px-8 py-5 text-white focus:outline-none focus:border-primary/50 transition-all text-lg font-bold tracking-tight shadow-inner"
+                                    placeholder="Ex: Hunter - Imóveis Alto Padrão"
+                                    className="w-full bg-black/40 border border-white/5 rounded-[2rem] px-10 py-6 text-white focus:outline-none focus:border-primary/40 transition-all text-lg font-black tracking-tight shadow-inner placeholder:text-slate-800"
                                 />
                             </div>
 
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-center px-4">
-                                    <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">Roadmap de Abordagem</h4>
-                                    <div className="flex gap-2">
+                            <div className="space-y-8">
+                                <div className="flex flex-col sm:flex-row justify-between items-center px-4 gap-6">
+                                    <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] italic">Roadmap de Abordagem Neural</h4>
+                                    <div className="flex gap-4">
                                         <button
                                             onClick={() => addStep('whatsapp')}
-                                            className="px-4 py-2 bg-green-500/10 text-green-500 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-green-500 border border-green-500/20 hover:text-white transition-all transform hover:scale-105"
-                                        >+ WhatsApp</button>
+                                            className="px-6 py-3 bg-emerald-500/10 text-emerald-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-slate-950 border border-emerald-500/20 transition-all transform hover:scale-105 italic"
+                                        >+ Whatsapp</button>
                                         <button
                                             onClick={() => addStep('email')}
-                                            className="px-4 py-2 bg-blue-500/10 text-blue-500 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-blue-500 border border-blue-500/20 hover:text-white transition-all transform hover:scale-105"
+                                            className="px-6 py-3 bg-blue-500/10 text-blue-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white border border-blue-500/20 transition-all transform hover:scale-105 italic"
                                         >+ E-mail</button>
                                     </div>
                                 </div>
 
-                                <div className="space-y-4 max-h-[350px] overflow-y-auto custom-scrollbar pr-4 -mr-4">
+                                <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-6 -mr-6 px-2">
                                     {newSequence.steps.length > 0 ? (
                                         newSequence.steps.map((step, idx) => (
-                                            <div key={idx} className="bg-white/5 p-6 rounded-[1.5rem] border border-white/5 flex items-center gap-8 group hover:border-white/10 transition-all">
-                                                <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center font-black text-sm text-primary border border-primary/20 shadow-lg shadow-black/20">
+                                            <div key={idx} className="bg-black/40 p-8 rounded-[2.5rem] border border-white/5 flex items-center gap-10 group hover:border-primary/20 transition-all duration-300">
+                                                <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center font-black text-lg text-primary border border-primary/20 shadow-xl shadow-black/40">
                                                     {idx + 1}
                                                 </div>
-                                                <div className="flex-1 flex items-center gap-6">
-                                                    <div className={`p-3 rounded-xl ${step.channel === 'whatsapp' ? 'bg-green-500/10 text-green-500' : 'bg-blue-500/10 text-blue-500'}`}>
-                                                        {step.channel === 'whatsapp' ? <MessageSquare size={20} /> : <Mail size={20} />}
+                                                <div className="flex-1 flex items-center gap-10">
+                                                    <div className={`p-4 rounded-2xl ${step.channel === 'whatsapp' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/10' : 'bg-blue-500/10 text-blue-500 border border-blue-500/10'}`}>
+                                                        {step.channel === 'whatsapp' ? <MessageSquare size={24} /> : <Mail size={24} />}
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="text-xs text-white font-black uppercase tracking-widest">{step.channel}</span>
-                                                        <div className="flex items-center gap-2 mt-1">
-                                                            <Clock size={10} className="text-slate-500" />
-                                                            <span className="text-[10px] font-mono text-slate-500 uppercase">Aguardar {step.delay_days} {step.delay_days === 1 ? 'dia' : 'dias'}</span>
+                                                        <span className="text-[10px] text-white font-black uppercase tracking-[0.2em] mb-1 italic">{step.channel}</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <Clock size={12} className="text-slate-600" />
+                                                            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Delay: {step.delay_days} {step.delay_days === 1 ? 'Dia' : 'Dias'}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -298,16 +318,16 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys }) =>
                                                         ...prev,
                                                         steps: prev.steps.filter((_, i) => i !== idx)
                                                     }))}
-                                                    className="p-3 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 rounded-xl"
+                                                    className="p-4 text-slate-700 hover:text-red-500 opacity-20 group-hover:opacity-100 transition-all hover:bg-red-500/10 rounded-2xl"
                                                 >
-                                                    <Trash2 size={18} />
+                                                    <Trash2 size={22} />
                                                 </button>
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="py-16 flex flex-col items-center justify-center bg-white/2 rounded-[2rem] border border-dashed border-white/5">
-                                            <Sparkles className="text-slate-800 mb-4" size={32} />
-                                            <p className="text-[10px] text-slate-600 font-mono uppercase tracking-[0.2em]">Matrix_Awaiting_Input</p>
+                                        <div className="py-24 flex flex-col items-center justify-center bg-white/[0.01] rounded-[3rem] border border-dashed border-white/5">
+                                            <Sparkles className="text-slate-800 mb-6 scale-150" size={32} />
+                                            <p className="text-[10px] text-slate-700 font-mono uppercase tracking-[0.4em] italic font-black">Aguardando definição neural</p>
                                         </div>
                                     )}
                                 </div>
@@ -316,9 +336,9 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys }) =>
                             <button
                                 onClick={handleCreateSequence}
                                 disabled={!newSequence.name || newSequence.steps.length === 0}
-                                className="w-full py-6 bg-primary text-slate-900 font-black text-sm uppercase tracking-[0.3em] rounded-2xl shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 disabled:grayscale"
+                                className="w-full py-7 bg-primary text-slate-900 font-black text-[10px] uppercase tracking-[0.4em] rounded-[2rem] shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-20 disabled:grayscale italic"
                             >
-                                Ativar Cadência Neural
+                                Implantar Cadência Neural
                             </button>
                         </div>
                     </div>
