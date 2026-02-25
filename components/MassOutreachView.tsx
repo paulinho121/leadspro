@@ -23,11 +23,13 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
     const [showModal, setShowModal] = useState(false);
     const [hasInfrastructure, setHasInfrastructure] = useState(false);
     const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
+    const [availableIndustries, setAvailableIndustries] = useState<string[]>([]);
     const [newCampaign, setNewCampaign] = useState({
         name: '',
         channel: 'whatsapp' as 'whatsapp' | 'email',
         template_content: '',
-        target_status: 'ENRICHED'
+        target_status: 'ENRICHED',
+        target_industry: 'all' as string
     });
 
     const loadCampaigns = async () => {
@@ -39,6 +41,19 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                 .eq('tenant_id', tenantId);
 
             setHasInfrastructure(!!settings?.some(s => s.is_active));
+
+            // Carregar nichos disponíveis para leads enriquecidos
+            const { data: industries } = await supabase
+                .from('leads')
+                .select('industry')
+                .eq('tenant_id', tenantId)
+                .eq('status', 'ENRICHED')
+                .not('industry', 'is', null);
+
+            if (industries) {
+                const uniqueIndustries = Array.from(new Set(industries.map(l => l.industry))).filter(Boolean) as string[];
+                setAvailableIndustries(uniqueIndustries.sort());
+            }
 
             const { data } = await supabase
                 .from('outreach_campaigns')
@@ -89,11 +104,17 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
 
                 if (error) throw error;
 
-                const { data: leads } = await supabase
+                let query = supabase
                     .from('leads')
                     .select('id')
                     .eq('tenant_id', tenantId)
                     .eq('status', newCampaign.target_status);
+
+                if (newCampaign.target_industry && newCampaign.target_industry !== 'all') {
+                    query = query.eq('industry', newCampaign.target_industry);
+                }
+
+                const { data: leads } = await query;
 
                 if (leads && leads.length > 0) {
                     await CampaignService.startCampaign(tenantId, campaign.id, leads.map(l => l.id));
@@ -126,7 +147,8 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
             name: camp.name,
             channel: camp.channel,
             template_content: camp.template_content,
-            target_status: 'ENRICHED' // Default, as it might not be relevant for edit
+            target_status: 'ENRICHED',
+            target_industry: 'all'
         });
         setShowModal(true);
     };
@@ -137,7 +159,8 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
             name: '',
             channel: 'whatsapp',
             template_content: '',
-            target_status: 'ENRICHED'
+            target_status: 'ENRICHED',
+            target_industry: 'all'
         });
         setShowModal(true);
     };
@@ -326,17 +349,35 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                                 </div>
 
                                 {!editingCampaignId && (
-                                    <div className="space-y-3">
-                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-6">Público Alvo</label>
-                                        <select
-                                            className="w-full bg-black/40 border border-white/5 rounded-2xl px-8 py-5 text-white focus:outline-none focus:border-primary/30 text-[10px] appearance-none cursor-pointer font-bold uppercase tracking-widest"
-                                            value={newCampaign.target_status}
-                                            onChange={e => setNewCampaign({ ...newCampaign, target_status: e.target.value })}
-                                        >
-                                            <option value="ENRICHED">Leads Enriquecidos</option>
-                                            <option value="NEW">Leads Novos</option>
-                                        </select>
-                                    </div>
+                                    <>
+                                        <div className="space-y-3">
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-6">Público Alvo</label>
+                                            <select
+                                                className="w-full bg-black/40 border border-white/5 rounded-2xl px-8 py-5 text-white focus:outline-none focus:border-primary/30 text-[10px] appearance-none cursor-pointer font-bold uppercase tracking-widest"
+                                                value={newCampaign.target_status}
+                                                onChange={e => setNewCampaign({ ...newCampaign, target_status: e.target.value })}
+                                            >
+                                                <option value="ENRICHED">Leads Enriquecidos</option>
+                                                <option value="NEW">Leads Novos</option>
+                                            </select>
+                                        </div>
+
+                                        {newCampaign.target_status === 'ENRICHED' && (
+                                            <div className="space-y-3">
+                                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-6">Nicho Específico</label>
+                                                <select
+                                                    className="w-full bg-black/40 border border-white/5 rounded-2xl px-8 py-5 text-white focus:outline-none focus:border-primary/30 text-[10px] appearance-none cursor-pointer font-bold uppercase tracking-widest"
+                                                    value={newCampaign.target_industry}
+                                                    onChange={e => setNewCampaign({ ...newCampaign, target_industry: e.target.value })}
+                                                >
+                                                    <option value="all">Todos os Nichos</option>
+                                                    {availableIndustries.map(industry => (
+                                                        <option key={industry} value={industry}>{industry}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
 
