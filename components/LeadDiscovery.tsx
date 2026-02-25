@@ -30,7 +30,7 @@ const CITY_FALLBACK_SEED: Record<string, string[]> = {
 
 const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEnrichment, apiKeys }) => {
   const { config } = useBranding();
-  const [mode, setMode] = useState<'MAPS' | 'CNPJ' | 'ENRICH' | 'SHERLOCK'>('MAPS');
+  const [mode, setMode] = useState<'MAPS' | 'CNPJ' | 'ENRICH' | 'SHERLOCK' | 'B2C_HUNTER'>('MAPS');
   const [filters, setFilters] = useState<SearchFilters>({
     keyword: '',
     location: '',
@@ -204,6 +204,9 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
               const contextKeywords = filters.industry;
               console.log(`[Sherlock] Chamando performCompetitorScan com Alvo: ${cleanKeyword} e Contexto: ${contextKeywords}`);
               results = await DiscoveryService.performCompetitorScan(cleanKeyword, currentSearchLocation, config.tenantId, apiKeys, currentPage, contextKeywords);
+            } else if (searchMode === 'B2C_HUNTER') {
+              console.log(`[B2C Hunter] Chamando performB2CHunterScan com Q: ${cleanKeyword}`);
+              results = await DiscoveryService.performB2CHunterScan(cleanKeyword, currentSearchLocation, config.tenantId, apiKeys, currentPage);
             } else {
               console.log(`[CNPJ] Chamando performCNPJScan com Q: ${cleanKeyword}`);
               results = await DiscoveryService.performCNPJScan(cleanKeyword, currentSearchLocation, config.tenantId, apiKeys, currentPage);
@@ -307,7 +310,8 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                 {mode === 'MAPS' ? <Cpu size={24} className={isScanning ? 'animate-neural' : ''} /> :
                   mode === 'CNPJ' ? <Building2 size={24} /> :
                     mode === 'SHERLOCK' ? <Crosshair size={24} className={isScanning ? 'animate-pulse text-red-500' : ''} /> :
-                      <BrainCircuit size={24} className={isScanning ? 'animate-neural' : ''} />}
+                      mode === 'B2C_HUNTER' ? <Target size={24} className={isScanning ? 'animate-bounce text-emerald-500' : ''} /> :
+                        <BrainCircuit size={24} className={isScanning ? 'animate-neural' : ''} />}
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -319,7 +323,8 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                   {mode === 'MAPS' ? 'Neural Extractor' :
                     mode === 'CNPJ' ? 'Empresas Gov' :
                       mode === 'SHERLOCK' ? 'Hunter Protocol' :
-                        'Deep Enrich'}
+                        mode === 'B2C_HUNTER' ? 'B2C Intent Hunter' :
+                          'Deep Enrich'}
                 </h3>
               </div>
             </div>
@@ -331,7 +336,9 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                   ? 'Acesse a base oficial de empresas brasileiras com alta precisão.'
                   : mode === 'SHERLOCK'
                     ? 'Localize clientes insatisfeitos e interações públicas.'
-                    : 'Enriqueça dados de um CNPJ individual com IA.'}
+                    : mode === 'B2C_HUNTER'
+                      ? 'Capture pessoas físicas com intenção real de compra em fóruns e redes.'
+                      : 'Enriqueça dados de um CNPJ individual com IA.'}
             </p>
           </div>
 
@@ -378,6 +385,12 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                 label="Espionagem"
               />
               <ModeButton
+                active={mode === 'B2C_HUNTER'}
+                onClick={() => { setMode('B2C_HUNTER'); console.log('[LeadDiscovery] Mode changed to B2C_HUNTER'); }}
+                disabled={isScanning}
+                label="B2C Hunter"
+              />
+              <ModeButton
                 active={mode === 'ENRICH'}
                 onClick={() => { setMode('ENRICH'); console.log('[LeadDiscovery] Mode changed to ENRICH'); }}
                 disabled={isScanning}
@@ -393,14 +406,15 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                 {mode === 'MAPS' ? 'Nicho ou Atividade' :
                   mode === 'CNPJ' ? 'CNAE ou Palavra-chave' :
                     mode === 'SHERLOCK' ? 'Alvo / Concorrente' :
-                      'Número do CNPJ'}
+                      mode === 'B2C_HUNTER' ? 'O que o lead procura? (Ex: Plano de Saúde)' :
+                        'Número do CNPJ'}
               </label>
               <div className="relative group/input">
                 <Search className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
                 <input
                   type="text"
                   disabled={isScanning}
-                  placeholder={mode === 'MAPS' ? "Ex: Academias, Restaurantes..." : mode === 'CNPJ' ? "Ex: 6201-5/00 ou Tecnologia" : mode === 'SHERLOCK' ? "Link Instagram/Site ou Nome do Concorrente" : "00.000.000/0001-00"}
+                  placeholder={mode === 'MAPS' ? "Ex: Academias, Restaurantes..." : mode === 'CNPJ' ? "Ex: 6201-5/00 ou Tecnologia" : mode === 'SHERLOCK' ? "Link Instagram/Site ou Nome do Concorrente" : mode === 'B2C_HUNTER' ? "Ex: valor plano de saúde, casas para alugar..." : "00.000.000/0001-00"}
                   className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white text-lg focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
                   value={filters.keyword}
                   onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}

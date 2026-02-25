@@ -418,6 +418,96 @@ export class DiscoveryService {
 
 
 
+    /**
+     * MODO B2C HUNTER: Captura de intenção de compra B2C
+     * Busca por pessoas físicas expressando intenção de compra, dúvidas ou pedidos de indicação em fóruns e redes sociais.
+     */
+    static async performB2CHunterScan(keyword: string, location: string, tenantId?: string, apiKeys?: any, page: number = 1): Promise<Lead[]> {
+        console.log(`[B2C Hunter] Iniciando caça de intenção para: ${keyword} em ${location} (Pág: ${page})`);
+
+        try {
+            const dorks = [
+                // Fóruns e Comunidades de Dúvidas
+                `site:reddit.com/r/brasil OR site:reddit.com "${keyword}" ("alguém sabe" OR "recomendações" OR "quanto custa" OR "vale a pena")`,
+                `site:quora.com "${keyword}" ("ajuda" OR "indicação" OR "como funciona")`,
+                // Redes Sociais (Filtro por indicação/dúvida)
+                `site:facebook.com "alguém indica" "${keyword}"`,
+                `site:twitter.com OR site:x.com "alguém indica" "${keyword}"`,
+                // Buscas abertas por intenção
+                `"preciso de" "${keyword}" "indicação"`,
+                `"qual o melhor" "${keyword}" "custo benefício"`
+            ];
+
+            const queryTemplate = dorks[(page - 1) % dorks.length] || dorks[0];
+            const finalQuery = `${queryTemplate} ${location}`;
+
+            console.log(`[B2C Hunter] Executing Intent Dork: ${finalQuery}`);
+
+            const searchResponse: any = await ApiGatewayService.callApi(
+                'google-search',
+                'search',
+                { q: finalQuery, page: page, num: 15 },
+                { tenantId, apiKeys }
+            );
+
+            // Enterprise Scaling: Validação de Créditos para B2C Hunter
+            if (tenantId) {
+                const hasCredits = await BillingService.useCredits(
+                    tenantId,
+                    15,
+                    'serper',
+                    `B2C Intent Hunter: ${keyword}`
+                );
+                if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");
+            }
+
+            if (searchResponse && searchResponse.organic) {
+                return searchResponse.organic.map((result: any): Lead => {
+                    let extractedName = result.title;
+                    let leadType = 'Intenção B2C';
+
+                    // Lógica de Extração de Nome baseada na fonte
+                    if (result.link.includes('reddit.com')) {
+                        const redditMatch = result.title.match(/(.+) : r\//);
+                        if (redditMatch) extractedName = redditMatch[1];
+                        leadType = 'Post Reddit';
+                    } else if (result.link.includes('quora.com')) {
+                        leadType = 'Dúvida Quora';
+                    } else if (result.link.includes('facebook.com')) {
+                        leadType = 'Post Facebook';
+                    }
+
+                    return {
+                        id: `b2c-${Math.random().toString(36).substr(2, 9)}`,
+                        name: extractedName.substring(0, 50).trim(),
+                        website: result.link,
+                        phone: '', // B2C raramente tem telefone direto no post, requer abordagem via rede social
+                        industry: `${leadType}: ${keyword}`,
+                        location: location || 'Brasil',
+                        status: LeadStatus.NEW,
+                        lastUpdated: new Date().toISOString(),
+                        details: {
+                            tradeName: result.title,
+                            // @ts-ignore
+                            notes: `Fonte: ${result.source || 'Web'}. Snippet: ${result.snippet}`,
+                            intent_score: 0.85 // Score fixo alto para esse modo
+                        },
+                        socialLinks: {
+                            map_link: result.link,
+                            whatsapp: null
+                        }
+                    };
+                });
+            }
+
+        } catch (error) {
+            console.error('[B2C Hunter] Erro fatal:', error);
+            throw error;
+        }
+
+        return [];
+    }
+
     private static async mockCNPJDiscovery(keyword: string, location: string): Promise<Lead[]> {
         // DESATIVADO: Geração de leads demo removida para produção estrita.
         return [];
