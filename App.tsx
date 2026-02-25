@@ -20,6 +20,7 @@ import LoginPage from './components/LoginPage';
 import ActivityHistory from './components/ActivityHistory';
 import NotificationsList from './components/NotificationsList';
 import { DiscoveryService } from './services/discoveryService';
+import { CommunicationService } from './services/communicationService';
 import { EnrichmentService } from './services/enrichmentService';
 import { SecretService, TenantSecrets } from './services/secretService';
 import { ActivityService } from './services/activityService';
@@ -298,6 +299,22 @@ const App: React.FC = () => {
 
     bootstrap();
   }, [config.tenantId]);
+
+  // Backgound Worker: Processador de Fila de Mensagens (Heartbeat)
+  useEffect(() => {
+    if (!session?.user || !userTenantId) return;
+
+    // Processar imediatamente no carregamento
+    CommunicationService.processMessageQueue();
+
+    // Loop a cada 30 segundos
+    const workerInterval = setInterval(() => {
+      console.log('[Worker] Verificando fila de mensagens pendentes...');
+      CommunicationService.processMessageQueue();
+    }, 30000);
+
+    return () => clearInterval(workerInterval);
+  }, [session, userTenantId]);
 
 
   const handleAddLeads = async (newLeads: any[]) => {
