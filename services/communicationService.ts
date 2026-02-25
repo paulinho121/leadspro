@@ -122,15 +122,7 @@ export class CommunicationService {
         try {
             const { data: pendingMessages } = await supabase
                 .from('message_queue')
-                .select(`
-                    *,
-                    leads:lead_id (
-                        id,
-                        name,
-                        phone,
-                        email
-                    )
-                `)
+                .select('*, leads(id, name, phone, email)')
                 .eq('status', 'pending')
                 .lte('scheduled_for', new Date().toISOString())
                 .limit(5);
