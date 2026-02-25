@@ -15,7 +15,7 @@ import { Lead, LeadStatus } from '../types';
 interface BentoDashboardProps {
   leads: Lead[];
   onEnrich: () => void;
-  onNavigate: (tab: 'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched') => void;
+  onNavigate: (tab: 'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched' | 'billing') => void;
 }
 
 const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavigate }) => {
@@ -131,8 +131,11 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
       </div>
 
       {/* 2. Key Metrics - Estatísticas */}
-      <div className="col-span-1 md:col-span-2 lg:col-span-2 glass rounded-[2rem] p-6 md:p-8 flex flex-col premium-card overflow-hidden">
-        <div className="absolute bottom-0 right-0 w-64 h-64 bg-slate-500/5 blur-[100px] -mr-32 -mb-32"></div>
+      <div
+        onClick={() => onNavigate('billing')}
+        className="col-span-1 md:col-span-2 lg:col-span-2 glass rounded-[2rem] p-6 md:p-8 flex flex-col premium-card overflow-hidden cursor-pointer hover:border-primary/30 transition-all group/rev"
+      >
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-slate-500/5 blur-[100px] -mr-32 -mb-32 group-hover/rev:bg-primary/5 transition-all"></div>
 
         <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
           <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">

@@ -20,6 +20,7 @@ import LoginPage from './components/LoginPage';
 import ActivityHistory from './components/ActivityHistory';
 import NotificationsList from './components/NotificationsList';
 import SecurityGuard from './components/SecurityGuard';
+import BillingView from './components/BillingView';
 import { DiscoveryService } from './services/discoveryService';
 import { CommunicationService } from './services/communicationService';
 import { EnrichmentService } from './services/enrichmentService';
@@ -597,8 +598,10 @@ const App: React.FC = () => {
         return <PipelineView tenantId={userTenantId} userId={session?.user?.id} apiKeys={tenantSecrets} />;
       case 'automation':
         return <AutomationView tenantId={userTenantId} apiKeys={tenantSecrets} />;
+      case 'billing':
+        return <BillingView tenantId={userTenantId} />;
       default:
-        return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
+        return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab as any} />;
     }
   };
 
@@ -667,6 +670,7 @@ const App: React.FC = () => {
           <NavItem icon={<Rocket size={20} />} label="Enriquecidos" active={activeTab === 'enriched'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
           <NavItem icon={<TrendingUp size={20} />} label="Pipeline" active={activeTab === 'pipeline'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('pipeline'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
           <NavItem icon={<Megaphone size={20} />} label="Automação" active={activeTab === 'automation'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('automation'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<MoneyIcon size={20} />} label="Faturamento" active={activeTab === 'billing'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('billing'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
 
 
           <div className="pt-8 pb-4">
@@ -828,7 +832,10 @@ const App: React.FC = () => {
 
           {/* Premium Wallet & Status Group */}
           <div className="hidden md:flex items-center gap-4">
-            <div className="flex items-center gap-4 px-4 py-2 bg-primary/10 rounded-2xl border border-primary/20 transition-all group/wallet cursor-pointer hover:bg-primary/20 shadow-lg shadow-primary/5">
+            <div
+              onClick={() => setActiveTab('billing')}
+              className="flex items-center gap-4 px-4 py-2 bg-primary/10 rounded-2xl border border-primary/20 transition-all group/wallet cursor-pointer hover:bg-primary/20 shadow-lg shadow-primary/5 active:scale-95"
+            >
               <div className="flex flex-col items-end">
                 <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em] leading-none mb-1">Matrix Balance</span>
                 <span className="text-[7px] text-primary/60 font-bold uppercase tracking-widest leading-none">Créditos Ativos</span>
