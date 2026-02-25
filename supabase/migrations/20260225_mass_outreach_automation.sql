@@ -106,4 +106,14 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ai_sdr_interactions' AND column_name = 'metadata') THEN
         ALTER TABLE ai_sdr_interactions ADD COLUMN metadata JSONB DEFAULT '{}'::jsonb;
     END IF;
+
+    -- Garantir que a tabela leads tem a coluna email para os disparos
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'leads' AND column_name = 'email') THEN
+        ALTER TABLE leads ADD COLUMN email TEXT;
+    END IF;
+
+    -- Adicionar client_token para Z-API
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'communication_settings' AND column_name = 'client_token') THEN
+        ALTER TABLE communication_settings ADD COLUMN client_token TEXT;
+    END IF;
 END $$;

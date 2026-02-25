@@ -26,6 +26,7 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
         apiUrl: '',
         apiKey: '',
         instanceName: '',
+        clientToken: '',
     });
 
     const [emailSettings, setEmailSettings] = useState({
@@ -51,6 +52,7 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                             apiUrl: activeWa.api_url || '',
                             apiKey: activeWa.api_key || '',
                             instanceName: activeWa.instance_name || '',
+                            clientToken: activeWa.client_token || '',
                         });
                     }
 
@@ -85,12 +87,13 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                     apiUrl: data.api_url || '',
                     apiKey: data.api_key || '',
                     instanceName: data.instance_name || '',
+                    clientToken: data.client_token || '',
                 });
             } else {
-                setWaSettings({ apiUrl: '', apiKey: '', instanceName: '' });
+                setWaSettings({ apiUrl: '', apiKey: '', instanceName: '', clientToken: '' });
             }
         } catch (err) {
-            setWaSettings({ apiUrl: '', apiKey: '', instanceName: '' });
+            setWaSettings({ apiUrl: '', apiKey: '', instanceName: '', clientToken: '' });
         }
     };
 
@@ -116,6 +119,7 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                     api_url: waSettings.apiUrl,
                     api_key: waSettings.apiKey,
                     instance_name: waSettings.instanceName,
+                    client_token: waSettings.clientToken,
                     is_active: true
                 }, { onConflict: 'tenant_id,provider_type' });
 
@@ -236,6 +240,22 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                                 onChange={e => setWaSettings({ ...waSettings, instanceName: e.target.value })}
                             />
                         </div>
+
+                        {selectedWaProvider === 'whatsapp_zapi' && (
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-3 text-[9px] font-black text-slate-500 uppercase tracking-widest ml-4 italic">
+                                    <Lock size={12} className="text-emerald-500/40" />
+                                    Client Token (Z-API)
+                                </label>
+                                <input
+                                    type="password"
+                                    className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-emerald-500/30 text-xs font-mono placeholder:text-slate-800 transition-all"
+                                    placeholder="••••••••••••••••"
+                                    value={waSettings.clientToken}
+                                    onChange={e => setWaSettings({ ...waSettings, clientToken: e.target.value })}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -287,8 +307,8 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                     onClick={handleSave}
                     disabled={loading}
                     className={`group flex items-center gap-4 px-12 py-5 rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-xl italic ${loading
-                            ? 'bg-slate-800 text-slate-600 cursor-not-allowed border border-white/5'
-                            : 'bg-primary text-slate-900 hover:scale-[1.03] active:scale-95 shadow-primary/20'
+                        ? 'bg-slate-800 text-slate-600 cursor-not-allowed border border-white/5'
+                        : 'bg-primary text-slate-900 hover:scale-[1.03] active:scale-95 shadow-primary/20'
                         }`}
                 >
                     {loading ? (

@@ -35,9 +35,13 @@ export class CommunicationService {
                     body: JSON.stringify({ number: payload.leadId, text: payload.content })
                 });
             } else if (settings.provider_type === 'whatsapp_zapi') {
+                const headers: any = { 'Content-Type': 'application/json' };
+                if (settings.client_token) {
+                    headers['Client-Token'] = settings.client_token;
+                }
                 response = await fetch(`https://api.z-api.io/instances/${settings.instance_name}/token/${settings.api_key}/send-text`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers,
                     body: JSON.stringify({ phone: payload.leadId, message: payload.content })
                 });
             } else if (settings.provider_type === 'whatsapp_duilio') {
@@ -122,7 +126,7 @@ export class CommunicationService {
         try {
             const { data: pendingMessages } = await supabase
                 .from('message_queue')
-                .select('*, leads(id, name, phone, email)')
+                .select('*, lead:leads(id, name, phone, email)') // Usando alias 'lead' para clareza
                 .eq('status', 'pending')
                 .lte('scheduled_for', new Date().toISOString())
                 .limit(5);
@@ -134,7 +138,8 @@ export class CommunicationService {
                 await supabase.from('message_queue').update({ status: 'processing' }).eq('id', msg.id);
 
                 let result;
-                const contactId = msg.channel === 'whatsapp' ? msg.leads?.phone : msg.leads?.email;
+                // Ajustando para o novo formato do join (lead em vez de leads plural)
+                const contactId = msg.channel === 'whatsapp' ? msg.lead?.phone : msg.lead?.email;
 
                 if (!contactId) {
                     await supabase.from('message_queue').update({
