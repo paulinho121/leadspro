@@ -19,6 +19,7 @@ import AutomationView from './components/AutomationView';
 import LoginPage from './components/LoginPage';
 import ActivityHistory from './components/ActivityHistory';
 import NotificationsList from './components/NotificationsList';
+import SecurityGuard from './components/SecurityGuard';
 import { DiscoveryService } from './services/discoveryService';
 import { CommunicationService } from './services/communicationService';
 import { EnrichmentService } from './services/enrichmentService';
@@ -624,6 +625,7 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen bg-background text-slate-200 flex font-sans selection:bg-primary/30 selection:text-primary overflow-hidden relative">
+      <SecurityGuard />
       {/* Sidebar Mobile Overlay - Only show when sidebar IS open on mobile */}
       {isSidebarOpen && (
         <div
