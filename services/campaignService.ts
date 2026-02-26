@@ -37,9 +37,13 @@ export class CampaignService {
 
                 if (!lead) continue;
 
-                // Aqui poderíamos usar o SdrService para personalizar cada uma
-                // Mas por performance em massa, usamos o template da campanha com variáveis
+                // Personalização com variáveis
                 const content = campaign.template_content
+                    .replace('${name}', lead.name)
+                    .replace('${industry}', lead.industry || 'seu setor')
+                    .replace('${location}', lead.location || 'sua região');
+
+                const subject = (campaign.template_subject || 'Oportunidade de Negócio')
                     .replace('${name}', lead.name)
                     .replace('${industry}', lead.industry || 'seu setor')
                     .replace('${location}', lead.location || 'sua região');
@@ -52,6 +56,7 @@ export class CampaignService {
                     campaign_id: campaignId,
                     lead_id: leadId,
                     channel: campaign.channel,
+                    subject,
                     content,
                     status: 'pending',
                     scheduled_for: scheduleDate.toISOString()

@@ -77,46 +77,78 @@ serve(async (req) => {
             }
         }
 
-        // --- PARTE 2: PROCESSAR FILA DE TAREFAS (Background Tasks) ---
-        // Vamos tentar processar até 3 tarefas por ciclo para não estourar o tempo
-        const workerId = `worker-${Math.random().toString(36).substr(2, 9)}`;
+        // --- PARTE 3: PROCESSAR FILA DE MENSAGENS (Mass Outreach) ---
+        const { data: messages } = await supabaseClient
+            .from('message_queue')
+            .select(`*, lead:leads(name, phone, email)`)
+            .eq('status', 'pending')
+            .lte('scheduled_for', new Date().toISOString())
+            .limit(5);
 
-        for (let i = 0; i < 3; i++) {
-            const { data: task, error: claimError } = await supabaseClient
-                .rpc('claim_background_task', { p_worker_id: workerId });
+        if (messages && messages.length > 0) {
+            console.log(`[Worker] Processando ${messages.length} mensagens da fila...`);
+            for (const msg of messages) {
+                try {
+                    // Marcar como processando
+                    await supabaseClient.from('message_queue').update({ status: 'processing' }).eq('id', msg.id);
 
-            if (claimError || !task || task.length === 0) break;
+                    // Buscar configurações do provedor para o tenant
+                    const { data: setting } = await supabaseClient
+                        .from('communication_settings')
+                        .select('*')
+                        .eq('tenant_id', msg.tenant_id)
+                        .eq('provider_type', msg.channel === 'whatsapp' ? 'whatsapp_evolution' : 'email_resend')
+                        .eq('is_active', true)
+                        .single();
 
-            const currentTask = task[0];
-            console.log(`[Worker] Reivindicada tarefa: ${currentTask.task_type} (${currentTask.task_id})`);
+                    if (!setting) {
+                        throw new Error(`Provedor ${msg.channel} não configurado para o tenant ${msg.tenant_id}`);
+                    }
 
-            try {
-                if (currentTask.task_type === 'ENRICH_BATCH') {
-                    await processEnrichBatch(supabaseClient, currentTask);
-                } else {
-                    console.warn(`[Worker] Tipo de tarefa desconhecido: ${currentTask.task_type}`);
+                    let success = false;
+                    const contact = msg.channel === 'whatsapp' ? msg.lead?.phone : msg.lead?.email;
+
+                    if (!contact) throw new Error('Lead sem informação de contato');
+
+                    if (msg.channel === 'whatsapp' && setting.provider_type === 'whatsapp_evolution') {
+                        const res = await fetch(`${setting.api_url}/message/sendText/${setting.instance_name}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'apikey': setting.api_key || '' },
+                            body: JSON.stringify({ number: contact, text: msg.content })
+                        });
+                        success = res.ok;
+                    } else if (msg.channel === 'email' && setting.provider_type === 'email_resend') {
+                        const res = await fetch('https://api.resend.com/emails', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${setting.api_key}` },
+                            body: JSON.stringify({
+                                from: 'LeadPro <onboarding@resend.dev>',
+                                to: contact,
+                                subject: msg.subject || 'Nova Oportunidade',
+                                html: msg.content
+                            })
+                        });
+                        success = res.ok;
+                    }
+
+                    // Atualizar status
+                    await supabaseClient.from('message_queue').update({
+                        status: success ? 'sent' : 'failed',
+                        sent_at: success ? new Date().toISOString() : null,
+                        error_message: success ? null : 'Falha no envio via API'
+                    }).eq('id', msg.id);
+
+                    if (success && msg.campaign_id) {
+                        await supabaseClient.rpc('increment_campaign_processed', { campaign_id: msg.campaign_id });
+                    }
+
+                } catch (err) {
+                    console.error(`[Worker] Erro na mensagem ${msg.id}:`, err);
+                    await supabaseClient.from('message_queue').update({
+                        status: 'failed',
+                        error_message: err.message
+                    }).eq('id', msg.id);
                 }
-
-                // Finalizar tarefa com sucesso
-                await supabaseClient.from('background_tasks').update({
-                    status: 'completed',
-                    finished_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                }).eq('id', currentTask.task_id);
-
-                results.background_tasks.push({ id: currentTask.task_id, status: 'completed' });
-
-            } catch (taskErr) {
-                console.error(`[Worker] Falha ao processar tarefa ${currentTask.task_id}:`, taskErr);
-
-                // Marcar como falha
-                await supabaseClient.from('background_tasks').update({
-                    status: 'failed',
-                    error_message: taskErr.message,
-                    updated_at: new Date().toISOString()
-                }).eq('id', currentTask.task_id);
-
-                results.background_tasks.push({ id: currentTask.task_id, status: 'failed', error: taskErr.message });
             }
         }
 

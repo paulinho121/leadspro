@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS outreach_campaigns (
     description TEXT,
     status TEXT DEFAULT 'draft', -- 'draft', 'scheduled', 'running', 'paused', 'completed'
     channel TEXT NOT NULL, -- 'whatsapp', 'email'
+    template_subject TEXT, -- Para e-mails
     template_content TEXT,
     scheduled_at TIMESTAMP WITH TIME ZONE,
     total_leads INTEGER DEFAULT 0,
@@ -37,10 +38,12 @@ CREATE TABLE IF NOT EXISTS message_queue (
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     campaign_id UUID REFERENCES outreach_campaigns(id) ON DELETE SET NULL,
     lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
-    channel TEXT NOT NULL,
+    channel TEXT NOT NULL, -- 'whatsapp', 'email'
+    subject TEXT, -- Para e-mails
     content TEXT NOT NULL,
     status TEXT DEFAULT 'pending', -- 'pending', 'sent', 'failed', 'scheduled'
     scheduled_for TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    metadata JSONB DEFAULT '{}'::jsonb,
     error_message TEXT,
     sent_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

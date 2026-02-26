@@ -126,10 +126,10 @@ export class CommunicationService {
         try {
             const { data: pendingMessages } = await supabase
                 .from('message_queue')
-                .select('*, lead:leads(id, name, phone, email)') // Usando alias 'lead' para clareza
+                .select('*, lead:leads(id, name, phone, email)')
                 .eq('status', 'pending')
                 .lte('scheduled_for', new Date().toISOString())
-                .limit(5);
+                .limit(10); // Aumentado para 10 para eficiência
 
             if (!pendingMessages || pendingMessages.length === 0) return;
 
@@ -138,13 +138,12 @@ export class CommunicationService {
                 await supabase.from('message_queue').update({ status: 'processing' }).eq('id', msg.id);
 
                 let result;
-                // Ajustando para o novo formato do join (lead em vez de leads plural)
                 const contactId = msg.channel === 'whatsapp' ? msg.lead?.phone : msg.lead?.email;
 
                 if (!contactId) {
                     await supabase.from('message_queue').update({
                         status: 'failed',
-                        error_message: 'Lead sem informação de contato'
+                        error_message: 'Lead sem informação de contato (Phone/Email)'
                     }).eq('id', msg.id);
                     continue;
                 }
@@ -152,17 +151,17 @@ export class CommunicationService {
                 if (msg.channel === 'whatsapp') {
                     result = await this.sendWhatsApp({
                         tenantId: msg.tenant_id,
-                        leadId: contactId, // Usando o telefone real agora
+                        leadId: contactId,
                         channel: 'whatsapp',
                         content: msg.content
                     });
                 } else {
                     result = await this.sendEmail({
                         tenantId: msg.tenant_id,
-                        leadId: contactId, // Usando o e-mail real agora
+                        leadId: contactId,
                         channel: 'email',
                         content: msg.content,
-                        subject: 'Nova Oportunidade'
+                        subject: msg.subject || 'Nova Oportunidade'
                     });
                 }
 
@@ -173,7 +172,7 @@ export class CommunicationService {
                     error_message: result.error ? String(result.error) : null
                 }).eq('id', msg.id);
 
-                // Incrementar estatísticas da campanha via RPC se necessário
+                // Incrementar estatísticas da campanha via RPC
                 if (result.success && msg.campaign_id) {
                     await supabase.rpc('increment_campaign_processed', { campaign_id: msg.campaign_id });
                 }

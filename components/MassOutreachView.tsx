@@ -27,6 +27,7 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
     const [newCampaign, setNewCampaign] = useState({
         name: '',
         channel: 'whatsapp' as 'whatsapp' | 'email',
+        template_subject: '',
         template_content: '',
         target_status: 'ENRICHED',
         target_industry: 'all' as string
@@ -83,6 +84,7 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                     .update({
                         name: newCampaign.name,
                         channel: newCampaign.channel,
+                        template_subject: newCampaign.template_subject,
                         template_content: newCampaign.template_content
                     })
                     .eq('id', editingCampaignId);
@@ -96,6 +98,7 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                         tenant_id: tenantId,
                         name: newCampaign.name,
                         channel: newCampaign.channel,
+                        template_subject: newCampaign.template_subject,
                         template_content: newCampaign.template_content,
                         status: 'draft'
                     }])
@@ -146,6 +149,7 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
         setNewCampaign({
             name: camp.name,
             channel: camp.channel,
+            template_subject: camp.template_subject || '',
             template_content: camp.template_content,
             target_status: 'ENRICHED',
             target_industry: 'all'
@@ -158,6 +162,7 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
         setNewCampaign({
             name: '',
             channel: 'whatsapp',
+            template_subject: '',
             template_content: '',
             target_status: 'ENRICHED',
             target_industry: 'all'
@@ -380,6 +385,18 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                                     </>
                                 )}
                             </div>
+
+                            {newCampaign.channel === 'email' && (
+                                <div className="space-y-3">
+                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-6">Assunto do E-mail</label>
+                                    <input
+                                        className="w-full bg-black/40 border border-white/5 rounded-2xl px-8 py-5 text-white focus:outline-none focus:border-primary/30 text-base font-bold transition-all"
+                                        placeholder="Ex: Nova parceria de negócios para ${name}"
+                                        value={newCampaign.template_subject}
+                                        onChange={e => setNewCampaign({ ...newCampaign, template_subject: e.target.value })}
+                                    />
+                                </div>
+                            )}
 
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center px-6">
