@@ -389,9 +389,11 @@ const App: React.FC = () => {
 
     if (error) {
       console.error('Erro ao salvar novos leads:', error);
+      return [];
     } else {
       refetchLeads();
       setActiveTab('lab');
+      return data;
     }
   };
 
@@ -443,6 +445,11 @@ const App: React.FC = () => {
     } finally {
       setIsEnriching(false);
       stopEnrichmentSignal.current = false;
+
+      // Se foi um enrich individual, vai para a aba de Enriquecidos
+      if (leadsToEnrich && targets.length === 1) {
+        setActiveTab('enriched');
+      }
     }
   };
 

@@ -190,7 +190,7 @@ export class DiscoveryService {
                                 name: String(realData.nome),
                                 website: String(realData.site || ''),
                                 phone: String(realData.telefone || ''),
-                                industry: keyword,
+                                industry: realData.atividade_principal?.[0]?.text || keyword,
                                 location: location,
                                 status: LeadStatus.NEW,
                                 lastUpdated: new Date().toISOString(),

@@ -141,7 +141,9 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
 
                             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                                 <button
-                                    onClick={() => setShowTopUpModal(true)}
+                                    onClick={() => {
+                                        document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }}
                                     className="px-8 py-4 bg-primary text-slate-900 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.05] transition-all flex items-center justify-center gap-3 active:scale-95"
                                 >
                                     <Plus size={20} strokeWidth={3} />
@@ -209,7 +211,7 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
             </div>
 
             {/* Pricing Modules */}
-            <div className="space-y-6">
+            <div id="pricing-section" className="space-y-6 scroll-mt-24">
                 <div className="flex items-center justify-between px-4">
                     <h3 className="text-lg font-black text-white uppercase tracking-tighter">Pacotes de Impulsão Neural</h3>
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Seleção de Créditos</span>

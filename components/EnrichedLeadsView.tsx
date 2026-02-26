@@ -31,6 +31,7 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertT
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const [selectedIndustry, setSelectedIndustry] = useState<string>('todos');
     const [searchQuery, setSearchQuery] = useState('');
+    const [imgErrors, setImgErrors] = useState<Set<string>>(new Set());
 
     // Filtrar apenas leads enriquecidos
     const enrichedLeads = useMemo(() => leads.filter(l => l.status === LeadStatus.ENRICHED), [leads]);
@@ -188,9 +189,14 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertT
 
                                     {/* Info Principal */}
                                     <div className="flex items-start gap-6 flex-1 min-w-0">
-                                        {lead.details?.placeImage ? (
+                                        {lead.details?.placeImage && !imgErrors.has(lead.id) ? (
                                             <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-[1.5rem] border border-white/10 overflow-hidden shadow-2xl shrink-0 group-hover:border-primary/30 transition-colors">
-                                                <img src={lead.details.placeImage} alt="Fachada" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                                <img
+                                                    src={lead.details.placeImage}
+                                                    alt="Fachada"
+                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                                    onError={() => setImgErrors(prev => new Set(prev).add(lead.id))}
+                                                />
                                             </div>
                                         ) : (
                                             <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-[1.5rem] bg-gradient-to-br from-primary/20 via-primary/5 to-transparent flex items-center justify-center text-primary font-black text-2xl border border-primary/20 shrink-0 group-hover:scale-105 transition-transform shadow-xl">

@@ -15,6 +15,7 @@ interface EnrichmentModalProps {
 }
 
 const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
+  const [imgError, setImgError] = React.useState(false);
   const details = lead.details || {};
   const score = details.ai_score || 0;
 
@@ -55,12 +56,13 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
             <div className="p-5 sm:p-6 bg-white/[0.03] rounded-[1.5rem] border border-white/5 space-y-4">
               <div className="flex justify-between items-start gap-4">
                 <div className="max-w-[70%]">
-                  {details.placeImage && (
+                  {details.placeImage && !imgError && (
                     <div className="mb-4 relative group/facade h-48 lg:h-56 w-full rounded-[1.5rem] overflow-hidden border border-white/5 shadow-2xl">
                       <img
                         src={details.placeImage}
                         alt="Fachada do Local"
                         className="w-full h-full object-cover transition-transform duration-700 group-hover/facade:scale-110"
+                        onError={() => setImgError(true)}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
                       <div className="absolute bottom-4 left-4 flex items-center gap-2">
