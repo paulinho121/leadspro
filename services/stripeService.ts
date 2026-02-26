@@ -10,11 +10,13 @@ export const StripeService = {
      * Inicia o processo de checkout criando uma sessão no backend
      * e redirecionando o usuário para o Stripe.
      */
+
     async createCheckoutSession(productId: string, tenantId: string) {
         if (!STRIPE_PUBLIC_KEY) {
-            console.error('[Stripe] VITE_STRIPE_PUBLIC_KEY não configurada no .env.local');
-            throw new Error('Configuração do Stripe ausente (Public Key). Verifique o arquivo .env.local e reinicie o servidor.');
+            console.error('[Stripe] VITE_STRIPE_PUBLIC_KEY não encontrada.');
+            throw new Error('Configuração do Stripe ausente (Public Key). Se você estiver em produção (Vercel), adicione VITE_STRIPE_PUBLIC_KEY nas Environment Variables do projeto.');
         }
+
 
         try {
             console.log('[Stripe] Invocando Edge Function para produto:', productId);

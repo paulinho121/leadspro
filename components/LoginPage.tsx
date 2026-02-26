@@ -66,12 +66,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         setError(null);
         setSuccessMsg(null);
 
+
         try {
+            const cleanEmail = email.trim();
+            const cleanPassword = password.trim();
+
             if (isRegistering) {
                 // 1. FLUXO DE REGISTRO
+                console.log('[Auth] Iniciando registro para:', cleanEmail);
                 const { data: authData, error: authError } = await supabase.auth.signUp({
-                    email,
-                    password,
+                    email: cleanEmail,
+                    password: cleanPassword,
                     options: {
                         data: {
                             full_name: fullName
@@ -82,28 +87,35 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 if (authError) throw authError;
 
                 if (authData.user) {
-                    setSuccessMsg('Registro concluído! Sua empresa está sendo preparada. Faça login para acessar.');
+                    setSuccessMsg('Registro concluído! Verifique seu e-mail (se o plano exigir) ou faça login para acessar.');
                     setIsRegistering(false);
                 }
 
             } else {
                 // FLUXO DE LOGIN
+                console.log('[Auth] Tentativa de login:', cleanEmail);
                 const { data, error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
+                    email: cleanEmail,
+                    password: cleanPassword
                 });
 
-                if (error) throw error;
+                if (error) {
+                    console.warn('[Auth] Falha no login:', error.message);
+                    throw error;
+                }
 
                 if (data.session) {
+                    console.log('[Auth] Login bem sucedido!');
                     onLoginSuccess(data.session);
                 }
             }
         } catch (err: any) {
+            console.error('[Auth] Erro capturado:', err);
             setError(err.message || 'Falha na autenticação. Verifique os dados.');
         } finally {
             setLoading(false);
         }
+
     };
 
     return (
