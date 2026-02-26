@@ -19,7 +19,7 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
     const [transactions, setTransactions] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showTopUpModal, setShowTopUpModal] = useState(false);
-    const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
+    const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
     const { setCreditBalance } = useStore();
 
 
@@ -77,16 +77,17 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
             return;
         }
 
-        setIsProcessingCheckout(true);
+        setProcessingPlanId(plan.id);
         try {
             console.log('[Billing] Invocando StripeService para tenant:', tenantId);
             await StripeService.createCheckoutSession(plan.stripeProductId, tenantId);
         } catch (err: any) {
             console.error('[Billing] Erro fatal no checkout:', err);
-            alert(`Falha ao iniciar checkout: ${err.message || 'Erro desconhecido'}`);
-            setShowTopUpModal(true);
+            // Mostrar erro detalhado se disponível
+            const errorMsg = err.message || 'Erro desconhecido';
+            alert(`Falha ao iniciar checkout: ${errorMsg}`);
         } finally {
-            setIsProcessingCheckout(false);
+            setProcessingPlanId(null);
         }
     };
 
@@ -227,7 +228,7 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                             icon={plan.id === 'starter' ? <Zap size={20} /> : plan.id === 'business' ? <TrendingUp size={20} /> : <Sparkles size={20} />}
                             recommended={plan.recommended}
                             onTopUp={() => handleTopUp(plan)}
-                            isLoading={isProcessingCheckout}
+                            isLoading={processingPlanId === plan.id}
                         />
                     ))}
                     <PricingCard

@@ -21,20 +21,23 @@ export const StripeService = {
         try {
             console.log('[Stripe] Invocando Edge Function para produto:', productId);
 
-            // Timeout de 15 segundos para a chamada da função
-            const promise = supabase.functions.invoke('create-checkout-session', {
+            const { data, error } = await supabase.functions.invoke('create-checkout-session', {
                 body: { productId, tenantId }
             });
 
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Tempo limite esgotado ao contatar o servidor de pagamentos.')), 15000)
-            );
-
-            const { data, error } = await Promise.race([promise, timeoutPromise]) as any;
-
             if (error) {
                 console.error('[Stripe] Erro retornado pela função:', error);
-                throw new Error(error.message || 'Erro ao criar sessão de pagamento.');
+
+                // Tentar extrair mensagem do corpo se for um objeto de erro do Supabase
+                let detailedMessage = error.message;
+
+                // O Supabase às vezes retorna o erro no formato { error: "mensagem" } 
+                // se a função retornar um JSON com status 400
+                if (typeof error === 'object' && (error as any).context?.status === 400) {
+                    console.log('[Stripe] Detectado erro 400, tentando extrair detalhes...');
+                }
+
+                throw new Error(detailedMessage || 'Erro ao criar sessão de pagamento.');
             }
 
             if (!data?.sessionId) {
@@ -44,17 +47,11 @@ export const StripeService = {
 
             console.log('[Stripe] Sessão criada com sucesso:', data.sessionId);
 
-            const stripe = await stripePromise;
-            if (!stripe) throw new Error('Falha ao inicializar o SDK do Stripe.');
-
-            console.log('[Stripe] Redirecionando para o Stripe Checkout...');
-            const { error: redirectError } = await (stripe as any).redirectToCheckout({
-                sessionId: data.sessionId
-            });
-
-            if (redirectError) {
-                console.error('[Stripe] Erro no redirecionamento:', redirectError);
-                throw redirectError;
+            if (data?.url) {
+                console.log('[Stripe] Redirecionando para a URL gerada...');
+                window.location.href = data.url;
+            } else {
+                throw new Error('Falha no redirecionamento: O backend não retornou a URL de checkout (Atualize a página pressionando F5 e tente novamente).');
             }
         } catch (err: any) {
             console.error('[Stripe] Erro no fluxo de checkout:', err);
