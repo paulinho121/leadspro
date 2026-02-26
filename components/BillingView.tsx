@@ -6,20 +6,43 @@ import {
     Download, Filter, Plus, ChevronRight, AlertCircle,
     Clock, CheckCircle2, DollarSign
 } from 'lucide-react';
+
+
 import { BillingService } from '../services/billingService';
 import { useStore } from '../store/useStore';
 import { supabase } from '../lib/supabase';
+import { PRICING_PLANS } from '../constants/billing';
+import { StripeService } from '../services/stripeService';
 
 const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
     const [balance, setBalance] = useState<number>(0);
     const [transactions, setTransactions] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showTopUpModal, setShowTopUpModal] = useState(false);
+    const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
     const { setCreditBalance } = useStore();
 
+
+
     useEffect(() => {
-        fetchData();
+        console.log('[Billing] Componente montado com tenantId:', tenantId);
+        if (tenantId) {
+            fetchData();
+
+            // Verificar se o usuário acabou de voltar de um pagamento bem-sucedido
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('session_id')) {
+                console.log('[Billing] Retorno de checkout detectado. Atualizando saldo em instantes...');
+                // Pequeno delay para dar tempo do webhook processar
+                setTimeout(() => {
+                    fetchData();
+                    alert('🎉 Pagamento processado! Seus créditos serão atualizados em instantes.');
+                }, 2000);
+            }
+        }
     }, [tenantId]);
+
+
 
     const fetchData = async () => {
         if (!tenantId) return;
@@ -38,13 +61,44 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
         }
     };
 
+
+    const handleTopUp = async (plan: any) => {
+        console.log('[Billing] Iniciando handleTopUp para plano:', plan.title, 'Stripe ID:', plan.stripeProductId);
+
+        if (!tenantId) {
+            console.warn('[Billing] Tenant ID ausente!');
+            alert('Erro: Tenant ID não identificado. Por favor, recarregue a página.');
+            return;
+        }
+
+        if (!plan.stripeProductId) {
+            console.log('[Billing] Plano sem Stripe ID, abrindo modal manual');
+            setShowTopUpModal(true);
+            return;
+        }
+
+        setIsProcessingCheckout(true);
+        try {
+            console.log('[Billing] Invocando StripeService para tenant:', tenantId);
+            await StripeService.createCheckoutSession(plan.stripeProductId, tenantId);
+        } catch (err: any) {
+            console.error('[Billing] Erro fatal no checkout:', err);
+            alert(`Falha ao iniciar checkout: ${err.message || 'Erro desconhecido'}`);
+            setShowTopUpModal(true);
+        } finally {
+            setIsProcessingCheckout(false);
+        }
+    };
+
     const getTransactionIcon = (amount: number) => {
         return amount > 0
             ? <ArrowUpRight className="text-emerald-500" size={18} />
             : <ArrowDownLeft className="text-red-500" size={18} />;
     };
 
+
     return (
+
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">
             {/* Header & Wallet Summary */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -160,32 +214,22 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Seleção de Créditos</span>
                 </div>
 
+
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <PricingCard
-                        title="Starter Pack"
-                        credits={1000}
-                        price="97"
-                        description="Ideal para testar o Sherlock Mode em nichos específicos."
-                        icon={<Zap size={20} />}
-                        onTopUp={() => setShowTopUpModal(true)}
-                    />
-                    <PricingCard
-                        title="Business"
-                        credits={5000}
-                        price="297"
-                        description="Perfeito para agências em fase de crescimento."
-                        icon={<TrendingUp size={20} />}
-                        recommended
-                        onTopUp={() => setShowTopUpModal(true)}
-                    />
-                    <PricingCard
-                        title="Pro Elite"
-                        credits={20000}
-                        price="797"
-                        description="Para operação massiva de extração estadual."
-                        icon={<Sparkles size={20} />}
-                        onTopUp={() => setShowTopUpModal(true)}
-                    />
+                    {PRICING_PLANS.map((plan) => (
+                        <PricingCard
+                            key={plan.id}
+                            title={plan.title}
+                            credits={plan.credits}
+                            price={plan.price}
+                            description={plan.description}
+                            icon={plan.id === 'starter' ? <Zap size={20} /> : plan.id === 'business' ? <TrendingUp size={20} /> : <Sparkles size={20} />}
+                            recommended={plan.recommended}
+                            onTopUp={() => handleTopUp(plan)}
+                            isLoading={isProcessingCheckout}
+                        />
+                    ))}
                     <PricingCard
                         title="Custom"
                         credits={0}
@@ -196,6 +240,8 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                         onTopUp={() => setShowTopUpModal(true)}
                     />
                 </div>
+
+
             </div>
 
             {/* Transactions History */}
@@ -332,8 +378,11 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
     );
 };
 
-const PricingCard = ({ title, credits, price, description, icon, recommended = false, isCustom = false, onTopUp }: any) => (
-    <div className={`glass rounded-[2rem] p-6 border transition-all duration-500 relative flex flex-col group ${recommended ? 'border-primary shadow-xl shadow-primary/10 overflow-hidden scale-[1.02]' : 'border-white/5 hover:border-white/20'}`}>
+const PricingCard = ({ title, credits, price, description, icon, recommended = false, isCustom = false, onTopUp, isLoading = false }: any) => (
+    <div
+        onClick={onTopUp}
+        className={`glass rounded-[2rem] p-6 border transition-all duration-500 relative flex flex-col group cursor-pointer ${recommended ? 'border-primary shadow-xl shadow-primary/10 overflow-hidden scale-[1.02] hover:scale-[1.04]' : 'border-white/5 hover:border-white/20 hover:scale-[1.02]'} ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
+    >
         {recommended && (
             <div className="absolute top-0 right-0 bg-primary text-slate-900 text-[8px] font-black uppercase tracking-widest py-1 px-4 rounded-bl-xl">Recomendado</div>
         )}
@@ -360,13 +409,24 @@ const PricingCard = ({ title, credits, price, description, icon, recommended = f
         </div>
 
         <button
-            onClick={onTopUp}
-            className={`w-full mt-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${recommended ? 'bg-primary text-slate-900 hover:scale-[1.02]' : 'bg-white/5 text-white hover:bg-white/10'}`}
+            onClick={(e) => { e.stopPropagation(); onTopUp(); }}
+            disabled={isLoading}
+            className={`w-full mt-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${recommended ? 'bg-primary text-slate-900 hover:scale-[1.02]' : 'bg-white/5 text-white hover:bg-white/10'} disabled:opacity-50`}
         >
-            {isCustom ? 'Falar com Consultor' : 'Adquirir Pack'}
-            <ChevronRight size={14} />
+            {isLoading ? (
+                <>
+                    <Clock size={14} className="animate-spin" />
+                    Processando...
+                </>
+            ) : (
+                <>
+                    {isCustom ? 'Falar com Consultor' : 'Adquirir Pack'}
+                    <ChevronRight size={14} />
+                </>
+            )}
         </button>
     </div>
 );
+
 
 export default BillingView;
