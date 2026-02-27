@@ -261,7 +261,11 @@ export class DiscoveryService {
                         atividade_principal: data.atividade_principal ||
                             (data.cnae_fiscal_descricao ? [{ text: data.cnae_fiscal_descricao }] :
                                 data.main_activity ? [{ text: data.main_activity.text }] : []),
-                        site: data.site || data.website || ''
+                        site: data.site || data.website || '',
+                        qsa: (data.qsa || data.socios || []).map((s: any) => ({
+                            nome: s.nome || s.nome_socio || s.name || 'Sócio não identificado',
+                            cargo: s.qual || s.qualificacao_socio || s.role || 'Sócio'
+                        }))
                     };
                 }
             } catch (err) {

@@ -80,19 +80,24 @@ body {
 
 /* Layout Utilities */
 .glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.85);
+  /* More opaque, less blur needed */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.4);
+  transform: translateZ(0);
+  /* Force HW acceleration */
 }
 
 .glass-strong {
-  background: rgba(15, 23, 42, 0.98);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  background: rgba(15, 23, 42, 0.95);
+  /* Nearly opaque for perf */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  transform: translateZ(0);
 }
 
 .liquid-gradient {

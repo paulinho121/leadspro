@@ -4,7 +4,7 @@ import {
   X, Instagram, Facebook, Globe, Search,
   MessageCircle, Phone, MapPin, Mail,
   Building2, Hash, Calendar, Layers, Zap,
-  BrainCircuit, Sparkles, Cpu, Atom
+  BrainCircuit, Sparkles, Cpu, Atom, Linkedin, User, Brain
 } from 'lucide-react';
 import { Lead } from '../types';
 
@@ -19,8 +19,10 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
   const details = lead.details || {};
   const score = details.ai_score || 0;
 
-  const handleSocialClick = (url?: string) => {
-    if (url) window.open(url, '_blank');
+  const openWhatsApp = (phone: string) => {
+    const cleanPhone = phone.replace(/\D/g, '');
+    const fullPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+    window.open(`https://wa.me/${fullPhone}`, '_blank');
   };
 
   return (
@@ -87,21 +89,108 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
                 )}
               </div>
 
+              {/* Advanced Data Grid */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <DetailCard icon={<Layers size={12} />} label="Setor/CNAE" value={details.activity || lead.industry || 'N/A'} />
+                <DetailCard icon={<Layers size={12} />} label="Setor/CNAE" value={details.activity || lead.industry || 'Indústria Local'} />
                 <DetailCard icon={<Calendar size={12} />} label="Fundação" value={details.foundedDate || 'Desconhecido'} />
-                <DetailCard icon={<Hash size={12} />} label="Porte" value={details.size || 'Não Inf.'} />
-                <DetailCard
-                  icon={<Zap size={12} className="animate-pulse text-primary" />}
-                  label="Lead Score"
-                  value={score > 0 ? `${(score / 10).toFixed(1)}/10` : 'Pendente'}
-                  highlight={score > 70}
-                />
+                <DetailCard icon={<Hash size={12} />} label="Porte" value={details.size || 'Não identificado'} />
+                <DetailCard icon={<Zap size={12} className="text-primary" />} label="Lead Score" value={score > 0 ? `${(score / 10).toFixed(1)}/10` : 'Pendente'} />
+                <DetailCard icon={<User size={12} />} label="Funcionários" value={details.employee_count || 'Sob consulta'} />
+                <DetailCard icon={<Phone size={12} />} label="Telefone" value={lead.phone || 'Não informado'} />
               </div>
 
-              {/* AI Diagnostics Indicators */}
+              {/* Partners and Decision Makers Section */}
+              {details.partners && Array.isArray(details.partners) && details.partners.length > 0 && (
+                <div className="p-4 rounded-2xl border border-white/5 bg-white/[0.02] space-y-3">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <Building2 size={12} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Sócios e Decisores (LinkedIn Intelligence)</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {details.partners.map((p: any, i: number) => {
+                      const partnerName = typeof p === 'string' ? p : p.nome || p.name;
+                      const partnerRole = typeof p === 'object' ? p.cargo || p.role : '';
+                      const linkedinSearchUrl = `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(partnerName + ' ' + (details.tradeName || lead.name))}`;
+
+                      return (
+                        <div key={i} className="flex items-center gap-1 group/partner">
+                          <span className="px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-xl text-[10px] font-bold text-primary flex flex-col">
+                            <span>{partnerName}</span>
+                            {partnerRole && <span className="text-[8px] opacity-60 font-medium">{partnerRole}</span>}
+                          </span>
+                          <a
+                            href={linkedinSearchUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1.5 bg-blue-600/10 text-blue-400 rounded-lg opacity-0 group-hover/partner:opacity-100 transition-all hover:bg-blue-600 hover:text-white"
+                            title={`Buscar ${partnerName} no LinkedIn`}
+                          >
+                            <Linkedin size={10} />
+                          </a>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Deep Response Channels (IA Discovery) */}
+              {(details.partners_contacts || details.realPhones) && (
+                <div className="p-4 rounded-2xl border border-primary/10 bg-primary/5 space-y-3">
+                  <div className="flex items-center gap-2 text-primary">
+                    <Sparkles size={12} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Canais de Resposta Direta (Neural Discovery)</span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-2">
+                    {details.partners_contacts && Array.isArray(details.partners_contacts) && details.partners_contacts.map((c: string, i: number) => (
+                      <span key={i} className="text-[10px] text-white font-bold flex items-center gap-1">
+                        <div className="w-1 h-1 rounded-full bg-primary animate-pulse"></div>
+                        {c}
+                      </span>
+                    ))}
+                    {details.realPhones && Array.isArray(details.realPhones) && details.realPhones.map((p: string, i: number) => (
+                      <button
+                        key={i}
+                        onClick={() => openWhatsApp(p)}
+                        className="text-[10px] text-emerald-400 font-bold hover:text-emerald-300 flex items-center gap-1 group/wa"
+                      >
+                        <MessageCircle size={10} className="group-hover/wa:scale-110 transition-transform" />
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Hunter.io Emails Section */}
+              {details.hunterEmails && Array.isArray(details.hunterEmails) && details.hunterEmails.length > 0 && (
+                <div className="p-4 rounded-2xl border border-blue-500/10 bg-blue-500/5 space-y-3">
+                  <div className="flex items-center gap-2 text-blue-400">
+                    <Mail size={12} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">E-mails Corporativos (Hunter Intelligence)</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {details.hunterEmails.map((email: string, i: number) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          const cleanEmail = email.split(' ')[0];
+                          navigator.clipboard.writeText(cleanEmail);
+                          alert('Email copiado: ' + cleanEmail);
+                        }}
+                        className="px-3 py-1.5 bg-white/5 border border-white/5 rounded-xl text-[10px] font-bold text-slate-300 hover:bg-blue-500/20 hover:border-blue-500/30 transition-all"
+                        title="Clique para copiar"
+                      >
+                        {email}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* AI Status Indicators */}
               {details.whatsapp_status && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-white/5">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 pt-3 border-t border-white/5">
                   <div className="flex flex-col gap-0.5">
                     <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">WhatsApp</span>
                     <span className={`text-[9px] font-bold ${details.whatsapp_status === 'Confirmado' ? 'text-emerald-400' : 'text-slate-300'}`}>
@@ -117,13 +206,7 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
                   <div className="flex flex-col gap-0.5">
                     <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Maturidade</span>
                     <span className="text-[9px] font-bold text-white">
-                      {details.digital_maturity}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Instagram</span>
-                    <span className={`text-[9px] font-bold ${details.instagram_status === 'Ativo' ? 'text-magenta-400' : 'text-slate-300'}`}>
-                      {details.instagram_status}
+                      {details.digital_maturity || 'Média'}
                     </span>
                   </div>
                 </div>
@@ -139,8 +222,8 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
                   <Atom size={40} className="text-primary animate-spin-slow" />
                 </div>
                 <div className="flex items-center gap-2 mb-2 text-primary">
-                  <Sparkles size={14} />
-                  <span className="text-[8px] font-black uppercase tracking-[0.2em]">Neural Insight</span>
+                  <Brain size={14} />
+                  <span className="text-[8px] font-black uppercase tracking-[0.2em]">Plano de Ataque Neural</span>
                 </div>
                 <p className="text-slate-300 text-[11px] leading-relaxed italic">
                   "{lead.ai_insights}"
@@ -149,19 +232,25 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
             </div>
           )}
 
-          {/* Neural Actions Grid (Social Links) - More compact */}
-          <div className="px-6 sm:px-10 pb-4 grid grid-cols-5 gap-2 relative z-10">
+          {/* Social Access Grid */}
+          <div className="px-6 sm:px-10 pb-4 grid grid-cols-6 gap-2 relative z-10">
             <SourceButton
               icon={<Globe size={16} className="text-blue-400" />}
               label="SITE"
-              onClick={() => handleSocialClick(lead.website)}
+              onClick={() => lead.website && window.open(lead.website.startsWith('http') ? lead.website : `https://${lead.website}`, '_blank')}
               disabled={!lead.website}
             />
             <SourceButton
-              icon={<Instagram size={16} className="text-magenta-500" />}
+              icon={<Instagram size={16} className="text-pink-500" />}
               label="INSTA"
-              onClick={() => handleSocialClick(details.instagram)}
+              onClick={() => details.instagram && window.open(details.instagram, '_blank')}
               disabled={!details.instagram}
+            />
+            <SourceButton
+              icon={<Linkedin size={16} className="text-blue-500" />}
+              label="LNKD"
+              onClick={() => lead.socialLinks?.linkedin && window.open(lead.socialLinks.linkedin, '_blank')}
+              disabled={!lead.socialLinks?.linkedin}
             />
             <SourceButton
               icon={<Mail size={16} className="text-primary shadow-[0_0_10px_rgba(6,182,212,0.5)]" />}
@@ -178,41 +267,31 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
             <SourceButton
               icon={<Facebook size={16} className="text-blue-600" />}
               label="FB"
-              onClick={() => handleSocialClick(details.facebook)}
+              onClick={() => details.facebook && window.open(details.facebook, '_blank')}
               disabled={!details.facebook}
             />
             <SourceButton
               icon={<Search size={16} className="text-primary" />}
               label="LOCAL"
-              onClick={() => handleSocialClick(lead.socialLinks?.map_link)}
+              onClick={() => lead.socialLinks?.map_link && window.open(lead.socialLinks.map_link, '_blank')}
               disabled={!lead.socialLinks?.map_link}
             />
           </div>
         </div>
 
-        {/* Primary Contact Actions - FIXED AT BOTTOM */}
+        {/* Primary Contact Actions */}
         <div className="px-6 sm:px-10 pb-6 sm:pb-8 pt-4 bg-slate-900 border-t border-white/5 relative z-20">
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <button
               onClick={() => {
                 const clean = lead.phone?.replace(/\D/g, '');
                 if (!clean) return;
-
-                const ddi = clean.startsWith('55') ? '' : '55';
-                const fullPhone = `${ddi}${clean}`;
-
+                const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
                 const hour = new Date().getHours();
                 const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
                 const company = details.tradeName || lead.name;
                 const city = (details.address || lead.location).split(',')[0];
-
-                let message = '';
-                if (lead.ai_insights) {
-                  message = `${greeting}, tudo bem na ${company}?\n\nEstava analisando o mercado de ${details.activity || lead.industry} em ${city} e vi o destaque de vocês.\n\n"${lead.ai_insights.split('.')[0]}."\n\nCom base nisso, tenho uma proposta que faz muito sentido. Podemos conversar rapidinho?`;
-                } else {
-                  message = `${greeting}! Vi que a ${company} é referência em ${details.activity || lead.industry} na região de ${city}.\n\nGostaria de apresentar uma solução ideal para empresas do seu porte. Tem um minuto?`;
-                }
-
+                let message = `${greeting}! Vi que a ${company} é uma referência em ${details.activity || lead.industry} na região de ${city}. Tem um minuto para conversarmos?`;
                 window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
               }}
               className="group flex items-center justify-center gap-2 sm:gap-3 bg-[#12b886] hover:bg-[#0ca678] text-white py-4 sm:py-5 rounded-[1.2rem] font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all shadow-xl shadow-emerald-500/10 hover:scale-[1.02]"

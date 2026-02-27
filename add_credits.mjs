@@ -19,14 +19,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 async function addCredits() {
     try {
         console.log("Looking for tenant...");
-        const { data: memberData, error: memberErr } = await supabase.from('tenant_members').select('tenant_id').limit(1);
+        const { data: profileData, error: profileErr } = await supabase.from('profiles').select('tenant_id').limit(1);
 
-        if (memberErr || !memberData || memberData.length === 0) {
-            console.log("No tenant members found.", memberErr);
+        if (profileErr || !profileData || profileData.length === 0) {
+            console.log("No profiles found.", profileErr);
             return;
         }
 
-        const tenantId = memberData[0].tenant_id;
+        const tenantId = profileData[0].tenant_id;
         console.log("Found tenant ID:", tenantId);
 
         console.log("Adding credits...");

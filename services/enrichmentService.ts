@@ -56,7 +56,8 @@ export class EnrichmentService {
                     instagram: socialData.instagram,
                     facebook: socialData.facebook,
                     phone: lead.phone,
-                    mapSnippet: lead.socialLinks?.map_link || ''
+                    mapSnippet: lead.socialLinks?.map_link || '',
+                    partnersFromQsa: officialData.qsa || [] // INJEÇÃO CRÍTICA: IA agora sabe quem procurar
                 },
                 { apiKeys, ttl: 86400 }
             );
@@ -74,13 +75,15 @@ export class EnrichmentService {
             ...lead.details,
             ...officialData,
             ...socialData,
-            ...diagnostic, // WhatsApp, Ads, Instagram status, maturidade e p2c_score
+            ...diagnostic, // WhatsApp, Ads, Instagram status, maturidade, p2c_score, partners, employees_est
             ai_score: aiScore,
             p2c_score: diagnostic.p2c_score || (aiScore / 100), // Fallback baseado no aiScore
             activity: officialData.activity || lead.industry,
             tradeName: officialData.tradeName || lead.name,
             foundedDate: officialData.foundedDate || 'Não identificado',
-            size: officialData.size || 'Pequeno Porte',
+            size: officialData.size || officialData.porte || 'Pequeno Porte',
+            partners: diagnostic.partners || officialData.qsa || [],
+            employee_count: diagnostic.employees_est || 'Sob consulta',
             real_email: socialData.realEmail,
             placeImage: placeImage
         };
@@ -122,6 +125,8 @@ export class EnrichmentService {
             const queries = [
                 { type: 'instagram', q: domain ? `site:instagram.com "${domain}"` : `site:instagram.com "${lead.name}" "${lead.location}"` },
                 { type: 'facebook', q: domain ? `site:facebook.com "${domain}"` : `site:facebook.com "${lead.name}" "${lead.location}"` },
+                { type: 'linkedin', q: domain ? `site:linkedin.com/company "${domain}"` : `site:linkedin.com/company "${lead.name}" "${lead.location}"` },
+                { type: 'decisor', q: `"${lead.name}" ("proprietário" OR "dono" OR "diretor" OR "sócio") "celular" OR "whatsapp"` },
                 { type: 'email', q: `"${lead.name}" "${lead.location}" (email OR contato OR "@")` }
             ];
 
@@ -130,19 +135,33 @@ export class EnrichmentService {
                 ApiGatewayService.callApi('google-search', 'search', { q: query.q, num: 5 }, { apiKeys, ttl: 86400 * 7 })
             );
 
-            const [instaResults, fbResults, emailResults]: any = await Promise.all(searchPromises);
+            const [instaResults, fbResults, linkedinResults, emailResults]: any = await Promise.all(searchPromises);
 
             // 3. VALIDAÇÃO NEURAL DOS LINKS (Evita falsos positivos como Sage Networks)
             const allSnippets = [
                 ...(instaResults.organic || []),
                 ...(fbResults.organic || []),
+                ...(linkedinResults.organic || []),
                 ...(emailResults.organic || [])
             ].map(r => `Link: ${r.link} | Título: ${r.title} | Snippet: ${r.snippet}`).join('\n');
+
+            // 4. HUNTER.IO INTEGRATION (Email Hunting)
+            let hunterEmails: string[] = [];
+            if (domain && !['facebook.com', 'instagram.com', 'linkedin.com', 'youtube.com'].includes(domain)) {
+                try {
+                    const hunterData: any = await ApiGatewayService.callApi('hunter', 'domain-search', { domain }, { apiKeys });
+                    hunterEmails = hunterData.data?.emails?.map((e: any) => `${e.value} (${e.position || 'Contato'})`) || [];
+                    console.log(`[Neural Hunter] Found ${hunterEmails.length} emails via Hunter.io`);
+                } catch (err) {
+                    console.warn('[Neural Hunter] Hunter.io lookup failed.', err);
+                }
+            }
 
             const validationPrompt = `Você é um detetive digital. Analise os resultados de busca e identifique as redes sociais REAIS da empresa abaixo:
             EMPRESA ALVO: ${lead.name}
             LOCALIZAÇÃO: ${lead.location}
             SITE OFICIAL: ${website}
+            EMAILS NO DOMÍNIO (Hunter.io): ${hunterEmails.join(', ')}
 
             RESULTADOS DE BUSCA:
             ${allSnippets}
@@ -150,13 +169,16 @@ export class EnrichmentService {
             REGRAS:
             - Ignore resultados de empresas com nomes parecidos mas cidades diferentes.
             - O Instagram deve refletir o negócio (ex: vila_mosquito). Ignore se for de um concorrente ou agência.
+            - O LinkedIn deve ser o perfil da empresa (company page).
             - Extraia o e-mail se houver.
 
             RETORNE APENAS JSON:
             {
               "instagram": "URL completa ou null",
               "facebook": "URL completa ou null",
-              "realEmail": "email ou null"
+              "linkedin": "URL completa ou null",
+              "realEmail": "email ou null",
+              "realPhones": [] // Lista de telefones adicionais detectados
             }`;
 
             try {
@@ -175,22 +197,26 @@ export class EnrichmentService {
                 return {
                     instagram: finalData.instagram || '',
                     facebook: finalData.facebook || '',
-                    linkedin: '',
+                    linkedin: finalData.linkedin || '',
                     website: website,
-                    realEmail: finalData.realEmail || ''
+                    realEmail: finalData.realEmail || '',
+                    realPhones: finalData.realPhones || [],
+                    hunterEmails: hunterEmails
                 };
 
             } catch (err) {
                 console.warn('[Social Validation] IA falhou na validação, usando extrator básico.', err);
                 const findInsta = instaResults.organic?.find((r: any) => r.link?.includes('instagram.com'))?.link;
                 const findFB = fbResults.organic?.find((r: any) => r.link?.includes('facebook.com'))?.link;
+                const findLinkedIn = linkedinResults.organic?.find((r: any) => r.link?.includes('linkedin.com/company'))?.link;
 
                 return {
                     instagram: findInsta || '',
                     facebook: findFB || '',
-                    linkedin: '',
+                    linkedin: findLinkedIn || '',
                     website: website,
-                    realEmail: ''
+                    realEmail: '',
+                    hunterEmails: hunterEmails
                 };
             }
         } catch (e) {
@@ -202,7 +228,8 @@ export class EnrichmentService {
             facebook: '',
             linkedin: '',
             website: lead.website || '',
-            realEmail: ''
+            realEmail: '',
+            hunterEmails: []
         };
     }
 

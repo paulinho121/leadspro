@@ -29,6 +29,10 @@ export interface CompanyDetails {
   ai_score?: number;
   email?: string; // Email governamental/oficial
   placeImage?: string;
+  employee_count?: string;
+  partners?: string[];
+  partners_contacts?: string[];
+  realPhones?: string[];
 }
 
 export interface Lead {

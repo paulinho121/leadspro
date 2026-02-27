@@ -14,6 +14,7 @@ interface LeadDiscoveryProps {
   onResultsFound: (results: any[]) => void;
   onStartEnrichment: () => void;
   apiKeys?: any;
+  existingLeads?: any[];
 }
 
 // Fallback estratégico para varredura se APIs falharem no online
@@ -29,7 +30,7 @@ const CITY_FALLBACK_SEED: Record<string, string[]> = {
   'PE': ['Recife', 'Jaboatão dos Guararapes', 'Olinda', 'Caruaru', 'Petrolina', 'Paulista'],
 };
 
-const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEnrichment, apiKeys }) => {
+const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEnrichment, apiKeys, existingLeads = [] }) => {
   const { config } = useBranding();
   const [mode, setMode] = useState<'MAPS' | 'CNPJ' | 'ENRICH' | 'SHERLOCK' | 'IMPORT'>('MAPS');
   const [filters, setFilters] = useState<SearchFilters>({
@@ -158,6 +159,8 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
     const runDiscoveryLoop = async () => {
       let currentPage = 1;
       let cityIndex = 0;
+      let currentTotalFound = 0;
+      const sessionLeadsNames = new Set(existingLeads.map(l => (l.name || '').toLowerCase().trim()));
 
       // Loop infinito até comando de parada
       while (!isStoppingRef.current) {
@@ -216,15 +219,31 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           if (isStoppingRef.current) break;
 
           if (results.length > 0) {
-            setLeadsFound(prev => {
-              const nextCount = prev + results.length;
-              if (filters.limit && filters.limit > 0 && nextCount >= filters.limit) {
+            // DEDUPLICAÇÃO E LIMITAÇÃO EM TEMPO REAL
+            const uniqueResultsInBatch = results.filter(l => {
+              const name = (l.name || '').toLowerCase().trim();
+              if (sessionLeadsNames.has(name)) return false;
+              sessionLeadsNames.add(name);
+              return true;
+            });
+
+            if (uniqueResultsInBatch.length > 0) {
+              const limit = filters.limit || 50;
+              const remainingNeeded = limit - currentTotalFound;
+
+              const finalBatch = uniqueResultsInBatch.slice(0, remainingNeeded);
+
+              currentTotalFound += finalBatch.length;
+              setLeadsFound(currentTotalFound);
+
+              onResultsFound(finalBatch);
+
+              if (currentTotalFound >= limit) {
+                console.log(`[Neural Engine] Limite de ${limit} leads atingido. Encerrando ciclo.`);
                 isStoppingRef.current = true;
                 setStopSignal(true);
               }
-              return nextCount;
-            });
-            onResultsFound(results);
+            }
           } else if (searchMode === 'MAPS' && selectedCity !== 'TODO_ESTADO') {
             break;
           }

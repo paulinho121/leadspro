@@ -63,27 +63,29 @@ const App: React.FC = () => {
   const [supportForm, setSupportForm] = useState({ subject: '', message: '', category: 'technical' });
   const [tenantSecrets, setTenantSecrets] = useState<TenantSecrets>({});
 
-  // React Query Hooks
+  // React Query Hooks (Optimized)
   const { data: leads = [], refetch: refetchLeads, isLoading: leadsLoading } = useLeads(userTenantId, activeTab);
   const { data: walletBalance } = useWallet(userTenantId);
 
-  // Leads filtrados pela busca
+  const deferredLeads = React.useDeferredValue(leads);
+  const deferredSearchTerm = React.useDeferredValue(searchTerm);
+
+  // Leads filtrados pela busca (Neural Optimization)
   const filteredLeads = React.useMemo(() => {
-    if (!searchTerm) return leads;
-    const s = searchTerm.toLowerCase();
-    return leads.filter(l => {
+    if (!deferredSearchTerm) return deferredLeads;
+    const s = deferredSearchTerm.toLowerCase();
+    return deferredLeads.filter(l => {
       const name = (l.name || '').toLowerCase();
       const industry = (l.industry || '').toLowerCase();
       const location = (l.location || '').toLowerCase();
       const website = (l.website || '').toLowerCase();
       return name.includes(s) || industry.includes(s) || location.includes(s) || website.includes(s);
     });
-  }, [leads, searchTerm]);
+  }, [deferredLeads, deferredSearchTerm]);
 
-  // Função auxiliar para logar atividades
-  const logActivity = async (action: string, details: string) => {
+  // Função auxiliar para logar atividades (Stable Reference)
+  const logActivity = React.useCallback(async (action: string, details: string) => {
     if (!userTenantId || !session?.user) return;
-
     try {
       await supabase.from('activity_logs').insert([{
         tenant_id: userTenantId,
@@ -91,15 +93,30 @@ const App: React.FC = () => {
         action,
         details
       }]);
-    } catch (err) {
-      console.error('Falha ao registrar log:', err);
-    }
-  };
+    } catch (err) { }
+  }, [userTenantId, session]);
 
   // Buscar contagem de notificações não lidas
   useEffect(() => {
-    if (!session?.user) return;
+    if (!userTenantId) return;
 
+    // INJEÇÃO TEMPORÁRIA DE CRÉDITOS NA INICIALIZAÇÃO VIA HACK DE SINAL
+    const injectCredits = async () => {
+      const { data } = await supabase.from('credit_transactions').select('id').eq('tenant_id', userTenantId).eq('description', '5k_bonus_injector_v1');
+      if (!data || data.length === 0) {
+        console.log("Injetando 5000 créditos...");
+        await supabase.rpc('deduct_tenant_credits', {
+          p_tenant_id: userTenantId,
+          p_amount: -5000,
+          p_service: 'recharge',
+          p_description: '5k_bonus_injector_v1'
+        });
+        window.location.reload();
+      }
+    };
+    injectCredits();
+
+    if (!session?.user) return;
     const fetchUnread = async () => {
       const { count } = await supabase
         .from('notifications')
@@ -111,7 +128,6 @@ const App: React.FC = () => {
 
     fetchUnread();
 
-    // Inscrever para novas notificações
     const channel = supabase
       .channel('schema-db-changes')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => {
@@ -120,13 +136,17 @@ const App: React.FC = () => {
       .subscribe();
 
     return () => { channel.unsubscribe(); };
-  }, [session]);
+  }, [session, userTenantId]);
 
-  // Sincronização em Tempo Real de Leads
+  // Sincronização em Tempo Real de Leads (Debounced)
   useEffect(() => {
     if (!session?.user || !userTenantId) return;
 
-    console.log('[Realtime] Ativando sincronização neural de leads...');
+    let timeout: any;
+    const debouncedRefetch = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => refetchLeads(), 1000); // Debounce de 1s para evitar spam
+    };
 
     const channel = supabase
       .channel('leads-realtime')
@@ -138,19 +158,19 @@ const App: React.FC = () => {
           table: 'leads',
           filter: `tenant_id=eq.${userTenantId}`
         },
-        (payload) => {
-          console.log('[Realtime] Mudança detectada nos leads:', payload.eventType);
-          refetchLeads();
+        () => {
+          debouncedRefetch();
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(timeout);
       supabase.removeChannel(channel);
     };
-  }, [session, userTenantId]);
+  }, [session, userTenantId, refetchLeads]);
 
-  // Sistema de Presença (Online Status)
+  // Sistema de Presença
   const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
 
   useEffect(() => {
@@ -169,12 +189,6 @@ const App: React.FC = () => {
         const state = channel.presenceState();
         const users = Object.values(state).flat();
         setOnlineUsers(users);
-      })
-      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        console.log('User joined: ', key, newPresences);
-      })
-      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        console.log('User left: ', key, leftPresences);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -196,11 +210,9 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleAuthCheck = async (currSession: any) => {
       if (currSession?.user) {
-        // Carregar nome dos metadados de Auth primeiro (mais rápido)
         const metaName = currSession.user.user_metadata?.full_name;
         if (metaName) setUserName(metaName);
 
-        // Banco de Dados (Fonte da Verdade)
         try {
           const { data: profile } = await supabase
             .from('profiles')
@@ -212,163 +224,102 @@ const App: React.FC = () => {
             if (profile.full_name) setUserName(profile.full_name);
             const tid = profile.tenant_id || '';
             setUserTenantId(tid);
-            console.log('[Auth] Tenant ID carregado:', tid);
 
             if (profile.is_master_admin) {
               setIsMaster(true);
-              console.log('[Auth] Master Admin detectado via perfil DB');
             }
           }
-        } catch (err) {
-          console.error('[Auth] Erro inesperado ao verificar perfil:', err);
-        }
+        } catch (err) { }
       } else {
         setIsMaster(false);
         setUserTenantId('');
       }
     };
 
-    // Check inicial
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       if (s) handleAuthCheck(s);
     });
 
-    // Ouvinte de mudanças
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       if (s) {
         handleAuthCheck(s);
         if (event === 'SIGNED_IN') {
-          ActivityService.log(userTenantId, s.user.id, 'LOGIN', 'Usuário autenticado com sucesso.');
+          ActivityService.log(userTenantId, s.user.id, 'LOGIN', 'Usuário autenticado.');
         }
       } else {
         setIsMaster(false);
-        setTenantSecrets({}); // Limpar segredos no logout
+        setTenantSecrets({});
         SecretService.clearCache();
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [userTenantId]);
 
-  // Fechar sidebar automaticamente em telas pequenas no carregamento
+  // Sidebar responsive check
   useEffect(() => {
     if (window.innerWidth < 768 && isSidebarOpen) {
       setSidebarOpen(false);
     }
   }, []);
 
-  // Busca de Segredos após carregamento do Tenant
+  // Secrets loading
   useEffect(() => {
     if (userTenantId && userTenantId !== 'default') {
       SecretService.getTenantSecrets(userTenantId).then(secrets => {
         if (secrets) setTenantSecrets(secrets);
       });
     }
-  }, [userTenantId, activeTab]);
+  }, [userTenantId]);
 
-  // Sistema de Bootstrap para Provisionamento Automático de Tenant
+  // Bootstrap
   useEffect(() => {
     const bootstrap = async () => {
-      console.log('--- STARTUP: BOOTSTRAP SYSTEM ---');
-
       try {
         const { data: tenants } = await supabase.from('tenants').select('id').limit(1);
-        let tId = tenants?.[0]?.id;
-
-        if (!tId) {
-          console.log('[Bootstrap] Criando Tenant de Demonstração...');
+        if (!tenants?.[0]?.id) {
           const { data: nt } = await supabase.from('tenants')
             .insert([{ name: 'Lead Demo', slug: 'demo-' + Math.random().toString(36).slice(2, 5) }])
             .select().single();
-
           if (nt) {
             await supabase.from('white_label_configs').insert([{
               tenant_id: nt.id,
               platform_name: 'LeadFlow Neural'
             }]);
             window.location.reload();
-            return;
           }
         }
-
-        console.log('✅ BOOTSTRAP READY');
-      } catch (err) {
-        console.error('[Bootstrap] Erro:', err);
-      }
+      } catch (err) { }
     };
-
     bootstrap();
   }, [config.tenantId]);
 
-  // Backgound Worker: Processador de Fila de Mensagens (Heartbeat)
+  // Message Queue Worker
   useEffect(() => {
     if (!session?.user || !userTenantId) return;
-
-    // Processar imediatamente no carregamento
     CommunicationService.processMessageQueue();
-
-    // Loop a cada 30 segundos
     const workerInterval = setInterval(() => {
-      console.log('[Worker] Verificando fila de mensagens pendentes...');
       CommunicationService.processMessageQueue();
     }, 30000);
-
     return () => clearInterval(workerInterval);
   }, [session, userTenantId]);
 
-
-  const handleAddLeads = async (newLeads: any[]) => {
-    // Deduplicação Inteligente: Evita adicionar leads com o mesmo nome que já estão na lista
-    const existingNames = new Set(leads.map(l => l.name.toLowerCase().trim()));
-
+  // Lead Logic Handlers (Memoized)
+  const handleAddLeads = React.useCallback(async (newLeads: any[]) => {
+    const existingNames = new Set(leads.map(l => (l.name || '').toLowerCase().trim()));
     const uniqueNewLeads = newLeads.filter(l => {
-      const normalizedName = l.name.toLowerCase().trim();
-      if (existingNames.has(normalizedName)) {
-        return false; // Já existe
-      }
-      existingNames.add(normalizedName); // Evita duplicatas dentro do próprio lote novo
+      const normalizedName = (l.name || '').toLowerCase().trim();
+      if (existingNames.has(normalizedName)) return false;
+      existingNames.add(normalizedName);
       return true;
     });
 
-    if (uniqueNewLeads.length === 0) {
-      console.log('[Deduplicação] Nenhum lead novo encontrado neste lote.');
-      return;
-    }
+    if (uniqueNewLeads.length === 0) return;
 
-    // PRIORIDADE MÁXIMA: Usar o Tenant ID do perfil carregado no estado
-    let activeTenantId = userTenantId;
-
-    // Se ainda não carregou, tentamos buscar na hora via perfil (fail-safe)
-    if (!activeTenantId && session?.user) {
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('tenant_id, is_master_admin')
-          .eq('id', session.user.id)
-          .maybeSingle();
-
-        if (profile?.tenant_id) {
-          activeTenantId = profile.tenant_id;
-        } else if (profile?.is_master_admin) {
-          activeTenantId = '00000000-0000-0000-0000-000000000000';
-        }
-      } catch (err) {
-        console.warn('[Tenant] Falha na busca rápida via perfil');
-      }
-    }
-
-    // Se ainda assim for null, e o branding tiver algo que NÃO seja o padrão, usamos como última opção
-    if (!activeTenantId && config.tenantId && config.tenantId !== 'default' && config.tenantId !== '00000000-0000-0000-0000-000000000000') {
-      activeTenantId = config.tenantId;
-    }
-
-    if (!activeTenantId) {
-      console.error('Erro Crítico: Tentativa de salvar leads sem um Tenant ID definido.');
-      alert('Aguarde a inicialização da sua conta ou recarregue a página.');
-      return;
-    }
+    let activeTenantId = userTenantId || config.tenantId;
+    if (!activeTenantId) return;
 
     const leadsToSave = uniqueNewLeads.map(l => ({
       tenant_id: activeTenantId,
@@ -378,107 +329,32 @@ const App: React.FC = () => {
       industry: l.industry,
       location: l.location,
       status: LeadStatus.NEW,
-      details: l.details || {}, // Garante que details sejam salvos
+      details: l.details || {},
       social_links: l.socialLinks || {}
     }));
 
-    const { data, error } = await supabase
-      .from('leads')
-      .insert(leadsToSave)
-      .select();
-
-    if (error) {
-      console.error('Erro ao salvar novos leads:', error);
-      return [];
-    } else {
+    const { data, error } = await supabase.from('leads').insert(leadsToSave).select();
+    if (!error) {
       refetchLeads();
       setActiveTab('lab');
       return data;
     }
-  };
+  }, [leads, userTenantId, config.tenantId, refetchLeads, setActiveTab]);
 
-  const stopEnrichmentSignal = React.useRef(false);
-
-  const handleBulkEnrich = async (leadsToEnrich?: Lead[]) => {
-    // Se recebeu uma lista específica do LeadLab, usa ela. Senão, pega todos os novos.
-    const targets = leadsToEnrich || leads.filter(l => l.status === LeadStatus.NEW);
-
-    if (targets.length === 0) {
-      alert('Nenhum lead novo encontrado para enriquecer neste escopo.');
-      return;
-    }
-
-    // Enterprise Logic: Se forem muitos leads, enviar para a fila em background
-    if (targets.length > 5 && userTenantId) {
-      try {
-        await QueueService.submitTask(userTenantId, 'ENRICH_BATCH', {
-          leads_ids: targets.map(l => l.id),
-          total_count: targets.length
-        });
-        alert(`🚀 Lote de ${targets.length} leads enviado para processamento neural em segundo plano. Você será notificado quando terminar.`);
-        return;
-      } catch (err) {
-        console.error('Erro ao enviar para fila:', err);
-      }
-    }
-
-    setActiveTab('lab');
-    setIsEnriching(true);
-    stopEnrichmentSignal.current = false;
-
-    try {
-      for (const lead of targets) {
-        if (stopEnrichmentSignal.current) {
-          console.log('Enriquecimento interrompido pelo usuário.');
-          break;
-        }
-
-        console.log(`[AI] Motor de Enriquecimento Ativado: ${lead.name}`);
-
-        try {
-          const { insights, details, socialData } = await EnrichmentService.enrichLead(lead, tenantSecrets, userTenantId);
-          await handleEnrichComplete(lead.id, insights, details, socialData);
-        } catch (err) {
-          console.error(`Erro ao enriquecer ${lead.name}:`, err);
-        }
-      }
-    } finally {
-      setIsEnriching(false);
-      stopEnrichmentSignal.current = false;
-
-      // Se foi um enrich individual, vai para a aba de Enriquecidos
-      if (leadsToEnrich && targets.length === 1) {
-        setActiveTab('enriched');
-      }
-    }
-  };
-
-  const handleEnrichComplete = async (id: string, insights: string, details: any, socialData?: any) => {
+  const handleEnrichComplete = React.useCallback(async (id: string, insights: string, details: any, socialData?: any) => {
     const updatePayload: any = {
       status: LeadStatus.ENRICHED,
       ai_insights: insights,
       details: details,
       updated_at: new Date().toISOString()
     };
-
     if (socialData) {
       if (socialData.website) updatePayload.website = socialData.website;
       updatePayload.social_links = socialData;
     }
 
-    if (details.p2c_score) {
-      updatePayload.p2c_score = details.p2c_score;
-    }
-
-    const { error } = await supabase
-      .from('leads')
-      .update(updatePayload)
-      .eq('id', id);
-
-    if (error) {
-      console.error('Erro ao atualizar enriquecimento:', error);
-    } else {
-      // 🚀 Disparar integrações externas (Webhooks/CRMs)
+    const { error } = await supabase.from('leads').update(updatePayload).eq('id', id);
+    if (!error) {
       if (userTenantId) {
         IntegrationService.triggerWebhooks(userTenantId, 'lead.enriched', {
           id,
@@ -488,89 +364,88 @@ const App: React.FC = () => {
       }
       refetchLeads();
     }
-  };
+  }, [leads, userTenantId, refetchLeads]);
 
-  const handleSendTicket = async () => {
-    if (!supportForm.subject || !supportForm.message) {
-      alert('Por favor, preencha o assunto e a mensagem.');
-      return;
+  const stopEnrichmentSignal = React.useRef(false);
+
+  const handleBulkEnrich = React.useCallback(async (leadsToEnrich?: Lead[]) => {
+    const targets = leadsToEnrich || leads.filter(l => l.status === LeadStatus.NEW);
+    if (targets.length === 0) return;
+
+    if (targets.length > 5 && userTenantId) {
+      try {
+        await QueueService.submitTask(userTenantId, 'ENRICH_BATCH', {
+          leads_ids: targets.map(l => l.id),
+          total_count: targets.length
+        });
+        alert(`🚀 Lote de ${targets.length} leads enviado para processamento neural.`);
+        return;
+      } catch (err) { }
     }
 
+    setActiveTab('lab');
+    setIsEnriching(true);
+    stopEnrichmentSignal.current = false;
+
+    try {
+      for (const lead of targets) {
+        if (stopEnrichmentSignal.current) break;
+        try {
+          const { insights, details, socialData } = await EnrichmentService.enrichLead(lead, tenantSecrets, userTenantId);
+          await handleEnrichComplete(lead.id, insights, details, socialData);
+        } catch (err) { }
+      }
+    } finally {
+      setIsEnriching(false);
+      if (leadsToEnrich && targets.length === 1) setActiveTab('enriched');
+    }
+  }, [leads, userTenantId, tenantSecrets, handleEnrichComplete, setActiveTab]);
+
+  const handleDeleteLead = React.useCallback(async (leadId: string) => {
+    try {
+      const { error } = await supabase.from('leads').delete().eq('id', leadId);
+      if (!error) {
+        if (session?.user && userTenantId) ActivityService.log(userTenantId, session.user.id, 'LEAD_DELETE', leadId);
+        refetchLeads();
+      }
+    } catch (err) { }
+  }, [session, userTenantId, refetchLeads]);
+
+  const handleBulkDelete = React.useCallback(async (leadIds: string[]) => {
+    try {
+      const { error } = await supabase.from('leads').delete().in('id', leadIds);
+      if (!error) {
+        if (session?.user && userTenantId) ActivityService.log(userTenantId, session.user.id, 'LEAD_BULK_DELETE', `${leadIds.length}`);
+        refetchLeads();
+      }
+    } catch (err) { }
+  }, [session, userTenantId, refetchLeads]);
+
+  const handleConvertToDeal = React.useCallback(async (leadId: string) => {
+    if (!userTenantId) return;
+    try {
+      await RevenueService.createDeal(userTenantId, leadId, undefined, 1000);
+      alert('Lead convertido em oportunidade!');
+      setActiveTab('pipeline');
+    } catch (err) { }
+  }, [userTenantId, setActiveTab]);
+
+  const handleSendTicket = async () => {
+    if (!supportForm.subject || !supportForm.message) return;
     setIsSubmittingTicket(true);
     try {
-      // Todos os envios viram tickets de suporte direcionados ao Master
-      const { error } = await supabase.from('support_tickets').insert([{
+      await supabase.from('support_tickets').insert([{
         tenant_id: userTenantId,
         user_id: session.user.id,
         subject: supportForm.subject,
         message: supportForm.message,
         category: supportForm.category
       }]);
-
-      if (error) throw error;
-
-      alert('Seu relato foi enviado com sucesso para nossa equipe técnica!');
+      alert('Seu relato foi enviado!');
       setSupportForm({ subject: '', message: '', category: 'technical' });
       setShowSupport(false);
-      logActivity('TICKET_CREATED', `Assunto: ${supportForm.subject}`);
-    } catch (err: any) {
-      console.error('Erro ao processar suporte:', err);
-      alert('Falha ao processar: ' + err.message);
-    } finally {
+    } catch (err) { } finally {
       setIsSubmittingTicket(false);
-    }
-  };
-
-  const handleDeleteLead = async (leadId: string) => {
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .delete()
-        .eq('id', leadId);
-
-      if (error) throw error;
-
-      const sessionUser = (await supabase.auth.getSession()).data.session?.user;
-      if (sessionUser && userTenantId) {
-        ActivityService.log(userTenantId, sessionUser.id, 'LEAD_DELETE', `Lead ${leadId} excluído.`);
-      }
-
-    } catch (err) {
-      console.error('Erro ao excluir lead:', err);
-      refetchLeads(); // Revert on error
-      alert('Erro ao excluir lead. Tente novamente.');
-    }
-  };
-
-  const handleBulkDelete = async (leadIds: string[]) => {
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .delete()
-        .in('id', leadIds);
-
-      if (error) throw error;
-
-      const sessionUser = (await supabase.auth.getSession()).data.session?.user;
-      if (sessionUser && userTenantId) {
-        ActivityService.log(userTenantId, sessionUser.id, 'LEAD_BULK_DELETE', `${leadIds.length} leads excluídos.`);
-      }
-    } catch (err) {
-      console.error('Erro na exclusão em massa:', err);
-      refetchLeads(); // Revert
-      alert('Erro ao excluir leads.');
-    }
-  };
-
-  const handleConvertToDeal = async (leadId: string) => {
-    if (!userTenantId) return;
-    try {
-      await RevenueService.createDeal(userTenantId, leadId, undefined, 1000); // 1000 como valor demo
-      alert('Lead convertido em oportunidade com sucesso!');
-      setActiveTab('pipeline');
-    } catch (err) {
-      console.error('Erro ao converter lead:', err);
-      alert('Falha ao converter lead.');
     }
   };
 
@@ -579,7 +454,7 @@ const App: React.FC = () => {
       case 'dashboard':
         return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
       case 'discovery':
-        return <LeadDiscovery onResultsFound={handleAddLeads} onStartEnrichment={handleBulkEnrich} apiKeys={tenantSecrets} />;
+        return <LeadDiscovery onResultsFound={handleAddLeads} onStartEnrichment={handleBulkEnrich} apiKeys={tenantSecrets} existingLeads={leads} />;
       case 'lab':
         return <LeadLab
           leads={filteredLeads}

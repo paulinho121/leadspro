@@ -49,6 +49,10 @@ export class ApiGatewayService {
                 return await this.callGeminiReal(endpoint, payload, apiKeys?.gemini, model);
             }
 
+            if (apiName === 'hunter') {
+                return await this.callHunter(payload, apiKeys?.hunter);
+            }
+
             return await this.mockRealApiCall(apiName, endpoint, payload);
         }, retries);
 
@@ -140,22 +144,30 @@ export class ApiGatewayService {
                   Instagram: ${payload.instagram}
                   Facebook: ${payload.facebook}
                   Google Maps/Avaliações: ${payload.mapSnippet}
+                  Sócios Oficiais (QSA): ${JSON.stringify(payload.partnersFromQsa)}
+
+                  MISSÃO CRÍTICA:
+                  Você deve identificar os DECISORES (Donos, Sócios ou Gerentes). 
+                  Se nomes foram fornecidos no QSA, use-os como base de busca.
+                  Tente encontrar os contatos DIRETOS (não o telefone da recepção).
 
                   CRITÉRIOS:
-                  - O campo "whatsapp_status" deve ser: "Confirmado", "Provável", "Baixa probabilidade" ou "Não identificado". Baseie no telefone ${payload.phone} e CTAs no site.
-                  - O campo "ads_status" deve ser: "Ativo", "Provável" ou "Não detectado". Baseie em pixels de rastreamento ou landing pages.
-                  - O campo "instagram_status" deve ser: "Ativo", "Pouco ativo", "Inativo" ou "Não encontrado".
-                  - O campo "digital_maturity" deve ser: "Muito Alta", "Alta", "Média", "Baixa" ou "Muito Baixa".
-                  - O campo "p2c_score": Probabilidade de fechamento (0.00 a 1.00). Analise o fôlego financeiro, nicho e presença digital.
-                  - O campo "commercial_score" (0-10).
-                  - O campo "strategic_insight": Focado em como gerar receita imediata (max 3 linhas).
+                  - O campo "whatsapp_status": "Confirmado", "Provável" ou "Não identificado".
+                  - O campo "ads_status": "Ativo" se houver indício de tráfego pago.
+                  - O campo "partners": Use os nomes do QSA + outros decisores encontrados na web.
+                  - O campo "partners_contacts": Priorize o WHATSAPP ou EMAIL PESSOAL dos sócios listados.
+                  - O campo "employees_est": Estimativa baseada no porte da empresa.
+                  - O campo "strategic_insight": Uma frase curta de como o dono deve ser abordado.
 
-                  RETORNE APENAS JSON no formato:
+                  RETORNE APENAS JSON:
                   {
                     "whatsapp_status": "",
                     "ads_status": "",
                     "instagram_status": "",
                     "digital_maturity": "",
+                    "partners": [],
+                    "partners_contacts": [],
+                    "employees_est": "",
                     "p2c_score": 0.0,
                     "commercial_score": 0,
                     "strategic_insight": ""
@@ -197,6 +209,27 @@ export class ApiGatewayService {
             }
         }
         return text;
+    }
+
+    private static async callHunter(payload: any, apiKey: string) {
+        const key = apiKey?.trim() || import.meta.env.VITE_HUNTER_API_KEY;
+        if (!key) throw new Error("HUNTER_API_KEY_MISSING");
+
+        const { domain } = payload;
+        if (!domain) return { data: { emails: [] } };
+
+        const baseUrl = `https://api.hunter.io/v2/domain-search?domain=${domain}&api_key=${key}`;
+
+        console.log(`[Neural Gateway] Connecting to Hunter.io for domain: ${domain}`);
+
+        const response = await fetch(baseUrl);
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Hunter Error: ${response.status} - ${errorBody}`);
+        }
+
+        return await response.json();
     }
 
     private static async executeWithRetry<T>(fn: () => Promise<T>, maxRetries: number): Promise<T> {

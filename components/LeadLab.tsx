@@ -2,7 +2,8 @@ import React, { useState, useMemo, useRef } from 'react';
 import {
   FlaskConical, Search, Filter, Mail, Phone, ExternalLink,
   MoreHorizontal, ChevronDown, CheckCircle, Database, Sparkles,
-  Zap, Globe, Download, LayoutList, Trash2, MapPin, MessageCircle, Layers, Loader2, Square, BrainCircuit, Cpu, Atom, TrendingUp
+  Zap, Globe, Download, LayoutList, Trash2, MapPin, MessageCircle, Layers, Loader2, Square, BrainCircuit, Cpu, Atom, TrendingUp,
+  Linkedin
 } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import LiquidBattery from './LiquidBattery';
@@ -103,6 +104,19 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
                 >
                   <FlaskConical size={12} />
                 </button>
+
+                {lead.socialLinks?.linkedin && (
+                  <a
+                    href={lead.socialLinks.linkedin}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-1.5 bg-blue-600/10 text-blue-500 hover:bg-blue-600 hover:text-white rounded-lg transition-all"
+                    title="LinkedIn"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Linkedin size={12} />
+                  </a>
+                )}
 
                 {lead.status === LeadStatus.ENRICHED && onConvertToDeal && (
                   <button
