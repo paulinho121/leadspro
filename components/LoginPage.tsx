@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useBranding } from './BrandingProvider';
-import { Lock, Mail, ChevronRight, Loader2, AlertCircle, ShieldCheck, TrendingUp } from 'lucide-react';
+import { Lock, Mail, ChevronRight, Loader2, AlertCircle, ShieldCheck, TrendingUp, ShieldAlert, ScrollText } from 'lucide-react';
+import TermsModal from './TermsModal';
 
 interface LoginPageProps {
     onLoginSuccess: (session: any) => void;
@@ -18,32 +19,25 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
+    const [showTerms, setShowTerms] = useState(false);
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
 
     // Diagnóstico de Conexão na Montagem
     React.useEffect(() => {
         const checkConnection = async () => {
             const envUrl = import.meta.env.VITE_SUPABASE_URL;
-            // console.log('[Debug] VITE_SUPABASE_URL:', envUrl); // Debug log
-
-            // 1. Checar se a URL é a placeholder ou indefinida
             // @ts-ignore
             const clientUrl = supabase.supabaseUrl;
 
             if (!envUrl || envUrl.includes('placeholder')) {
-                // Mascarar a URL para não mostrar em tela
                 const maskedEnv = envUrl ? envUrl.substring(0, 10) + '...' : 'undefined';
-
-                // Se a URL do client é diferente da ENV, pode ser problema de build
                 if (clientUrl && !clientUrl.includes('placeholder') && clientUrl !== envUrl) {
-                    // Estranho, mas talvez o client esteja OK
                     return;
                 }
-
                 setError(`CONFIGURAÇÃO PENDENTE: Environment Variables não carregadas. Valor lido: ${maskedEnv}. Reinicie o servidor 'npm run dev' se acabou de editar o .env.local.`);
                 return;
             }
 
-            // 2. Tentar um ping simples
             try {
                 const { error } = await supabase.from('tenants').select('count', { count: 'exact', head: true });
                 if (error) {
@@ -62,10 +56,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (isRegistering && !acceptedTerms) {
+            setError('Você precisa aceitar os Termos e a Política de Privacidade para continuar.');
+            return;
+        }
+
         setLoading(true);
         setError(null);
         setSuccessMsg(null);
-
 
         try {
             const cleanEmail = email.trim();
@@ -73,13 +72,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
             if (isRegistering) {
                 // 1. FLUXO DE REGISTRO
-                console.log('[Auth] Iniciando registro para:', cleanEmail);
                 const { data: authData, error: authError } = await supabase.auth.signUp({
                     email: cleanEmail,
                     password: cleanPassword,
                     options: {
                         data: {
-                            full_name: fullName
+                            full_name: fullName,
+                            company_name: companyName
                         }
                     }
                 });
@@ -93,19 +92,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
             } else {
                 // FLUXO DE LOGIN
-                console.log('[Auth] Tentativa de login:', cleanEmail);
                 const { data, error } = await supabase.auth.signInWithPassword({
                     email: cleanEmail,
                     password: cleanPassword
                 });
 
-                if (error) {
-                    console.warn('[Auth] Falha no login:', error.message);
-                    throw error;
-                }
+                if (error) throw error;
 
                 if (data.session) {
-                    console.log('[Auth] Login bem sucedido!');
                     onLoginSuccess(data.session);
                 }
             }
@@ -115,7 +109,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         } finally {
             setLoading(false);
         }
-
     };
 
     return (
@@ -124,7 +117,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             <div className={`absolute top-0 left-0 w-full h-full opacity-20 bg-[radial-gradient(circle_at_50%_0%,var(--color-primary)_0%,transparent_70%)] animate-pulse-slow`}></div>
 
             {/* Card */}
-            <div className="w-full max-w-md p-8 rounded-3xl glass border border-white/10 relative z-10 shadow-2xl backdrop-blur-xl animate-fade-in-up">
+            <div className="w-full max-w-md p-8 rounded-[2.5rem] glass border border-white/10 relative z-10 shadow-2xl backdrop-blur-xl animate-fade-in-up">
                 <div className="text-center mb-10">
                     <div className="w-20 h-20 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
                         {config.logoUrl ? (
@@ -133,11 +126,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                             <TrendingUp size={40} className="text-primary" />
                         )}
                     </div>
-                    <h1 className="text-2xl font-black text-white tracking-tight mb-2">
+                    <h1 className="text-2xl font-black text-white tracking-tight mb-2 uppercase italic tracking-widest">
                         {config.platformName}
                     </h1>
-                    <p className="text-slate-400 text-sm font-medium">
-                        {isRegistering ? 'Crie sua conta Master' : 'Acesso Administrativo Master'}
+                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">
+                        {isRegistering ? 'Criação de Nodo Neural Master' : 'Acesso à Matrix Neural Master'}
                     </p>
                 </div>
 
@@ -146,7 +139,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     {isRegistering && (
                         <div className="space-y-4 animate-fade-in-up">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nome Completo</label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Assinatura Digital (Nome)</label>
                                 <div className="relative group">
                                     <div className="absolute left-4 top-3.5 text-slate-500 w-5 h-5 group-focus-within:text-primary transition-colors">
                                         <ShieldCheck size={20} />
@@ -155,24 +148,24 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                                         type="text"
                                         value={fullName}
                                         onChange={(e) => setFullName(e.target.value)}
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all"
-                                        placeholder="Ex: Ana Silva"
+                                        className="w-full bg-black/20 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-slate-600 text-sm"
+                                        placeholder="Seu nome completo"
                                         required={isRegistering}
                                     />
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nome da Sua Empresa</label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Ativo Principal (Empresa)</label>
                                 <div className="relative group">
                                     <div className="absolute left-4 top-3.5 text-slate-500 w-5 h-5 group-focus-within:text-primary transition-colors">
-                                        <ShieldCheck size={20} />
+                                        <TrendingUp size={20} />
                                     </div>
                                     <input
                                         type="text"
                                         value={companyName}
                                         onChange={(e) => setCompanyName(e.target.value)}
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all"
-                                        placeholder="Ex: Agência Digital X"
+                                        className="w-full bg-black/20 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-slate-600 text-sm"
+                                        placeholder="Nome da sua organização"
                                         required={isRegistering}
                                     />
                                 </div>
@@ -181,34 +174,50 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     )}
 
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">E-mail Corporativo</label>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">E-mail de Acesso</label>
                         <div className="relative group">
-                            <Mail className="absolute left-4 top-3.5 text-slate-500 w-5 h-5 group-focus-within:text-primary transition-colors" />
+                            <Mail className="absolute left-4 top-4 text-slate-500 w-5 h-5 group-focus-within:text-primary transition-colors" />
                             <input
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all"
-                                placeholder="master@empresa.com"
+                                className="w-full bg-black/20 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-slate-600 text-sm"
+                                placeholder="master@neural.com"
                                 required
                             />
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Senha de Acesso</label>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Chave Criptográfica (Senha)</label>
                         <div className="relative group">
-                            <Lock className="absolute left-4 top-3.5 text-slate-500 w-5 h-5 group-focus-within:text-primary transition-colors" />
+                            <Lock className="absolute left-4 top-4 text-slate-500 w-5 h-5 group-focus-within:text-primary transition-colors" />
                             <input
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all"
+                                className="w-full bg-black/20 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-slate-600 text-sm"
                                 placeholder="••••••••"
                                 required
                             />
                         </div>
                     </div>
+
+                    {isRegistering && (
+                        <div
+                            className="flex items-start gap-3 p-4 bg-white/[0.02] border border-white/5 rounded-2xl cursor-pointer hover:bg-white/[0.04] transition-colors"
+                            onClick={() => setAcceptedTerms(!acceptedTerms)}
+                        >
+                            <div className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${acceptedTerms ? 'bg-primary border-primary' : 'border-white/10'}`}>
+                                {acceptedTerms && <ShieldCheck size={12} className="text-slate-950" />}
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-[10px] text-slate-400 font-bold leading-relaxed">
+                                    Concordo com os <button type="button" onClick={(e) => { e.stopPropagation(); setShowTerms(true); }} className="text-primary hover:underline">Termos de Uso</button> e a <button type="button" onClick={(e) => { e.stopPropagation(); setShowTerms(true); }} className="text-primary hover:underline">Política de Privacidade (LGPD)</button>.
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {error && (
                         <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 animate-head-shake">
@@ -227,16 +236,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-4 bg-primary text-slate-900 rounded-xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:hover:scale-100"
+                        className="w-full py-4.5 bg-primary text-slate-900 rounded-xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25 disabled:opacity-50 disabled:hover:scale-100 italic"
                     >
                         {loading ? (
                             <>
                                 <Loader2 size={16} className="animate-spin" />
-                                Processando...
+                                Validando Matrix...
                             </>
                         ) : (
                             <>
-                                {isRegistering ? 'Criar Conta' : 'Entrar no Painel'} <ChevronRight size={16} />
+                                {isRegistering ? 'Criar Nodo Neural' : 'Iniciar Sincronização'} <ChevronRight size={16} />
                             </>
                         )}
                     </button>
@@ -245,19 +254,27 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                         <button
                             type="button"
                             onClick={() => { setIsRegistering(!isRegistering); setError(null); setSuccessMsg(null); }}
-                            className="text-xs text-slate-400 hover:text-white transition-colors underline decoration-slate-700 underline-offset-4"
+                            className="text-[10px] font-black text-slate-500 hover:text-white transition-colors uppercase tracking-widest underline decoration-slate-800 underline-offset-8"
                         >
-                            {isRegistering ? 'Já tem conta? Clique para Entrar.' : 'Não tem conta? Registre-se agora.'}
+                            {isRegistering ? 'Já possui acesso? Voltar ao Login' : 'Nova conexão? Registrar Master'}
                         </button>
                     </div>
                 </form>
 
-                <div className="mt-8 pt-6 border-t border-white/5 text-center">
-                    <p className="text-[10px] text-slate-600 font-mono">
-                        Protected by {config.platformName} Secure Gate v3.0
+                <div className="mt-10 pt-6 border-t border-white/5 flex flex-col items-center gap-4">
+                    <button
+                        onClick={() => setShowTerms(true)}
+                        className="flex items-center gap-2 text-[8px] font-black text-slate-700 hover:text-slate-400 uppercase tracking-[0.2em] transition-colors"
+                    >
+                        <ScrollText size={10} /> Compliance & Regulamentação LGPD
+                    </button>
+                    <p className="text-[10px] text-slate-700 font-mono italic">
+                        Secured by Neural Gate v3.5
                     </p>
                 </div>
             </div>
+
+            <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
         </div>
     );
 };

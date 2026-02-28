@@ -1,11 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import {
-  LayoutDashboard, Search, Database, Settings,
-  HelpCircle, LogOut, Bell, Menu, X, Sparkles,
-  ChevronRight, BrainCircuit, Activity, Globe, Map as MapIcon,
-  Zap, ShieldCheck, Rocket, AlertTriangle, ArrowRight, Cpu, LifeBuoy, MessageSquare, TrendingUp
+  Bell, LayoutDashboard, Search, Database, Rocket, TrendingUp,
+  Megaphone, ShieldCheck, Menu, X, LogOut, BrainCircuit, Activity,
+  HelpCircle, AlertTriangle, ScrollText, Cpu, ChevronRight,
+  Send as SendIcon, CheckCircle, Info, DollarSign as MoneyIcon
 } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import TermsModal from './components/TermsModal';
 import LeadDiscovery from './components/LeadDiscovery';
 import BentoDashboard from './components/BentoDashboard';
 import LeadLab from './components/LeadLab';
@@ -36,7 +37,6 @@ import { useLeads } from './hooks/useLeads';
 import { useWallet } from './hooks/useWallet';
 import { useBranding } from './components/BrandingProvider';
 import { supabase } from './lib/supabase';
-import { Megaphone, Send as SendIcon, CheckCircle, Info, AlertTriangle as AlertIcon, DollarSign as MoneyIcon } from 'lucide-react';
 
 const App: React.FC = () => {
   const { config, isLoading: brandingLoading } = useBranding();
@@ -57,6 +57,7 @@ const App: React.FC = () => {
   const [userName, setUserName] = useState('Administrador');
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showTerms, setShowTerms] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSupport, setShowSupport] = useState(false);
   const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
@@ -785,8 +786,31 @@ const App: React.FC = () => {
         )}
 
         <section className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar pb-24 md:pb-10 no-scrollbar">
-          <div className="max-w-7xl mx-auto">
-            {renderActiveSection()}
+          <div className="max-w-7xl mx-auto min-h-full flex flex-col">
+            <div className="flex-1">
+              {renderActiveSection()}
+            </div>
+
+            {/* Footer Corporativo */}
+            <footer className="mt-20 pt-10 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 pb-10">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                  <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Matrix Node Online</span>
+                </div>
+                <button
+                  onClick={() => setShowTerms(true)}
+                  className="flex items-center gap-2 text-[10px] font-bold text-slate-500 hover:text-primary transition-colors uppercase tracking-widest"
+                >
+                  <ScrollText size={12} /> Termos & Privacidade (LGPD)
+                </button>
+              </div>
+              <div className="text-[10px] font-mono text-slate-700 uppercase tracking-widest flex items-center gap-4">
+                <span>© 2026 {config.platformName}</span>
+                <span className="hidden md:inline text-slate-800">|</span>
+                <span>v3.5.2-Neural</span>
+              </div>
+            </footer>
           </div>
         </section>
       </main>
@@ -801,6 +825,7 @@ const App: React.FC = () => {
           />
         )
       }
+      <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
     </div >
   );
 };
