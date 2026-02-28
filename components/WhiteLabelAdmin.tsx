@@ -4,6 +4,7 @@ import { useBranding } from './BrandingProvider';
 import { supabase } from '../lib/supabase';
 import { DEFAULT_BRANDING } from '../types/branding';
 import { SecretService } from '../services/secretService';
+import { toast } from './Toast';
 
 const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' | 'api' }> = ({ initialTab = 'branding' }) => {
     const { config, refreshBranding } = useBranding();
@@ -64,10 +65,10 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
         });
 
         if (error) {
-            alert('Erro ao convidar: ' + error.message);
+            toast.error('Erro ao convidar', error.message);
         } else {
             fetchUsers();
-            alert(`Convite enviado para ${email}!`);
+            toast.success('Convite enviado!', `Usuário ${email} adicionado com sucesso.`);
         }
     };
 
@@ -77,7 +78,7 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
         const { error } = await supabase.from('tenant_users').delete().eq('id', id);
 
         if (error) {
-            alert('Erro ao remover: ' + error.message);
+            toast.error('Erro ao remover', error.message);
         } else {
             fetchUsers();
         }
@@ -107,18 +108,18 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
         });
 
         if (error) {
-            alert('Erro ao adicionar webhook: ' + error.message);
+            toast.error('Erro no webhook', error.message);
         } else {
             setNewWebhook({ name: '', url: '', event_type: 'lead.enriched' });
             fetchWebhooks();
-            alert('Webhook configurado com sucesso!');
+            toast.success('Webhook configurado!', 'Integração ativa com sucesso.');
         }
     };
 
     const handleDeleteWebhook = async (id: string) => {
         if (!window.confirm('Excluir este Webhook?')) return;
         const { error } = await supabase.from('webhooks').delete().eq('id', id);
-        if (error) alert('Erro ao remover: ' + error.message);
+        if (error) toast.error('Erro ao remover', error.message);
         else fetchWebhooks();
     };
 
@@ -146,12 +147,12 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
             });
 
             if (response.ok) {
-                alert('Vinte! O destino recebeu o sinal com sucesso (200 OK)');
+                toast.success('Webhook testado!', 'Sinal recebido com sucesso (200 OK).');
             } else {
-                alert(`Falha no teste: O servidor destino retornou status ${response.status}`);
+                toast.error('Falha no teste', `Servidor retornou status ${response.status}`);
             }
         } catch (err: any) {
-            alert('Erro de conexão: Verifique se a URL permite requisições externas (CORS) ou se o endpoint está ativo.');
+            toast.error('Erro de conexão', 'Verifique se a URL permite CORS ou se o endpoint está ativo.');
         } finally {
             setIsTestingWebhook(null);
         }
@@ -210,7 +211,7 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
             }
         } catch (error: any) {
             console.error('Upload error:', error);
-            alert('Erro ao fazer upload: ' + error.message);
+            toast.error('Erro no upload', error.message);
         } finally {
             setIsUploading(null);
         }
@@ -296,7 +297,7 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session?.user) {
-                alert('Sessão expirada. Faça login novamente.');
+                toast.error('Sessão expirada', 'Faça login novamente.');
                 return;
             }
 
@@ -368,10 +369,10 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
             SecretService.clearCache(); // Forçar recarregamento
 
             await refreshBranding();
-            alert('Configurações salvas com sucesso!');
+            toast.success('Configurações salvas!', 'Plataforma atualizada com sucesso.');
         } catch (err: any) {
             console.error('[WhiteLabelAdmin] Erro crítico:', err);
-            alert(`Falha ao salvar: ${err.message || 'Erro desconhecido'}`);
+            toast.error('Falha ao salvar', err.message || 'Erro desconhecido');
         } finally {
             setSaving(false);
         }

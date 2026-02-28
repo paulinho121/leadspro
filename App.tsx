@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import {
   Bell, LayoutDashboard, Search, Database, Rocket, TrendingUp,
   Megaphone, ShieldCheck, Menu, X, LogOut, BrainCircuit, Activity,
@@ -12,17 +12,18 @@ import BentoDashboard from './components/BentoDashboard';
 import LeadLab from './components/LeadLab';
 import EnrichedLeadsView from './components/EnrichedLeadsView';
 import EnrichmentModal from './components/EnrichmentModal';
-import WhiteLabelAdmin from './components/WhiteLabelAdmin';
-import MasterConsole from './components/MasterConsole';
-
-import PipelineView from './components/PipelineView';
-import AutomationView from './components/AutomationView';
 import LoginPage from './components/LoginPage';
-import ActivityHistory from './components/ActivityHistory';
-import NotificationsList from './components/NotificationsList';
 import SecurityGuard from './components/SecurityGuard';
-import BillingView from './components/BillingView';
-import AutomationHealthDashboard from './components/AutomationHealthDashboard';
+// Heavy components loaded lazily to avoid blocking first-paint
+const WhiteLabelAdmin = lazy(() => import('./components/WhiteLabelAdmin'));
+const MasterConsole = lazy(() => import('./components/MasterConsole'));
+const PipelineView = lazy(() => import('./components/PipelineView'));
+const AutomationView = lazy(() => import('./components/AutomationView'));
+const ActivityHistory = lazy(() => import('./components/ActivityHistory'));
+const NotificationsList = lazy(() => import('./components/NotificationsList'));
+const BillingView = lazy(() => import('./components/BillingView'));
+const AutomationHealthDashboard = lazy(() => import('./components/AutomationHealthDashboard'));
+import { ToastContainer, registerToastFn, toast } from './components/Toast';
 import { DiscoveryService } from './services/discoveryService';
 import { CommunicationService } from './services/communicationService';
 import { EnrichmentService } from './services/enrichmentService';
@@ -47,8 +48,12 @@ const App: React.FC = () => {
     activeTab, setActiveTab,
     isSidebarOpen, setSidebarOpen,
     userTenantId, setUserTenantId,
-    creditBalance
+    creditBalance,
+    toasts, addToast, removeToast,
   } = useStore();
+
+  // Registra o singleton de toast para uso global
+  useEffect(() => { registerToastFn(addToast); }, [addToast]);
 
   const [isMaster, setIsMaster] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -385,7 +390,7 @@ const App: React.FC = () => {
           leads_ids: targets.map(l => l.id),
           total_count: targets.length
         });
-        alert(`🚀 Lote de ${targets.length} leads enviado para processamento neural.`);
+        toast.success(`${targets.length} leads em processamento`, 'Lote enviado para a fila neural.');
         return;
       } catch (err) { }
     }
@@ -431,8 +436,7 @@ const App: React.FC = () => {
   const handleConvertToDeal = React.useCallback(async (leadId: string) => {
     if (!userTenantId) return;
     try {
-      await RevenueService.createDeal(userTenantId, leadId, undefined, 1000);
-      alert('Lead convertido em oportunidade!');
+      toast.success('Lead convertido!', 'Oportunidade adicionada ao Pipeline.');
       setActiveTab('pipeline');
     } catch (err) { }
   }, [userTenantId, setActiveTab]);
@@ -440,8 +444,7 @@ const App: React.FC = () => {
   const handleBulkConvertToDeal = React.useCallback(async (leadIds: string[]) => {
     if (!userTenantId || leadIds.length === 0) return;
     try {
-      await RevenueService.createBulkDeals(userTenantId, leadIds, undefined, 1000);
-      alert(`${leadIds.length} leads convertidos em oportunidades!`);
+      toast.success(`${leadIds.length} leads convertidos!`, 'Oportunidades adicionadas ao Pipeline.');
       setActiveTab('pipeline');
     } catch (err) { }
   }, [userTenantId, setActiveTab]);
@@ -457,7 +460,7 @@ const App: React.FC = () => {
         message: supportForm.message,
         category: supportForm.category
       }]);
-      alert('Seu relato foi enviado!');
+      toast.success('Suporte enviado!', 'Seu relato foi registrado com sucesso.');
       setSupportForm({ subject: '', message: '', category: 'technical' });
       setShowSupport(false);
     } catch (err) { } finally {
@@ -465,24 +468,22 @@ const App: React.FC = () => {
     }
   };
 
+  // Fallback minimalista para lazy components
+  const LazyFallback = () => (
+    <div className="flex items-center justify-center py-32">
+      <div className="flex flex-col items-center gap-4">
+        <Cpu className="text-primary animate-spin" size={32} />
+        <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Carregando módulo...</span>
+      </div>
+    </div>
+  );
+
   const renderActiveSection = () => {
     switch (activeTab) {
       case 'dashboard':
         return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
       case 'discovery':
         return <LeadDiscovery onResultsFound={handleAddLeads} onStartEnrichment={handleBulkEnrich} apiKeys={tenantSecrets} existingLeads={leads} />;
-      case 'lab':
-        return <LeadLab
-          leads={filteredLeads}
-          onEnrich={setSelectedLead}
-          onBulkEnrich={handleBulkEnrich}
-          isEnriching={isEnriching}
-          onStopEnrichment={() => stopEnrichmentSignal.current = true}
-          onDelete={handleDeleteLead}
-          onBulkDelete={handleBulkDelete}
-          onConvertToDeal={handleConvertToDeal}
-          userTenantId={userTenantId}
-        />;
       case 'enriched':
         return <EnrichedLeadsView
           leads={filteredLeads}
@@ -490,20 +491,19 @@ const App: React.FC = () => {
           onBulkConvertToDeal={handleBulkConvertToDeal}
         />;
       case 'partner':
-        return <WhiteLabelAdmin initialTab="api" />;
+        return <Suspense fallback={<LazyFallback />}><WhiteLabelAdmin initialTab="api" /></Suspense>;
       case 'master':
-        return <MasterConsole onlineUsers={onlineUsers} />;
+        return <Suspense fallback={<LazyFallback />}><MasterConsole onlineUsers={onlineUsers} /></Suspense>;
       case 'history':
-        return <ActivityHistory tenantId={userTenantId} isMaster={isMaster} />;
-
+        return <Suspense fallback={<LazyFallback />}><ActivityHistory tenantId={userTenantId} isMaster={isMaster} /></Suspense>;
       case 'pipeline':
-        return <PipelineView tenantId={userTenantId} userId={session?.user?.id} apiKeys={tenantSecrets} />;
+        return <Suspense fallback={<LazyFallback />}><PipelineView tenantId={userTenantId} userId={session?.user?.id} apiKeys={tenantSecrets} /></Suspense>;
       case 'automation':
-        return <AutomationView tenantId={userTenantId} apiKeys={tenantSecrets} />;
+        return <Suspense fallback={<LazyFallback />}><AutomationView tenantId={userTenantId} apiKeys={tenantSecrets} /></Suspense>;
       case 'monitor':
-        return <AutomationHealthDashboard tenantId={userTenantId} />;
+        return <Suspense fallback={<LazyFallback />}><AutomationHealthDashboard tenantId={userTenantId} /></Suspense>;
       case 'billing':
-        return <BillingView tenantId={userTenantId} />;
+        return <Suspense fallback={<LazyFallback />}><BillingView tenantId={userTenantId} /></Suspense>;
       default:
         return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab as any} />;
     }
@@ -796,7 +796,27 @@ const App: React.FC = () => {
 
         <section className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar pb-24 md:pb-10 no-scrollbar">
           <div className="max-w-7xl mx-auto min-h-full flex flex-col">
-            <div className="flex-1">
+
+            {/* LeadLab: sempre montado, visível apenas na aba 'lab' */}
+            <div
+              className={`flex-1 ${activeTab === 'lab' ? 'animate-page-enter' : 'hidden'}`}
+              aria-hidden={activeTab !== 'lab'}
+            >
+              <LeadLab
+                leads={filteredLeads}
+                onEnrich={setSelectedLead}
+                onBulkEnrich={handleBulkEnrich}
+                isEnriching={isEnriching}
+                onStopEnrichment={() => stopEnrichmentSignal.current = true}
+                onDelete={handleDeleteLead}
+                onBulkDelete={handleBulkDelete}
+                onConvertToDeal={handleConvertToDeal}
+                userTenantId={userTenantId}
+              />
+            </div>
+
+            {/* Demais abas: montam/desmontam normalmente */}
+            <div key={activeTab} className={`flex-1 ${activeTab !== 'lab' ? 'animate-page-enter' : 'hidden'}`}>
               {renderActiveSection()}
             </div>
 
@@ -835,6 +855,7 @@ const App: React.FC = () => {
         )
       }
       <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div >
   );
 };
@@ -851,16 +872,23 @@ interface NavItemProps {
 const NavItem: React.FC<NavItemProps> = ({ icon, label, active, expanded, primaryColor, onClick }) => (
   <button
     onClick={onClick}
+    title={!expanded ? label : undefined}
     className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-500 relative group ${active
       ? 'bg-primary/10 text-primary'
       : 'text-slate-500 hover:text-white hover:bg-white/5'
       }`}
   >
     <div
-      className="transition-all duration-500 group-hover:scale-110"
+      className="transition-all duration-500 group-hover:scale-110 relative"
       style={{ filter: active ? `drop-shadow(0 0 8px ${primaryColor}80)` : 'none' }}
     >
       {icon}
+      {active && !expanded && (
+        <span
+          className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full"
+          style={{ backgroundColor: primaryColor, boxShadow: `0 0 6px ${primaryColor}` }}
+        />
+      )}
     </div>
     {expanded && (
       <span className={`text-sm font-bold tracking-tight transition-all duration-500 ${active ? 'text-white' : ''}`}>
@@ -875,6 +903,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active, expanded, primar
     )}
   </button>
 );
+
 
 const MobileNavItem: React.FC<{ icon: React.ReactNode; label: string; active: boolean; onClick: () => void }> = ({ icon, label, active, onClick }) => (
   <button

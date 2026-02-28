@@ -7,6 +7,7 @@ import {
     Terminal, Lock, ShieldAlert, History, LifeBuoy, MessageSquare, Clock, CheckCircle2
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { toast } from './Toast';
 
 interface Tenant {
     id: string;
@@ -194,7 +195,7 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
             .eq('id', tenantId);
 
         if (error) {
-            alert('Erro ao alterar status.');
+            toast.error('Erro', 'Não foi possível alterar o status do tenant.');
         } else {
             fetchData();
         }
@@ -207,7 +208,7 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
             .eq('id', ticketId);
 
         if (error) {
-            alert('Erro ao atualizar ticket.');
+            toast.error('Erro', 'Não foi possível atualizar o ticket.');
         } else {
             fetchData();
         }
@@ -215,7 +216,7 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
 
     const sendNotification = async (targetTenantId?: string) => {
         if (!notificationForm.title || !notificationForm.message) {
-            alert('Preencha título e mensagem.');
+            toast.warning('Formulário incompleto', 'Preencha título e mensagem antes de enviar.');
             return;
         }
 
@@ -233,11 +234,11 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
             const { error } = await supabase.from('notifications').insert(inserts);
             if (error) throw error;
 
-            alert(`Sucesso! ${inserts.length} notificação(ões) enviada(s).`);
+            toast.success(`${inserts.length} notificação(ões) enviada(s)!`, 'Mensagem entregue aos tenants selecionados.');
             setNotificationForm({ title: '', message: '', type: 'info' });
             setSelectedTenantForNote(null);
         } catch (err: any) {
-            alert('Falha ao enviar: ' + err.message);
+            toast.error('Falha ao enviar', err.message);
         } finally {
             setIsSendingNotification(false);
         }
@@ -272,13 +273,13 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
 
             if (ticketError) throw ticketError;
 
-            alert('Resposta enviada e chamado resolvido!');
+            toast.success('Chamado resolvido!', 'Resposta enviada ao usuário com sucesso.');
             setRespondingTicket(null);
             setResponseMessage('');
             fetchData();
         } catch (err: any) {
             console.error('Error resolving ticket:', err);
-            alert('Erro ao responder: ' + err.message);
+            toast.error('Erro ao responder', err.message);
         }
     };
 
@@ -690,10 +691,10 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                                     try {
                                         const { data, error } = await supabase.functions.invoke('automation-worker');
                                         if (error) throw error;
-                                        alert(`Processamento concluído: ${data.processed} ações executadas.`);
+                                        toast.success('Worker disparado!', `${data.processed} ações executadas.`);
                                         fetchData();
                                     } catch (err: any) {
-                                        alert('Erro ao disparar worker: ' + err.message);
+                                        toast.error('Erro no worker', err.message);
                                     }
                                 }}
                                 className="w-full py-4 bg-primary/10 hover:bg-primary text-primary hover:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-primary/20 transition-all flex items-center justify-center gap-2 mb-4"
@@ -710,7 +711,7 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                             </div>
 
                             <button
-                                onClick={() => alert('Em breve: Relatório completo de auditoria.')}
+                                onClick={() => toast.info('Em breve', 'Relatório completo de auditoria em desenvolvimento.')}
                                 className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-white border border-white/5 transition-all flex items-center justify-center gap-2"
                             >
                                 <History size={14} /> Ver Logs do Sistema

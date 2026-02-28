@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { toast } from './Toast';
 import {
     Wallet, CreditCard, ArrowUpRight, ArrowDownLeft,
     History, Sparkles, Zap, ShieldCheck, TrendingUp,
@@ -36,7 +37,7 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                 // Pequeno delay para dar tempo do webhook processar
                 setTimeout(() => {
                     fetchData();
-                    alert('🎉 Pagamento processado! Seus créditos serão atualizados em instantes.');
+                    toast.success('Pagamento processado!', 'Seus créditos serão atualizados em instantes.');
                 }, 2000);
             }
         }
@@ -67,7 +68,7 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
 
         if (!tenantId) {
             console.warn('[Billing] Tenant ID ausente!');
-            alert('Erro: Tenant ID não identificado. Por favor, recarregue a página.');
+            toast.error('Sessão expirada', 'Por favor, recarregue a página e faça login novamente.');
             return;
         }
 
@@ -85,7 +86,7 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
             console.error('[Billing] Erro fatal no checkout:', err);
             // Mostrar erro detalhado se disponível
             const errorMsg = err.message || 'Erro desconhecido';
-            alert(`Falha ao iniciar checkout: ${errorMsg}`);
+            toast.error('Falha no checkout', errorMsg);
         } finally {
             setProcessingPlanId(null);
         }

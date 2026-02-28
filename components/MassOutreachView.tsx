@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { toast } from './Toast';
 import {
     Send, Users, Calendar,
     CheckCircle2, Clock, Play,
@@ -261,7 +262,7 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
             loadCampaigns();
         } catch (err) {
             console.error('Erro ao excluir campanha:', err);
-            alert('Erro ao excluir campanha.');
+            toast.error('Erro ao excluir', 'Não foi possível excluir a campanha.');
         }
     };
 
@@ -315,8 +316,8 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                 <div className="flex items-center gap-4 mt-6 md:mt-0 relative z-10">
                     {/* Realtime Badge */}
                     <div className={`hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${isRealtimeConnected
-                            ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                            : 'bg-white/5 border-white/10 text-slate-600'
+                        ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                        : 'bg-white/5 border-white/10 text-slate-600'
                         }`}>
                         <Radio size={11} className={isRealtimeConnected ? 'animate-pulse' : ''} />
                         {isRealtimeConnected ? 'Ao Vivo' : 'Conectando...'}

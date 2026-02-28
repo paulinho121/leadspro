@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { toast } from './Toast';
 import {
     LayoutDashboard, TrendingUp, DollarSign, Target,
     ChevronRight, MoreVertical, Filter, Plus,
@@ -78,10 +79,10 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
         if (!deal.lead_id) return;
         try {
             await SequenceService.enrollLead(tenantId, deal.lead_id, sequenceId);
-            alert('Lead inscrito na cadência automatizada com sucesso!');
+            toast.success('Cadência ativada!', 'Lead inscrito na sequência automatizada.');
         } catch (err) {
             console.error('Error enrolling in sequence:', err);
-            alert('Falha ao inscrever na cadência.');
+            toast.error('Falha ao inscrever', 'Não foi possível adicionar o lead à cadência.');
         }
     };
 

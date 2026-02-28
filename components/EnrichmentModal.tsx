@@ -7,6 +7,7 @@ import {
   BrainCircuit, Sparkles, Cpu, Atom, Linkedin, User, Brain
 } from 'lucide-react';
 import { Lead } from '../types';
+import { toast } from './Toast';
 
 interface EnrichmentModalProps {
   lead: Lead;
@@ -176,7 +177,7 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
                         onClick={() => {
                           const cleanEmail = email.split(' ')[0];
                           navigator.clipboard.writeText(cleanEmail);
-                          alert('Email copiado: ' + cleanEmail);
+                          toast.success('E-mail copiado!', cleanEmail);
                         }}
                         className="px-3 py-1.5 bg-white/5 border border-white/5 rounded-xl text-[10px] font-bold text-slate-300 hover:bg-blue-500/20 hover:border-blue-500/30 transition-all"
                         title="Clique para copiar"
@@ -259,7 +260,7 @@ const EnrichmentModal: React.FC<EnrichmentModalProps> = ({ lead, onClose }) => {
                 const email = details.real_email || lead.email;
                 if (email) {
                   navigator.clipboard.writeText(email);
-                  alert('Email copiado: ' + email);
+                  toast.success('E-mail copiado!', email);
                 }
               }}
               disabled={!details.real_email && !lead.email}

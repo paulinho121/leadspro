@@ -251,14 +251,16 @@ const LeadLab: React.FC<LeadLabProps> = ({
     overscan: 10,
   });
 
-  const niches = useMemo(() => {
-    const allNiches = leads.map(l => l.industry).filter(Boolean) as string[];
-    const uniqueNiches = Array.from(new Set(allNiches));
-    return uniqueNiches.sort((a, b) => {
-      const countA = leads.filter(l => l.industry === a).length;
-      const countB = leads.filter(l => l.industry === b).length;
-      return countB - countA;
-    }).slice(0, 10);
+  const { niches, nicheCount } = useMemo(() => {
+    // O(n) single-pass count using Map instead of O(n²) nested .filter
+    const countMap = new Map<string, number>();
+    for (const l of leads) {
+      if (l.industry) countMap.set(l.industry, (countMap.get(l.industry) ?? 0) + 1);
+    }
+    const sorted = Array.from(countMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+    return { niches: sorted.map(([n]) => n), nicheCount: countMap };
   }, [leads]);
 
   return (
@@ -333,7 +335,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                     >
                       <span className="capitalize">{niche.toLowerCase()}</span>
                       <span className="text-[9px] opacity-40 font-mono">
-                        {leads.filter(l => l.industry === niche).length}
+                        {nicheCount.get(niche) ?? 0}
                       </span>
                     </button>
                   ))}

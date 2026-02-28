@@ -22,6 +22,7 @@ import {
     Save, Play, X, ChevronRight, Sparkles, Filter
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { toast } from './Toast';
 
 const nodeStyles = "glass-strong border border-white/10 rounded-3xl p-6 min-w-[260px] shadow-2xl relative overflow-hidden transition-all duration-500";
 
@@ -163,7 +164,7 @@ const VisualWorkflowBuilder = ({ tenantId }: { tenantId: string }) => {
                 }, { onConflict: 'tenant_id, name' });
 
             if (error) throw error;
-            alert('Workflow Neural implantado com sucesso!');
+            toast.success('Workflow implantado!', 'Fluxo Neural salvo com sucesso.');
         } catch (err) {
             console.error('Erro ao salvar workflow:', err);
         } finally {
@@ -371,8 +372,8 @@ const VisualWorkflowBuilder = ({ tenantId }: { tenantId: string }) => {
                                                                 key={intent}
                                                                 onClick={() => updateNodeData('condition_intent', intent)}
                                                                 className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all border ${selectedNode?.data?.condition_intent === intent
-                                                                        ? 'bg-primary/20 border-primary/40 text-primary'
-                                                                        : 'bg-white/[0.02] border-white/5 text-slate-500 hover:border-white/20'
+                                                                    ? 'bg-primary/20 border-primary/40 text-primary'
+                                                                    : 'bg-white/[0.02] border-white/5 text-slate-500 hover:border-white/20'
                                                                     }`}
                                                             >
                                                                 {intent === 'positive' ? '✅ Positiva' : intent === 'negative' ? '❌ Negativa' : intent === 'neutral' ? '➖ Neutro' : '❓ Dúvida'}
