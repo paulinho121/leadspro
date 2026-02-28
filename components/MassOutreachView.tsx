@@ -25,6 +25,9 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
     const [hasInfrastructure, setHasInfrastructure] = useState(false);
     const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
     const [availableIndustries, setAvailableIndustries] = useState<string[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
+    const [leadCount, setLeadCount] = useState<number | null>(null);
     const [newCampaign, setNewCampaign] = useState({
         name: '',
         channel: 'whatsapp' as 'whatsapp' | 'email',
@@ -76,10 +79,18 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
     }, [tenantId]);
 
     const handleSaveCampaign = async () => {
-        if (!newCampaign.name) return;
-        // Se não for IA, exige template
-        if (!newCampaign.use_ai_personalization && !newCampaign.template_content) return;
+        setSaveError(null);
 
+        if (!newCampaign.name.trim()) {
+            setSaveError('Informe o nome da campanha.');
+            return;
+        }
+        if (!newCampaign.use_ai_personalization && !newCampaign.template_content.trim()) {
+            setSaveError('Adicione o template da mensagem ou ative a Personalização com IA.');
+            return;
+        }
+
+        setIsSaving(true);
         try {
             if (editingCampaignId) {
                 const { error } = await supabase
@@ -134,9 +145,14 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
 
             setShowModal(false);
             setEditingCampaignId(null);
+            setSaveError(null);
+            setLeadCount(null);
             loadCampaigns();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Erro ao processar campanha:', err);
+            setSaveError(err?.message || 'Erro inesperado. Verifique o console.');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -154,13 +170,16 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
 
     const openEditModal = (camp: OutreachCampaign) => {
         setEditingCampaignId(camp.id);
+        setSaveError(null);
+        setLeadCount(null);
         setNewCampaign({
             name: camp.name,
             channel: camp.channel,
             template_subject: camp.template_subject || '',
             template_content: camp.template_content,
             target_status: 'ENRICHED',
-            target_industry: 'all'
+            target_industry: 'all',
+            use_ai_personalization: camp.use_ai_personalization || false,
         });
         setShowModal(true);
     };
@@ -228,8 +247,8 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                             {/* Card Header */}
                             <div className="flex justify-between items-start mb-8">
                                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-xl ${camp.channel === 'whatsapp'
-                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
-                                        : 'bg-blue-500/10 border-blue-500/20 text-blue-500'
+                                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                                    : 'bg-blue-500/10 border-blue-500/20 text-blue-500'
                                     }`}>
                                     {camp.channel === 'whatsapp' ? <MessageCircle size={24} /> : <Mail size={24} />}
                                 </div>
@@ -268,9 +287,9 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                                         <Trash2 size={16} />
                                     </button>
                                     <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${camp.status === 'running' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 animate-pulse' :
-                                            camp.status === 'paused' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                                camp.status === 'completed' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                                                    'bg-white/5 text-slate-500 border-white/10'
+                                        camp.status === 'paused' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                            camp.status === 'completed' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                                'bg-white/5 text-slate-500 border-white/10'
                                         }`}>
                                         {camp.status === 'running' ? 'Executando' :
                                             camp.status === 'paused' ? 'Pausado' :
@@ -436,8 +455,8 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                                     <button
                                         onClick={() => setNewCampaign(prev => ({ ...prev, use_ai_personalization: !prev.use_ai_personalization }))}
                                         className={`relative w-12 h-6 rounded-full border transition-all duration-300 ${newCampaign.use_ai_personalization
-                                                ? 'bg-primary/30 border-primary/50'
-                                                : 'bg-slate-800 border-white/10'
+                                            ? 'bg-primary/30 border-primary/50'
+                                            : 'bg-slate-800 border-white/10'
                                             }`}
                                     >
                                         <div className={`absolute top-1 w-4 h-4 rounded-full shadow-lg transition-all duration-300 ${newCampaign.use_ai_personalization ? 'left-7 bg-primary' : 'left-1 bg-slate-600'
@@ -474,18 +493,50 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                                 />
                             </div>
 
-                            <div className="flex flex-col sm:flex-row gap-6 pt-6">
+                            {/* Botões de ação — Área de erro e confirmação */}
+                            {saveError && (
+                                <div className="flex items-start gap-3 px-6 py-4 bg-red-500/10 border border-red-500/20 rounded-2xl animate-in fade-in duration-200">
+                                    <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5" />
+                                    <p className="text-[10px] text-red-400 font-bold leading-relaxed">{saveError}</p>
+                                </div>
+                            )}
+
+                            {/* Aviso se sem provedor configurado */}
+                            {!hasInfrastructure && (
+                                <div className="flex items-start gap-3 px-6 py-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+                                    <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                                    <p className="text-[10px] text-amber-400 font-bold leading-relaxed">
+                                        Nenhum provedor configurado. Vá em <strong>Integração</strong> e configure seu WhatsApp ou E-mail antes de disparar.
+                                        <br />
+                                        <span className="opacity-70">A campanha será criada e ficará na fila até um provedor ser ativado.</span>
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="flex flex-col sm:flex-row gap-6 pt-2">
                                 <button
-                                    onClick={() => setShowModal(false)}
-                                    className="flex-1 py-5 bg-white/5 text-slate-500 font-bold text-[10px] uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all order-2 sm:order-1"
+                                    onClick={() => { setShowModal(false); setSaveError(null); setLeadCount(null); }}
+                                    disabled={isSaving}
+                                    className="flex-1 py-5 bg-white/5 text-slate-500 font-bold text-[10px] uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all order-2 sm:order-1 disabled:opacity-50"
                                 >Cancelar</button>
+
                                 <button
+                                    id="btn-iniciar-disparos"
                                     onClick={handleSaveCampaign}
-                                    disabled={!hasInfrastructure || !newCampaign.name || !newCampaign.template_content}
-                                    className="flex-[2] py-5 bg-primary text-slate-900 font-black text-[10px] uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-primary/20 order-1 sm:order-2 disabled:opacity-20 flex items-center justify-center gap-3 italic"
+                                    disabled={isSaving}
+                                    className="flex-[2] py-5 bg-primary text-slate-900 font-black text-[10px] uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-primary/20 order-1 sm:order-2 disabled:opacity-60 flex items-center justify-center gap-3 italic"
                                 >
-                                    {editingCampaignId ? <Edit2 size={16} /> : <Send size={16} />}
-                                    <span>{editingCampaignId ? 'Salvar Alterações' : 'Iniciar Disparos'}</span>
+                                    {isSaving ? (
+                                        <>
+                                            <RotateCcw size={16} className="animate-spin" />
+                                            <span>Processando leads...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {editingCampaignId ? <Edit2 size={16} /> : <Send size={16} />}
+                                            <span>{editingCampaignId ? 'Salvar Alterações' : 'Iniciar Disparos'}</span>
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -497,3 +548,4 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
 };
 
 export default MassOutreachView;
+
