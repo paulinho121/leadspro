@@ -121,6 +121,8 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
 
                 if (error) throw error;
 
+                console.log('[MassOutreach] Campanha criada:', campaign.id);
+
                 let query = supabase
                     .from('leads')
                     .select('id')
@@ -131,16 +133,33 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                     query = query.eq('industry', newCampaign.target_industry);
                 }
 
-                const { data: leads } = await query;
+                const { data: leads, error: leadsErr } = await query;
 
-                if (leads && leads.length > 0) {
-                    await CampaignService.startCampaign(
-                        tenantId,
-                        campaign.id,
-                        leads.map(l => l.id),
-                        { useAI: newCampaign.use_ai_personalization }
-                    );
+                console.log('[MassOutreach] Leads encontrados:', leads?.length ?? 0, leadsErr ?? '');
+
+                if (leadsErr) throw new Error(`Erro ao buscar leads: ${leadsErr.message}`);
+
+                if (!leads || leads.length === 0) {
+                    setSaveError(`Nenhum lead encontrado com status "${newCampaign.target_status}"${newCampaign.target_industry !== 'all' ? ` e setor "${newCampaign.target_industry}"` : ''}. Verifique os filtros.`);
+                    // Excluir campanha vazia que foi criada
+                    await supabase.from('outreach_campaigns').delete().eq('id', campaign.id);
+                    return;
                 }
+
+                setLeadCount(leads.length);
+                const result = await CampaignService.startCampaign(
+                    tenantId,
+                    campaign.id,
+                    leads.map(l => l.id),
+                    { useAI: newCampaign.use_ai_personalization }
+                );
+
+                console.log('[MassOutreach] startCampaign result:', result);
+
+                if (!result.success) {
+                    throw new Error('Erro ao iniciar campanha. Verifique o console.');
+                }
+
             }
 
             setShowModal(false);
