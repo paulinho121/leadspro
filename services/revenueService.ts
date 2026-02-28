@@ -54,6 +54,29 @@ export class RevenueService {
     }
 
     /**
+     * Cria múltiplos Deals (Oportunidades) de uma vez
+     */
+    static async createBulkDeals(tenantId: string, leadIds: string[], campaignId?: string, estimatedValue: number = 0): Promise<void> {
+        if (leadIds.length === 0) return;
+
+        const deals = leadIds.map(leadId => ({
+            tenant_id: tenantId,
+            lead_id: leadId,
+            campaign_id: campaignId,
+            estimated_value: estimatedValue,
+            probability_to_close: 0.10,
+            stage: DealStage.DISCOVERY,
+            status: 'open'
+        }));
+
+        const { error } = await supabase
+            .from('deals')
+            .insert(deals);
+
+        if (error) throw error;
+    }
+
+    /**
      * Atualiza o estágio de um Deal e registra no histórico
      */
     static async updateDealStage(dealId: string, newStage: DealStage, userId?: string): Promise<void> {

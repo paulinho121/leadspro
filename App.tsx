@@ -430,6 +430,15 @@ const App: React.FC = () => {
     } catch (err) { }
   }, [userTenantId, setActiveTab]);
 
+  const handleBulkConvertToDeal = React.useCallback(async (leadIds: string[]) => {
+    if (!userTenantId || leadIds.length === 0) return;
+    try {
+      await RevenueService.createBulkDeals(userTenantId, leadIds, undefined, 1000);
+      alert(`${leadIds.length} leads convertidos em oportunidades!`);
+      setActiveTab('pipeline');
+    } catch (err) { }
+  }, [userTenantId, setActiveTab]);
+
   const handleSendTicket = async () => {
     if (!supportForm.subject || !supportForm.message) return;
     setIsSubmittingTicket(true);
@@ -468,7 +477,11 @@ const App: React.FC = () => {
           userTenantId={userTenantId}
         />;
       case 'enriched':
-        return <EnrichedLeadsView leads={filteredLeads} onConvertToDeal={handleConvertToDeal} />;
+        return <EnrichedLeadsView
+          leads={filteredLeads}
+          onConvertToDeal={handleConvertToDeal}
+          onBulkConvertToDeal={handleBulkConvertToDeal}
+        />;
       case 'partner':
         return <WhiteLabelAdmin initialTab="api" />;
       case 'master':

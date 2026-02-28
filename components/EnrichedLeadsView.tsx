@@ -10,6 +10,7 @@ import { ExportService, CRMFormat } from '../services/exportService';
 interface EnrichedLeadsViewProps {
     leads: Lead[];
     onConvertToDeal?: (leadId: string) => void;
+    onBulkConvertToDeal?: (leadIds: string[]) => void;
 }
 
 const CRMMenuItem = ({ label, icon, onClick, color }: { label: string, icon: React.ReactNode, onClick: () => void, color: string }) => (
@@ -249,7 +250,7 @@ const LeadCard = React.memo(({ lead, idx, openWhatsApp, onConvertToDeal, imgErro
     );
 });
 
-const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertToDeal }) => {
+const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertToDeal, onBulkConvertToDeal }) => {
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const [selectedIndustry, setSelectedIndustry] = useState<string>('todos');
     const [searchQuery, setSearchQuery] = useState('');
@@ -387,13 +388,28 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertT
                                 {industries.length - 1} SETORES
                             </span>
                         </button>
+                    </div>
 
-                        <div className="hidden sm:flex items-center gap-2 px-6 py-4 bg-white/[0.02] rounded-2xl border border-white/5">
-                            <Zap size={12} className="text-emerald-500 animate-pulse" />
-                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">
-                                {filteredLeads.length} Ativos
-                            </span>
-                        </div>
+                    {selectedIndustry !== 'todos' && onBulkConvertToDeal && filteredLeads.length > 0 && (
+                        <button
+                            onClick={() => {
+                                const ids = filteredLeads.map(l => l.id);
+                                if (window.confirm(`Deseja mover todos os ${ids.length} leads de "${selectedIndustry}" para o pipeline?`)) {
+                                    onBulkConvertToDeal(ids);
+                                }
+                            }}
+                            className="px-6 py-4 bg-primary text-slate-950 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 animate-in fade-in zoom-in duration-300"
+                        >
+                            <Rocket size={14} className="animate-bounce" />
+                            Mover {filteredLeads.length} leads para Pipeline
+                        </button>
+                    )}
+
+                    <div className="hidden sm:flex items-center gap-2 px-6 py-4 bg-white/[0.02] rounded-2xl border border-white/5">
+                        <Zap size={12} className="text-emerald-500 animate-pulse" />
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">
+                            {filteredLeads.length} Ativos
+                        </span>
                     </div>
                 </div>
 
@@ -408,6 +424,7 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertT
                                     <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Selecione o nicho de prospecção</p>
                                 </div>
                             </div>
+
                             <button
                                 onClick={() => { setSelectedIndustry('todos'); setShowFilters(false); }}
                                 className="text-[8px] font-black text-slate-500 hover:text-primary transition-colors uppercase tracking-[0.2em]"
