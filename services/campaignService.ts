@@ -118,10 +118,14 @@ export class CampaignService {
             console.log(`[CampaignService] ✅ ${queueItems.length} mensagens enfileiradas com sucesso!`);
             return { success: true, count: queueItems.length, estimated_duration_minutes: Math.round(delaySeconds / 60) };
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('[CampaignService] Erro ao iniciar campanha:', error);
-            await supabase.from('outreach_campaigns').update({ status: 'draft' }).eq('id', campaignId);
-            return { success: false, error };
+            // Tentar reverter para draft
+            try {
+                await supabase.from('outreach_campaigns').update({ status: 'draft' }).eq('id', campaignId);
+            } catch (_) { }
+            // IMPORTANTE: re-throw para que a UI exiba o erro ao usuário
+            throw error;
         }
     }
 
