@@ -1,7 +1,6 @@
 
 import { supabase } from '../lib/supabase';
-import { SdrService } from './sdrService';
-import { HumanizerService } from './humanizerService';
+
 
 export class CampaignService {
 
@@ -15,33 +14,41 @@ export class CampaignService {
         options?: { useAI?: boolean; apiKeys?: any }
     ) {
         try {
+            console.log(`[CampaignService] Iniciando campanha ${campaignId} com ${leadIds.length} leads...`);
+
             // 1. Buscar campanha
-            const { data: campaign } = await supabase
+            const { data: campaign, error: campError } = await supabase
                 .from('outreach_campaigns')
                 .select('*')
                 .eq('id', campaignId)
                 .single();
 
-            if (!campaign) throw new Error('Campanha não encontrada');
+            if (campError) throw new Error(`Erro ao buscar campanha: ${campError.message}`);
+            if (!campaign) throw new Error('Campanha não encontrada no banco');
 
-            // 2. Marcar como running
-            await supabase
+            // 2. Marcar como running imediatamente
+            const { error: updateErr } = await supabase
                 .from('outreach_campaigns')
                 .update({ status: 'running', total_leads: leadIds.length })
                 .eq('id', campaignId);
 
+            if (updateErr) console.warn('[CampaignService] Aviso ao atualizar status:', updateErr.message);
+
             // 3. BATCH FETCH: buscar todos os leads de uma vez (não serial)
-            const { data: leads } = await supabase
+            const { data: leads, error: leadsError } = await supabase
                 .from('leads')
                 .select('id, name, phone, email, industry, location, ai_insights, website')
                 .in('id', leadIds);
+
+            if (leadsError) throw new Error(`Erro ao buscar leads: ${leadsError.message}`);
+            console.log(`[CampaignService] ${leads?.length ?? 0} leads encontrados`);
 
             if (!leads || leads.length === 0) {
                 await supabase.from('outreach_campaigns').update({ status: 'completed' }).eq('id', campaignId);
                 return { success: true, count: 0 };
             }
 
-            const queueItems = [];
+            const queueItems: any[] = [];
             let delaySeconds = 0;
 
             for (const lead of leads) {
@@ -69,8 +76,9 @@ export class CampaignService {
                         : undefined;
                 }
 
-                // Calcular delay humanizado acumulativo
-                const humanizedDelay = HumanizerService.getHumanizedDelaySeconds(campaign.channel);
+                // Delay acumulativo para espaçar envios (30s a 90s entre cada um)
+                // O anti-ban real (2-5min) é feito pelo WORKER, não aqui
+                const humanizedDelay = 30 + Math.round(Math.random() * 60); // 30-90s entre cada mensagem
                 delaySeconds += humanizedDelay;
 
                 const scheduleDate = new Date();
@@ -100,10 +108,14 @@ export class CampaignService {
             const chunkSize = 100;
             for (let i = 0; i < queueItems.length; i += chunkSize) {
                 const chunk = queueItems.slice(i, i + chunkSize);
-                const { error } = await supabase.from('message_queue').insert(chunk);
-                if (error) throw error;
+                const { error: insertError } = await supabase.from('message_queue').insert(chunk);
+                if (insertError) {
+                    console.error('[CampaignService] Erro ao inserir na fila:', insertError);
+                    throw new Error(`Erro ao enfileirar mensagens: ${insertError.message}`);
+                }
             }
 
+            console.log(`[CampaignService] ✅ ${queueItems.length} mensagens enfileiradas com sucesso!`);
             return { success: true, count: queueItems.length, estimated_duration_minutes: Math.round(delaySeconds / 60) };
 
         } catch (error) {
