@@ -45,7 +45,7 @@ const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose }) => {
                             <h3 className="text-sm font-black uppercase tracking-widest">1. Natureza do Serviço</h3>
                         </div>
                         <p className="text-sm text-slate-400 leading-relaxed font-medium">
-                            O LeadPro é uma plataforma de Software como Serviço (SaaS) que utiliza algoritmos de inteligência artificial e extração de dados públicos para auxiliar empresas na identificação e enriquecimento de Leads B2B.
+                            O LeadFlow é uma plataforma de Software como Serviço (SaaS) que utiliza algoritmos de inteligência artificial e extração de dados públicos para auxiliar empresas na identificação e enriquecimento de Leads B2B.
                         </p>
                     </section>
 
@@ -56,7 +56,7 @@ const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose }) => {
                         </div>
                         <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5 space-y-4">
                             <p className="text-sm text-slate-300 font-bold leading-relaxed">
-                                LeadPro atua como OPERADOR de dados, enquanto o USUÁRIO atua como CONTROLADOR.
+                                LeadFlow atua como OPERADOR de dados, enquanto o USUÁRIO atua como CONTROLADOR.
                             </p>
                             <p className="text-xs text-slate-500 leading-relaxed">
                                 A coleta de dados é estritamente de fontes públicas (Art. 7º, §3º e §4º da LGPD), priorizando a transparência e a finalidade comercial legítima. O usuário deve garantir base legal para abordagens comerciais.

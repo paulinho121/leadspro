@@ -96,7 +96,7 @@ export class CommunicationService {
                     'Authorization': `Bearer ${settings.api_key}`
                 },
                 body: JSON.stringify({
-                    from: 'LeadPro <onboarding@resend.dev>',
+                    from: 'LeadFlow <onboarding@resend.dev>',
                     to: payload.leadId,
                     subject: payload.subject || 'Oportunidade de Negócio',
                     html: payload.content

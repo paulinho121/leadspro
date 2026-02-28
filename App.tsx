@@ -58,6 +58,7 @@ const App: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showTerms, setShowTerms] = useState(false);
+  const [isRecovering, setIsRecovering] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSupport, setShowSupport] = useState(false);
   const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
@@ -249,8 +250,12 @@ const App: React.FC = () => {
         if (event === 'SIGNED_IN') {
           ActivityService.log(userTenantId, s.user.id, 'LOGIN', 'Usuário autenticado.');
         }
+        if (event === 'PASSWORD_RECOVERY') {
+          setIsRecovering(true);
+        }
       } else {
         setIsMaster(false);
+        setIsRecovering(false);
         setTenantSecrets({});
         SecretService.clearCache();
       }
@@ -518,8 +523,8 @@ const App: React.FC = () => {
     );
   }
 
-  if (!session) {
-    return <LoginPage onLoginSuccess={setSession} />;
+  if (!session || isRecovering) {
+    return <LoginPage onLoginSuccess={setSession} isRecoveringPassword={isRecovering} onPasswordReset={() => setIsRecovering(false)} />;
   }
 
   return (
@@ -553,7 +558,7 @@ const App: React.FC = () => {
           <div className={`transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 md:hidden invisible'}`}>
             <h1 className="text-xl font-black tracking-tighter leading-none flex items-center">
               <span className="text-white">Lead</span>
-              <span className="text-primary">Pro</span>
+              <span className="text-primary">Flow</span>
             </h1>
             <p className="text-[9px] font-black text-primary/60 uppercase tracking-[0.3em] mt-1">Matrix v3.5</p>
           </div>

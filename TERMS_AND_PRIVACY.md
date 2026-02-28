@@ -1,21 +1,21 @@
-# Termos de Uso e Política de Privacidade - LeadPro Neural Matrix
+# Termos de Uso e Política de Privacidade - LeadFlow Neural Matrix
 
 **Última Atualização:** 27 de Fevereiro de 2026
 
-Bem-vindo ao **LeadPro Neural Matrix**. Este documento estabelece os termos legais e as práticas de privacidade para o uso de nossa plataforma de inteligência de vendas e prospecção B2B. Ao utilizar o LeadPro, você concorda integralmente com as disposições aqui contidas.
+Bem-vindo ao **LeadFlow Neural Matrix**. Este documento estabelece os termos legais e as práticas de privacidade para o uso de nossa plataforma de inteligência de vendas e prospecção B2B. Ao utilizar o LeadFlow, você concorda integralmente com as disposições aqui contidas.
 
 ---
 
 ## 1. Natureza do Serviço
 
-O LeadPro é uma plataforma de Software como Serviço (SaaS) que utiliza algoritmos de inteligência artificial e extração de dados públicos para auxiliar empresas na identificação, enriquecimento e gestão de oportunidades comerciais (Leads) em ambiente B2B.
+O LeadFlow é uma plataforma de Software como Serviço (SaaS) que utiliza algoritmos de inteligência artificial e extração de dados públicos para auxiliar empresas na identificação, enriquecimento e gestão de oportunidades comerciais (Leads) em ambiente B2B.
 
 ---
 
 ## 2. Conformidade com a LGPD (Lei Geral de Proteção de Dados - Lei 13.709/2018)
 
 ### 2.1. Papéis e Responsabilidades
-*   **A PLATAFORMA (Operadora):** O LeadPro atua como **Operador de Dados**, fornecendo as ferramentas tecnológicas para o processamento de informações solicitadas pelo Usuário.
+*   **A PLATAFORMA (Operadora):** O LeadFlow atua como **Operador de Dados**, fornecendo as ferramentas tecnológicas para o processamento de informações solicitadas pelo Usuário.
 *   **O USUÁRIO (Controlador):** Você, ao utilizar a plataforma para prospectar leads, assume o papel de **Controlador de Dados**. É sua responsabilidade garantir que possui uma base legal válida (como Legítimo Interesse ou Consentimento) para abordar os titulares dos dados.
 
 ### 2.2. Origem dos Dados
@@ -51,7 +51,7 @@ Implementamos rigorosos padrões de segurança "By Design":
 
 ## 5. Responsabilidades do Usuário
 
-Ao utilizar o LeadPro, o Usuário se compromete a:
+Ao utilizar o LeadFlow, o Usuário se compromete a:
 1.  **Não praticar SPAM:** Utilizar as ferramentas de automação (WhatsApp/E-mail) de forma ética e respeitando as normas de cada canal.
 2.  **Direito de Opt-out:** Atender prontamente a qualquer pedido de exclusão de dados feito por um titular (Lead).
 3.  **Uso Ético da IA:** Não utilizar os *insights* gerados pela IA para finalidades discriminatórias ou ilícitas.
@@ -60,7 +60,7 @@ Ao utilizar o LeadPro, o Usuário se compromete a:
 
 ## 6. Direitos dos Titulares
 
-Qualquer pessoa cujos dados tenham sido prospectados via LeadPro tem o direito de solicitar:
+Qualquer pessoa cujos dados tenham sido prospectados via LeadFlow tem o direito de solicitar:
 *   Confirmação da existência de tratamento.
 *   Acesso aos dados.
 *   Correção de dados incompletos ou inexatos.
@@ -72,13 +72,13 @@ Para solicitações de exclusão, o titular pode entrar em contato através do e
 
 ## 7. Propriedade Intelectual
 
-O código-fonte, algoritmos, design e a "Matriz Neural" do LeadPro são de propriedade exclusiva da plataforma. Tentativas de engenharia reversa, extração não autorizada do código ou violação das travas de segurança (`SecurityGuard`) resultarão no bloqueio imediato da conta e medidas judiciais cabíveis.
+O código-fonte, algoritmos, design e a "Matriz Neural" do LeadFlow são de propriedade exclusiva da plataforma. Tentativas de engenharia reversa, extração não autorizada do código ou violação das travas de segurança (`SecurityGuard`) resultarão no bloqueio imediato da conta e medidas judiciais cabíveis.
 
 ---
 
 ## 8. Limitação de Responsabilidade
 
-O LeadPro fornece informações baseadas em dados públicos. Não garantimos a precisão absoluta de dados de terceiros ou o sucesso comercial das abordagens realizadas. O uso da ferramenta é de inteira responsabilidade do Usuário.
+O LeadFlow fornece informações baseadas em dados públicos. Não garantimos a precisão absoluta de dados de terceiros ou o sucesso comercial das abordagens realizadas. O uso da ferramenta é de inteira responsabilidade do Usuário.
 
 ---
 
@@ -89,4 +89,4 @@ Reservamo-nos o direito de atualizar estes termos periodicamente. O uso continua
 ---
 
 > [!IMPORTANT]
-> **Consentimento:** Ao clicar em "Entrar" ou utilizar qualquer funcionalidade do LeadPro, o Usuário confirma ter lido, compreendido e aceitado integralmente estes Termos de Uso e Política de Privacidade.
+> **Consentimento:** Ao clicar em "Entrar" ou utilizar qualquer funcionalidade do LeadFlow, o Usuário confirma ter lido, compreendido e aceitado integralmente estes Termos de Uso e Política de Privacidade.
