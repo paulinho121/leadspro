@@ -3,7 +3,9 @@ export enum LeadStatus {
   NEW = 'NEW',
   ENRICHING = 'ENRICHING',
   ENRICHED = 'ENRICHED',
-  EXPORTED = 'EXPORTED'
+  EXPORTED = 'EXPORTED',
+  PARKED = 'PARKED',       // Movido para Administração de Leads (fora do Lab)
+  DISCARDED = 'DISCARDED'  // Descartado / rejeitado
 }
 
 export enum DealStage {

@@ -330,3 +330,37 @@ input:-webkit-autofill:active {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 10px;
 }
+
+/* ── Lead Status Badge (LeadLab) ───────────────────────────────────────────
+   FIX: substituindo inline style objects que causavam reconciliação forçada
+   no React a cada render de cada row (30+ writes ao DOM por scroll event)  */
+.lead-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.5rem;
+  font-size: 0.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-width: 1px;
+  border-style: solid;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* will-change permite que o browser otimize o layer antecipadamente */
+  will-change: border-color, background-color, color;
+  transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+}
+
+.lead-status-enriched {
+  border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
+  background-color: color-mix(in srgb, var(--color-primary) 6%, transparent);
+  color: var(--color-primary);
+}
+
+.lead-status-raw {
+  border-color: rgba(71, 85, 105, 0.25);
+  background-color: rgba(71, 85, 105, 0.06);
+  color: #64748b;
+}

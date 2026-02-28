@@ -3,22 +3,27 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { Lead, LeadStatus } from '../types';
 
-export function useLeads(tenantId: string, activeTab: string) {
+export const LEADS_PAGE_SIZE = 100;
+
+export function useLeads(tenantId: string, activeTab: string, limit = LEADS_PAGE_SIZE) {
     return useQuery({
-        queryKey: ['leads', tenantId, activeTab],
+        queryKey: ['leads', tenantId, activeTab, limit],
         queryFn: async () => {
-            if (!tenantId || tenantId === 'default') return [];
+            if (!tenantId || tenantId === 'default') return { leads: [], totalCount: 0 };
 
-            console.log(`[Neural Cache] Refetching leads for tenant: ${tenantId}`);
+            // Select only fields needed for display — avoid loading heavy JSON blobs unnecessarily
+            let query = supabase
+                .from('leads')
+                .select('id, tenant_id, name, website, phone, industry, location, status, updated_at, p2c_score, social_links, details, ai_insights', { count: 'exact' })
+                .order('created_at', { ascending: false })
+                .range(0, limit - 1);
 
-            let query = supabase.from('leads').select('*');
-
-            // Isolamento por Tenant
+            // Tenant isolation
             if (activeTab !== 'master') {
                 query = query.eq('tenant_id', tenantId);
             }
 
-            const { data, error } = await query.order('created_at', { ascending: false });
+            const { data, error, count } = await query;
 
             if (error) throw error;
 
@@ -38,17 +43,20 @@ export function useLeads(tenantId: string, activeTab: string) {
                 p2c_score: dbLead.p2c_score
             }));
 
-            // Deduplicação visual automática
-            const seen = new Set();
-            return formattedLeads.filter(lead => {
+            // Visual deduplication
+            const seen = new Set<string>();
+            const deduped = formattedLeads.filter(lead => {
                 const key = lead.name.toLowerCase().trim() + '|' + (lead.location || '').toLowerCase();
                 if (seen.has(key)) return false;
                 seen.add(key);
                 return true;
             });
+
+            return { leads: deduped, totalCount: count ?? 0 };
         },
         enabled: !!tenantId && tenantId !== 'default',
         refetchOnWindowFocus: false,
-        staleTime: 1000 * 60 * 2, // 2 minutos de cache fresco
+        staleTime: 1000 * 60 * 5, // 5 min cache — evita refetches desnecessários
+        placeholderData: (prev) => prev, // mantém dados anteriores durante load da próxima página
     });
 }

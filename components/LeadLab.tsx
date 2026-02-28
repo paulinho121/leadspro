@@ -1,16 +1,22 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import {
   FlaskConical, Search, Filter, Mail, Phone, ExternalLink,
-  MoreHorizontal, ChevronDown, CheckCircle, Database, Sparkles,
-  Zap, Globe, Download, LayoutList, Trash2, MapPin, MessageCircle, Layers, Loader2, Square, BrainCircuit, Cpu, Atom, TrendingUp,
-  Linkedin
+  MoreHorizontal, CheckCircle, Database, Sparkles,
+  Zap, Globe, LayoutList, Trash2, MapPin, MessageCircle, Layers,
+  Loader2, Square, BrainCircuit, TrendingUp,
+  Linkedin, Archive, Ban, ChevronDown, Command
 } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import LiquidBattery from './LiquidBattery';
 import { Lead, LeadStatus } from '../types';
 import { ActivityService } from '../services/activityService';
 import { supabase } from '../lib/supabase';
-import { useBranding } from './BrandingProvider';
+import { toast } from './Toast';
+import LeadSearchPalette from './LeadSearchPalette';
+
+// FIX #3: Formatter estático — criado UMA vez, reutilizado em toda a lista
+// evita chamar new Date() + toLocaleDateString() em cada row a cada render
+const DATE_FMT = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
 interface LeadLabProps {
   leads: Lead[];
@@ -21,15 +27,23 @@ interface LeadLabProps {
   onDelete?: (id: string) => void;
   onBulkDelete?: (ids: string[]) => void;
   onConvertToDeal?: (leadId: string) => void;
+  onParkLead?: (leadId: string) => void;
+  onDiscardLead?: (leadId: string) => void;
   userTenantId?: string;
+  // Pagination
+  hasMoreLeads?: boolean;
+  totalCount?: number;
+  onLoadMore?: () => void;
 }
 
-const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToDeal }: {
+const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToDeal, onPark, onDiscard }: {
   lead: Lead;
   virtualRow: any;
   onEnrich: any;
   onDelete: any;
   onConvertToDeal: any;
+  onPark: (id: string) => void;
+  onDiscard: (id: string) => void;
 }) => {
   const [imgError, setImgError] = useState(false);
 
@@ -56,13 +70,14 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
                 />
               </div>
             ) : (
+              // FIX #4: removido animate-pulse dos 162+ dots simultanâneos — causava jank no compositor CSS
               <div
-                className={`w-2.5 h-2.5 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)] transition-all duration-700 ml-4 ${lead.status === LeadStatus.ENRICHED ? 'animate-pulse scale-125' : ''}`}
+                className={`w-2.5 h-2.5 rounded-full ml-4 transition-colors duration-500 ${lead.status === LeadStatus.ENRICHED ? 'scale-125' : ''}`}
                 style={{
                   backgroundColor: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : '#475569',
-                  boxShadow: lead.status === LeadStatus.ENRICHED ? '0 0 15px var(--color-primary)' : 'none',
+                  boxShadow: lead.status === LeadStatus.ENRICHED ? '0 0 12px var(--color-primary)' : 'none',
                 }}
-              ></div>
+              />
             )}
           </div>
           <div className="min-w-0 flex-1 flex flex-col justify-center overflow-hidden">
@@ -128,10 +143,28 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
                   </button>
                 )}
 
+                {/* Mover para Admin (Pausar) */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); onPark(lead.id); }}
+                  className="p-1.5 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-slate-900 rounded-lg transition-all"
+                  title="Mover para Administração"
+                >
+                  <Archive size={12} />
+                </button>
+
+                {/* Descartar */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDiscard(lead.id); }}
+                  className="p-1.5 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all"
+                  title="Descartar Lead"
+                >
+                  <Ban size={12} />
+                </button>
+
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete?.(lead.id); }}
-                  className="p-1.5 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all"
-                  title="Descartar"
+                  className="p-1.5 bg-slate-500/10 text-slate-600 hover:bg-slate-500 hover:text-white rounded-lg transition-all"
+                  title="Excluir do Banco"
                 >
                   <Trash2 size={12} />
                 </button>
@@ -154,17 +187,11 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
         </div>
       </td>
 
-      {/* STATUS NEURAL - 15% (150px) */}
+      {/* STATUS NEURAL - FIX #5: CSS classes ao invés de inline style objects (evita reconciliação forçada) */}
       <td className="px-10 py-4 text-center align-middle w-[15%] min-w-[150px] shrink-0">
         <div className="flex justify-center">
-          <span
-            className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-[1.5px] border transition-all truncate`}
-            style={{
-              borderColor: lead.status === LeadStatus.ENRICHED ? 'rgba(var(--color-primary-rgb), 0.2)' : 'rgba(71, 85, 105, 0.2)',
-              backgroundColor: lead.status === LeadStatus.ENRICHED ? 'rgba(var(--color-primary-rgb), 0.05)' : 'rgba(71, 85, 105, 0.05)',
-              color: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : '#64748b',
-            }}
-          >
+          <span className={`lead-status-badge ${lead.status === LeadStatus.ENRICHED ? 'lead-status-enriched' : 'lead-status-raw'
+            }`}>
             {lead.status === LeadStatus.ENRICHED ? 'Neural Enabled' : 'Raw Lead'}
           </span>
         </div>
@@ -173,7 +200,10 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
       {/* DATA DE REGISTRO - 25% (250px) */}
       <td className="px-10 py-4 text-right align-middle w-[25%] min-w-[250px] shrink-0">
         <div className="flex flex-col items-end justify-center">
-          <span className="text-[10px] text-slate-300 font-bold tracking-tight">{new Date(lead.lastUpdated).toLocaleDateString()}</span>
+          {/* FIX #3: usando DATE_FMT estático ao invés de new Date().toLocaleDateString() por row */}
+          <span className="text-[10px] text-slate-300 font-bold tracking-tight">
+            {DATE_FMT.format(new Date(lead.lastUpdated))}
+          </span>
           <span className="text-[8px] text-slate-600 font-medium uppercase tracking-widest mt-0.5 tracking-tighter">Capturado no Lab</span>
         </div>
       </td>
@@ -226,42 +256,74 @@ const MobileLeadCard = ({ lead, onEnrich, onDelete, onConvertToDeal }: any) => {
 
 const LeadLab: React.FC<LeadLabProps> = ({
   leads, onEnrich, onBulkEnrich, isEnriching = false,
-  onStopEnrichment, onDelete, onBulkDelete, onConvertToDeal, userTenantId
+  onStopEnrichment, onDelete, onBulkDelete, onConvertToDeal,
+  onParkLead, onDiscardLead, userTenantId,
+  hasMoreLeads = false, totalCount = 0, onLoadMore
 }) => {
-  const { config } = useBranding();
+  // FIX #6: removido useBranding()
   const [selectedNiche, setSelectedNiche] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<LeadStatus | 'ALL'>('ALL');
   const [isEnrichMenuOpen, setIsEnrichMenuOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
 
-  const filteredLeads = useMemo(() => leads.filter(l => {
+  // Atalho global Ctrl+K / Cmd+K para abrir a Busca Inteligente
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // Lab only shows NEW and ENRICHED leads — PARKED/DISCARDED go to Admin
+  const labLeads = useMemo(() =>
+    leads.filter(l => l.status !== LeadStatus.PARKED && l.status !== LeadStatus.DISCARDED),
+    [leads]);
+
+  const filteredLeads = useMemo(() => labLeads.filter(l => {
     const matchesStatus = filterStatus === 'ALL' || l.status === filterStatus;
     const matchesNiche = !selectedNiche || l.industry === selectedNiche;
     const matchesLocation = !selectedLocation || (l.location && l.location.includes(selectedLocation ?? ''));
     return matchesStatus && matchesNiche && matchesLocation;
-  }), [leads, filterStatus, selectedNiche, selectedLocation]);
+  }), [labLeads, filterStatus, selectedNiche, selectedLocation]);
+
+  const handlePark = React.useCallback((id: string) => {
+    onParkLead?.(id);
+    toast.success('Movido para Administração', 'Lead pausado. Acesse a aba Adm. Leads.');
+  }, [onParkLead]);
+
+  const handleDiscard = React.useCallback((id: string) => {
+    onDiscardLead?.(id);
+    toast.info('Lead descartado', 'Visível em Adm. Leads > Descartados.');
+  }, [onDiscardLead]);
 
   const parentRef = useRef<HTMLDivElement>(null);
 
+  // FIX #2: overscan reduzido de 10 para 3 — evita renderizar 20 rows fora da viewport
   const rowVirtualizer = useVirtualizer({
     count: filteredLeads.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 85,
-    overscan: 10,
+    overscan: 3,
   });
 
   const { niches, nicheCount } = useMemo(() => {
     // O(n) single-pass count using Map instead of O(n²) nested .filter
     const countMap = new Map<string, number>();
-    for (const l of leads) {
+    for (const l of labLeads) {
       if (l.industry) countMap.set(l.industry, (countMap.get(l.industry) ?? 0) + 1);
     }
     const sorted = Array.from(countMap.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10);
     return { niches: sorted.map(([n]) => n), nicheCount: countMap };
-  }, [leads]);
+  }, [labLeads]);
 
   return (
     <div className="flex flex-col lg:flex-row h-full gap-6 animate-fade-in relative overflow-hidden">
@@ -359,13 +421,13 @@ const LeadLab: React.FC<LeadLabProps> = ({
               <div>
                 <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-1 block">Maturidade Neural</span>
                 <h4 className="text-3xl font-black text-white tracking-tighter">
-                  {leads.length > 0 ? Math.round((leads.filter(l => l.status === LeadStatus.ENRICHED).length / leads.length) * 100) : 0}%
+                  {labLeads.length > 0 ? Math.round((labLeads.filter(l => l.status === LeadStatus.ENRICHED).length / labLeads.length) * 100) : 0}%
                 </h4>
               </div>
               <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
                 <div
                   className="bg-primary h-full transition-all duration-1000 shadow-[0_0_15px_var(--color-primary)]"
-                  style={{ width: `${leads.length > 0 ? (leads.filter(l => l.status === LeadStatus.ENRICHED).length / leads.length) * 100 : 0}%` }}
+                  style={{ width: `${labLeads.length > 0 ? (labLeads.filter(l => l.status === LeadStatus.ENRICHED).length / labLeads.length) * 100 : 0}%` }}
                 ></div>
               </div>
             </div>
@@ -375,7 +437,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
             <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 block">Enriquecidos (IA)</span>
             <div className="flex items-end gap-3 relative z-10">
               <h4 className="text-4xl font-black text-white tracking-tighter">
-                {leads.filter(l => l.status === LeadStatus.ENRICHED).length}
+                {labLeads.filter(l => l.status === LeadStatus.ENRICHED).length}
               </h4>
               <span className="text-[10px] text-slate-500 font-bold mb-2 uppercase tracking-widest">Leads Qualificados</span>
             </div>
@@ -385,7 +447,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
             <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 block">Fila Pendente</span>
             <div className="flex items-end gap-3 relative z-10">
               <h4 className="text-4xl font-black text-white/40 tracking-tighter group-hover:text-white transition-colors">
-                {leads.filter(l => l.status === LeadStatus.NEW).length}
+                {labLeads.filter(l => l.status === LeadStatus.NEW).length}
               </h4>
               <span className="text-[10px] text-slate-500 font-bold mb-2 uppercase tracking-widest font-mono">Scanning...</span>
             </div>
@@ -400,7 +462,8 @@ const LeadLab: React.FC<LeadLabProps> = ({
               <h2 className="text-2xl lg:text-3xl font-black text-white tracking-tighter flex items-center gap-4">
                 Laboratório
                 <span className="text-[10px] font-mono text-primary bg-primary/10 px-3 py-1 rounded-lg border border-primary/20 uppercase tracking-[0.2em]">
-                  {filteredLeads.length} de {leads.length} leads
+                  {filteredLeads.length} de {labLeads.length}
+                  {totalCount > labLeads.length && <span className="text-slate-500"> ({totalCount} total)</span>}
                 </span>
               </h2>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1 opacity-60">Ambiente de extração e refinamento de dados</p>
@@ -414,7 +477,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                   if (isEnriching && onStopEnrichment) onStopEnrichment();
                   else setIsEnrichMenuOpen(!isEnrichMenuOpen);
                 }}
-                disabled={leads.filter(l => l.status === LeadStatus.NEW).length === 0 && !isEnriching}
+                disabled={labLeads.filter(l => l.status === LeadStatus.NEW).length === 0 && !isEnriching}
                 className={`flex items-center justify-center gap-3 w-full px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.15em] transition-all shadow-xl relative overflow-hidden group
                   ${isEnriching
                     ? 'bg-red-600 text-white shadow-red-900/40'
@@ -434,7 +497,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                     }}
                     className="w-full text-left px-5 py-4 hover:bg-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-primary transition-all flex items-center gap-3"
                   >
-                    <Layers size={14} /> Todos os {leads.filter(l => l.status === LeadStatus.NEW).length} Novos
+                    <Layers size={14} /> Todos os {labLeads.filter(l => l.status === LeadStatus.NEW).length} Novos
                   </button>
                   <button
                     onClick={() => {
@@ -454,13 +517,23 @@ const LeadLab: React.FC<LeadLabProps> = ({
             <button
               onClick={() => onBulkDelete?.(filteredLeads.map(l => l.id))}
               className="p-4 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-500 rounded-2xl border border-white/5 transition-all shadow-xl"
-              title="Limpar Filtro"
+              title="Limpar seleção"
             >
               <Trash2 size={18} />
             </button>
-            <button className="p-4 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-2xl border border-white/5 transition-all shadow-xl">
-              <Download size={18} />
+
+            {/* Botão Busca Inteligente */}
+            <button
+              onClick={() => setIsPaletteOpen(true)}
+              className="flex items-center gap-2 p-4 bg-white/5 hover:bg-primary/10 text-slate-400 hover:text-primary rounded-2xl border border-white/5 hover:border-primary/20 transition-all shadow-xl group"
+              title="Busca Inteligente (Ctrl+K)"
+            >
+              <Search size={18} />
+              <kbd className="hidden xl:flex items-center gap-1 text-[8px] font-mono bg-white/5 group-hover:bg-primary/10 px-1.5 py-0.5 rounded-md border border-white/10 text-slate-600 group-hover:text-primary">
+                Ctrl K
+              </kbd>
             </button>
+
           </div>
         </div>
 
@@ -489,6 +562,8 @@ const LeadLab: React.FC<LeadLabProps> = ({
                       onEnrich={onEnrich}
                       onDelete={onDelete}
                       onConvertToDeal={onConvertToDeal}
+                      onPark={handlePark}
+                      onDiscard={handleDiscard}
                     />
                   );
                 })}
@@ -510,11 +585,35 @@ const LeadLab: React.FC<LeadLabProps> = ({
 
             {filteredLeads.length === 0 && (
               <div className="flex-1 flex flex-col items-center justify-center py-32 text-center">
-                <div className="p-6 rounded-full bg-white/5 mb-6 animate-pulse">
+                <div className="p-6 rounded-full bg-white/5 mb-6">
                   <Search className="w-10 h-10 text-slate-700" />
                 </div>
                 <h4 className="text-xl font-black text-white mb-2 tracking-tight">Vazio Estratégico</h4>
                 <p className="text-slate-500 text-[10px] uppercase tracking-[0.2em] max-w-xs leading-relaxed">Nenhum registro encontrado nos parâmetros de filtro atuais</p>
+              </div>
+            )}
+
+            {/* Botão Carregar Mais */}
+            {hasMoreLeads && filteredLeads.length > 0 && filterStatus === 'ALL' && !selectedNiche && (
+              <div className="flex flex-col items-center py-8 gap-3">
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">
+                  Mostrando {leads.length} de {totalCount} leads no banco
+                </p>
+                <button
+                  onClick={() => {
+                    setIsLoadingMore(true);
+                    onLoadMore?.();
+                    setTimeout(() => setIsLoadingMore(false), 1500);
+                  }}
+                  disabled={isLoadingMore}
+                  className="flex items-center gap-3 px-8 py-3 bg-primary/10 hover:bg-primary/20 text-primary rounded-2xl border border-primary/20 text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 disabled:opacity-50"
+                >
+                  {isLoadingMore ? (
+                    <><Loader2 size={14} className="animate-spin" /> Carregando...</>
+                  ) : (
+                    <><ChevronDown size={14} /> Carregar mais {Math.min(100, totalCount - leads.length)} leads</>
+                  )}
+                </button>
               </div>
             )}
           </div>
@@ -529,6 +628,16 @@ const LeadLab: React.FC<LeadLabProps> = ({
           onClick={() => setIsDrawerOpen(false)}
         />
       )}
+
+      {/* Busca Inteligente — Command Palette */}
+      <LeadSearchPalette
+        isOpen={isPaletteOpen}
+        onClose={() => setIsPaletteOpen(false)}
+        tenantId={userTenantId ?? ''}
+        onEnrich={(lead) => { onEnrich(lead); }}
+        onPark={(id) => { onParkLead?.(id); toast.success('Movido para Administração', 'Acesse a aba Adm. Leads.'); }}
+        onDiscard={(id) => { onDiscardLead?.(id); toast.info('Lead descartado', 'Visível em Adm. Leads.'); }}
+      />
     </div>
   );
 };

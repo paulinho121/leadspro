@@ -3,7 +3,7 @@ import {
   Bell, LayoutDashboard, Search, Database, Rocket, TrendingUp,
   Megaphone, ShieldCheck, Menu, X, LogOut, BrainCircuit, Activity,
   HelpCircle, AlertTriangle, ScrollText, Cpu, ChevronRight, BarChart3,
-  Send as SendIcon, CheckCircle, Info, DollarSign as MoneyIcon
+  Send as SendIcon, CheckCircle, Info, DollarSign as MoneyIcon, Archive
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import TermsModal from './components/TermsModal';
@@ -23,6 +23,7 @@ const ActivityHistory = lazy(() => import('./components/ActivityHistory'));
 const NotificationsList = lazy(() => import('./components/NotificationsList'));
 const BillingView = lazy(() => import('./components/BillingView'));
 const AutomationHealthDashboard = lazy(() => import('./components/AutomationHealthDashboard'));
+const LeadAdminView = lazy(() => import('./components/LeadAdminView'));
 import { ToastContainer, registerToastFn, toast } from './components/Toast';
 import { DiscoveryService } from './services/discoveryService';
 import { CommunicationService } from './services/communicationService';
@@ -35,7 +36,7 @@ import { BillingService } from './services/billingService';
 import { QueueService } from './services/queueService';
 import { Lead, LeadStatus } from './types';
 import { useStore } from './store/useStore';
-import { useLeads } from './hooks/useLeads';
+import { useLeads, LEADS_PAGE_SIZE } from './hooks/useLeads';
 import { useWallet } from './hooks/useWallet';
 import { useBranding } from './components/BrandingProvider';
 import { supabase } from './lib/supabase';
@@ -70,9 +71,18 @@ const App: React.FC = () => {
   const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
   const [supportForm, setSupportForm] = useState({ subject: '', message: '', category: 'technical' });
   const [tenantSecrets, setTenantSecrets] = useState<TenantSecrets>({});
+  // Paginação de leads — carrega em blocos de 250
+  const [leadsLimit, setLeadsLimit] = useState(LEADS_PAGE_SIZE);
 
   // React Query Hooks (Optimized)
-  const { data: leads = [], refetch: refetchLeads, isLoading: leadsLoading } = useLeads(userTenantId, activeTab);
+  const { data: leadsData, refetch: refetchLeads, isLoading: leadsLoading } = useLeads(userTenantId, activeTab, leadsLimit);
+  const leads = leadsData?.leads ?? [];
+  const leadsTotalCount = leadsData?.totalCount ?? 0;
+  const hasMoreLeads = leadsTotalCount > leads.length;
+
+  const handleLoadMoreLeads = React.useCallback(() => {
+    setLeadsLimit(prev => prev + LEADS_PAGE_SIZE);
+  }, []);
   const { data: walletBalance } = useWallet(userTenantId);
 
   const deferredLeads = React.useDeferredValue(leads);
@@ -441,6 +451,26 @@ const App: React.FC = () => {
     } catch (err) { }
   }, [userTenantId, setActiveTab]);
 
+  const handleParkLead = React.useCallback(async (leadId: string) => {
+    if (!userTenantId) return;
+    try {
+      await supabase.from('leads').update({ status: LeadStatus.PARKED }).eq('id', leadId).eq('tenant_id', userTenantId);
+      refetchLeads();
+    } catch (err: any) {
+      toast.error('Erro ao pausar lead', err.message);
+    }
+  }, [userTenantId, refetchLeads]);
+
+  const handleDiscardLead = React.useCallback(async (leadId: string) => {
+    if (!userTenantId) return;
+    try {
+      await supabase.from('leads').update({ status: LeadStatus.DISCARDED }).eq('id', leadId).eq('tenant_id', userTenantId);
+      refetchLeads();
+    } catch (err: any) {
+      toast.error('Erro ao descartar lead', err.message);
+    }
+  }, [userTenantId, refetchLeads]);
+
   const handleBulkConvertToDeal = React.useCallback(async (leadIds: string[]) => {
     if (!userTenantId || leadIds.length === 0) return;
     try {
@@ -490,6 +520,19 @@ const App: React.FC = () => {
           onConvertToDeal={handleConvertToDeal}
           onBulkConvertToDeal={handleBulkConvertToDeal}
         />;
+      case 'leadAdmin':
+        return <Suspense fallback={<LazyFallback />}><LeadAdminView
+          leads={leads}
+          onRefetch={refetchLeads}
+          onRestoreToLab={async (id) => {
+            await supabase.from('leads').update({ status: LeadStatus.NEW }).eq('id', id).eq('tenant_id', userTenantId);
+            refetchLeads();
+            toast.success('Restaurado!', 'Lead de volta ao Laboratório.');
+          }}
+          onPermanentDelete={handleDeleteLead}
+          onConvertToDeal={handleConvertToDeal}
+          userTenantId={userTenantId}
+        /></Suspense>;
       case 'partner':
         return <Suspense fallback={<LazyFallback />}><WhiteLabelAdmin initialTab="api" /></Suspense>;
       case 'master':
@@ -571,6 +614,7 @@ const App: React.FC = () => {
           <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('dashboard'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
           <NavItem icon={<Search size={20} />} label="Extração" active={activeTab === 'discovery'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('discovery'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
           <NavItem icon={<Database size={20} />} label="Laboratório" active={activeTab === 'lab'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('lab'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<Archive size={20} />} label="Adm. Leads" active={activeTab === 'leadAdmin'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('leadAdmin'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
           <NavItem icon={<Rocket size={20} />} label="Enriquecidos" active={activeTab === 'enriched'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
           <NavItem icon={<TrendingUp size={20} />} label="Pipeline" active={activeTab === 'pipeline'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('pipeline'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
           <NavItem icon={<Megaphone size={20} />} label="Automação" active={activeTab === 'automation'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('automation'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
@@ -729,6 +773,7 @@ const App: React.FC = () => {
               {activeTab === 'discovery' && 'Extração'}
               {activeTab === 'lab' && 'Laboratório'}
               {activeTab === 'enriched' && 'Comercial'}
+              {activeTab === 'leadAdmin' && 'Adm. Leads'}
               {activeTab === 'partner' && 'Branding'}
               {activeTab === 'master' && 'Master'}
               {activeTab === 'history' && 'Logs'}
@@ -811,7 +856,12 @@ const App: React.FC = () => {
                 onDelete={handleDeleteLead}
                 onBulkDelete={handleBulkDelete}
                 onConvertToDeal={handleConvertToDeal}
+                onParkLead={handleParkLead}
+                onDiscardLead={handleDiscardLead}
                 userTenantId={userTenantId}
+                hasMoreLeads={hasMoreLeads}
+                totalCount={leadsTotalCount}
+                onLoadMore={handleLoadMoreLeads}
               />
             </div>
 
