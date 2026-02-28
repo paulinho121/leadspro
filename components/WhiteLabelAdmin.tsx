@@ -19,7 +19,7 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
         sidebarColor: '',
         customDomain: '',
         subdomain: '',
-        apiKeys: { gemini: '', openai: '', serper: '' }
+        apiKeys: { gemini: '', openai: '', serper: '', rdStation: '', hubspot: '', pipedrive: '', salesforce: '' }
     });
     const [saving, setSaving] = useState(false);
     const [isUploading, setIsUploading] = useState<'logo' | 'favicon' | null>(null);
@@ -230,16 +230,25 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                     sidebarColor: config.colors?.sidebar || 'rgba(30, 41, 59, 0.7)',
                     customDomain: config.domain || '',
                     subdomain: config.subdomain || '',
-                    apiKeys: { gemini: '', openai: '', serper: '' }
+                    apiKeys: { gemini: '', openai: '', serper: '', rdStation: '', hubspot: '', pipedrive: '', salesforce: '' }
                 };
 
                 // Carregar Segredos separadamente (Segurança Sênior)
                 const secrets = await SecretService.getTenantSecrets(config.tenantId);
+
+                // Extrair CRM configs antigas se houver
+                const wlc = await supabase.from('white_label_configs').select('api_keys').eq('tenant_id', config.tenantId).maybeSingle();
+                const jsonApiKeys = wlc.data?.api_keys || {};
+
                 if (secrets) {
                     brandingData.apiKeys = {
                         gemini: secrets.gemini || '',
                         openai: secrets.openai || '',
-                        serper: secrets.serper || ''
+                        serper: secrets.serper || '',
+                        rdStation: jsonApiKeys.rd_station_token || secrets.rdStation || '',
+                        hubspot: jsonApiKeys.hubspot_token || secrets.hubspot || '',
+                        pipedrive: jsonApiKeys.pipedrive_token || secrets.pipedrive || '',
+                        salesforce: jsonApiKeys.salesforce_token || secrets.salesforce || ''
                     };
                 }
 
@@ -345,6 +354,13 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                     sidebar_color: formData.sidebarColor,
                     custom_domain: formData.customDomain || null,
                     subdomain: formData.subdomain || null,
+                    api_keys: {
+                        gemini: null, openai: null, deepseek: null, // As chaves core ficam no tenant_api_keys
+                        rd_station_token: formData.apiKeys?.rdStation?.trim() || null,
+                        hubspot_token: formData.apiKeys?.hubspot?.trim() || null,
+                        pipedrive_token: formData.apiKeys?.pipedrive?.trim() || null,
+                        salesforce_token: formData.apiKeys?.salesforce?.trim() || null
+                    },
                     updated_at: new Date().toISOString()
                 }, { onConflict: 'tenant_id' });
 
@@ -734,8 +750,44 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                     {activeSettingsTab === 'integrations' && (
                         <div className="space-y-8 animate-in slide-in-from-right duration-300">
                             <div>
+                                <h3 className="text-xl font-bold text-white mb-2 underline decoration-primary decoration-4">Integrações Nativas (CRM)</h3>
+                                <p className="text-sm text-slate-400">Integre diretamente com seu CRM via API Push.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-6">
+                                <ApiConfigItem
+                                    label="Token do RD Station CRM"
+                                    placeholder="Coloque seu token da API do RD Station..."
+                                    value={formData.apiKeys?.rdStation || ''}
+                                    onChange={(val) => setFormData({ ...formData, apiKeys: { ...formData.apiKeys, rdStation: val } })}
+                                    description="Requerido para Sincronização. Ache isso nas configurações do RD Station."
+                                />
+                                <ApiConfigItem
+                                    label="HubSpot Private App Token"
+                                    placeholder="pat-na1-..."
+                                    value={formData.apiKeys?.hubspot || ''}
+                                    onChange={(val) => setFormData({ ...formData, apiKeys: { ...formData.apiKeys, hubspot: val } })}
+                                    description="Requer um Private App Token do HubSpot com permissões crm.objects.contacts.write."
+                                />
+                                <ApiConfigItem
+                                    label="Pipedrive API Token"
+                                    placeholder="Token do Pipedrive (30+ chars)..."
+                                    value={formData.apiKeys?.pipedrive || ''}
+                                    onChange={(val) => setFormData({ ...formData, apiKeys: { ...formData.apiKeys, pipedrive: val } })}
+                                    description="Encontrado nas Preferências Pessoais > API do Pipedrive."
+                                />
+                                <ApiConfigItem
+                                    label="Salesforce Access Token"
+                                    placeholder="Bearer token de acesso do Salesforce..."
+                                    value={formData.apiKeys?.salesforce || ''}
+                                    onChange={(val) => setFormData({ ...formData, apiKeys: { ...formData.apiKeys, salesforce: val } })}
+                                    description="Token provisório ou de integração de longa duração."
+                                />
+                            </div>
+
+                            <div className="pt-8">
                                 <h3 className="text-xl font-bold text-white mb-2 underline decoration-primary decoration-4">Power Integrations (Webhooks)</h3>
-                                <p className="text-sm text-slate-400">Conecte o LeadPro ao seu CRM (Hubspot, Pipedrive), ERP ou ferramentas como Zapier e Make.</p>
+                                <p className="text-sm text-slate-400">Conecte o LeadPro ao seu ERP ou ferramentas como Zapier e Make.</p>
                             </div>
 
                             <div className="glass p-6 rounded-2xl border-primary/20 bg-primary/5">

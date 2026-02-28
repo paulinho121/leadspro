@@ -514,11 +514,29 @@ const App: React.FC = () => {
         return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
       case 'discovery':
         return <LeadDiscovery onResultsFound={handleAddLeads} onStartEnrichment={handleBulkEnrich} apiKeys={tenantSecrets} existingLeads={leads} />;
+      case 'lab':
+        return <LeadLab
+          leads={filteredLeads}
+          onEnrich={(lead) => handleBulkEnrich([lead])}
+          onBulkEnrich={handleBulkEnrich}
+          isEnriching={isEnriching}
+          onStopEnrichment={() => { stopEnrichmentSignal.current = true; setIsEnriching(false); }}
+          onDelete={handleDeleteLead}
+          onBulkDelete={handleBulkDelete}
+          onConvertToDeal={handleConvertToDeal}
+          onParkLead={handleParkLead}
+          onDiscardLead={handleDiscardLead}
+          userTenantId={userTenantId}
+          hasMoreLeads={hasMoreLeads}
+          totalCount={leadsTotalCount}
+          onLoadMore={handleLoadMoreLeads}
+        />;
       case 'enriched':
         return <EnrichedLeadsView
           leads={filteredLeads}
           onConvertToDeal={handleConvertToDeal}
           onBulkConvertToDeal={handleBulkConvertToDeal}
+          userTenantId={userTenantId}
         />;
       case 'leadAdmin':
         return <Suspense fallback={<LazyFallback />}><LeadAdminView

@@ -23,6 +23,13 @@ export function useLeads(tenantId: string, activeTab: string, limit = LEADS_PAGE
                 query = query.eq('tenant_id', tenantId);
             }
 
+            // Otimização Neural: Filtrar por status base na aba ativa para evitar que limit exclua leads
+            if (activeTab === 'enriched') {
+                query = query.eq('status', 'ENRICHED');
+            } else if (activeTab === 'lab') {
+                query = query.in('status', ['NEW', 'ENRICHING', 'ENRICHED', 'EXPORTED']);
+            }
+
             const { data, error, count } = await query;
 
             if (error) throw error;

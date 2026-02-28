@@ -6,11 +6,18 @@ import {
 } from 'lucide-react';
 import { Lead, LeadStatus } from '../types';
 import { ExportService, CRMFormat } from '../services/exportService';
+import { RDStationService } from '../services/rdStationService';
+import { HubSpotService } from '../services/hubspotService';
+import { PipedriveService } from '../services/pipedriveService';
+import { SalesforceService } from '../services/salesforceService';
+import { toast } from './Toast';
 
 interface EnrichedLeadsViewProps {
     leads: Lead[];
     onConvertToDeal?: (leadId: string) => void;
     onBulkConvertToDeal?: (leadIds: string[]) => void;
+    onBulkPushToRDStation?: (leadIds: string[]) => void;
+    userTenantId?: string;
 }
 
 const CRMMenuItem = ({ label, icon, onClick, color }: { label: string, icon: React.ReactNode, onClick: () => void, color: string }) => (
@@ -250,7 +257,7 @@ const LeadCard = React.memo(({ lead, idx, openWhatsApp, onConvertToDeal, imgErro
     );
 });
 
-const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertToDeal, onBulkConvertToDeal }) => {
+export const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertToDeal, onBulkConvertToDeal, onBulkPushToRDStation, userTenantId }) => {
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const [selectedIndustry, setSelectedIndustry] = useState<string>('todos');
     const [searchQuery, setSearchQuery] = useState('');
@@ -286,6 +293,26 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertT
     const handleExport = (format: CRMFormat) => {
         ExportService.exportToCSV(filteredLeads, format);
         setIsExportMenuOpen(false);
+    };
+
+    const handleRDSync = async () => {
+        setIsExportMenuOpen(false);
+        const success = await RDStationService.pushLeads(filteredLeads, userTenantId || '');
+    };
+
+    const handleHubSpotSync = async () => {
+        setIsExportMenuOpen(false);
+        const success = await HubSpotService.pushLeads(filteredLeads, userTenantId || '');
+    };
+
+    const handlePipedriveSync = async () => {
+        setIsExportMenuOpen(false);
+        const success = await PipedriveService.pushLeads(filteredLeads, userTenantId || '');
+    };
+
+    const handleSalesforceSync = async () => {
+        setIsExportMenuOpen(false);
+        const success = await SalesforceService.pushLeads(filteredLeads, userTenantId || '');
     };
 
     const openWhatsApp = React.useCallback((phone: string) => {
@@ -343,13 +370,62 @@ const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onConvertT
 
                         {isExportMenuOpen && (
                             <div className="absolute top-full right-0 mt-4 w-full sm:w-80 glass-strong border border-white/10 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.5)] p-4 z-50 animate-in slide-in-from-top-4 duration-300 backdrop-blur-3xl overflow-hidden">
-                                <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] px-5 py-3 mb-2 border-b border-white/5 italic">Ecossistema de Integração</div>
+
+                                <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] px-5 py-3 mb-2 border-b border-white/5 italic">Push Nativo Direto API</div>
+                                <div className="space-y-1 mb-4">
+                                    <button
+                                        onClick={handleHubSpotSync}
+                                        className="w-full text-left px-5 py-3 rounded-xl hover:bg-orange-500/20 text-white font-bold text-xs flex items-center justify-between group transition-all border border-orange-500/10 hover:border-orange-500/50"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-orange-500 p-1.5 rounded-lg text-slate-900 group-hover:scale-110 transition-transform">
+                                                <Zap size={14} />
+                                            </div>
+                                            HUBSPOT CRM
+                                        </div>
+                                    </button>
+                                    <button
+                                        onClick={handlePipedriveSync}
+                                        className="w-full text-left px-5 py-3 rounded-xl hover:bg-green-500/20 text-white font-bold text-xs flex items-center justify-between group transition-all border border-green-500/10 hover:border-green-500/50"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-green-500 p-1.5 rounded-lg text-slate-900 group-hover:scale-110 transition-transform">
+                                                <CheckCircle size={14} />
+                                            </div>
+                                            PIPEDRIVE
+                                        </div>
+                                    </button>
+                                    <button
+                                        onClick={handleSalesforceSync}
+                                        className="w-full text-left px-5 py-3 rounded-xl hover:bg-blue-600/20 text-white font-bold text-xs flex items-center justify-between group transition-all border border-blue-600/10 hover:border-blue-600/50"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-blue-600 p-1.5 rounded-lg text-white group-hover:scale-110 transition-transform">
+                                                <Globe size={14} />
+                                            </div>
+                                            SALESFORCE
+                                        </div>
+                                    </button>
+                                    <button
+                                        onClick={handleRDSync}
+                                        className="w-full text-left px-5 py-3 rounded-xl hover:bg-blue-400/20 text-white font-bold text-xs flex items-center justify-between group transition-all border border-blue-400/10 hover:border-blue-400/50"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-blue-400 p-1.5 rounded-lg text-slate-900 group-hover:scale-110 transition-transform">
+                                                <MessageCircle size={14} />
+                                            </div>
+                                            RD STATION
+                                        </div>
+                                    </button>
+                                </div>
+
+                                <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] px-5 py-3 mb-2 border-b border-white/5 italic">Download de Planilhas</div>
                                 <div className="space-y-1">
-                                    <CRMMenuItem label="HubSpot CRM" color="bg-orange-500" onClick={() => handleExport('HUBSPOT')} icon={<Zap size={14} fill="white" />} />
-                                    <CRMMenuItem label="Pipedrive" color="bg-green-600" onClick={() => handleExport('PIPEDRIVE')} icon={<CheckCircle size={14} />} />
-                                    <CRMMenuItem label="Salesforce" color="bg-blue-600" onClick={() => handleExport('SALESFORCE')} icon={<Globe size={14} />} />
-                                    <CRMMenuItem label="RD Station" color="bg-blue-400" onClick={() => handleExport('RD_STATION')} icon={<MessageCircle size={14} />} />
-                                    <CRMMenuItem label="Planilha Excel/CSV" color="bg-slate-700" onClick={() => handleExport('GENERIC')} icon={<Download size={14} />} />
+                                    <CRMMenuItem label="HubSpot (CSV)" color="bg-orange-500" onClick={() => handleExport('HUBSPOT')} icon={<CheckCircle size={14} fill="white" />} />
+                                    <CRMMenuItem label="Pipedrive (CSV)" color="bg-green-600" onClick={() => handleExport('PIPEDRIVE')} icon={<CheckCircle size={14} />} />
+                                    <CRMMenuItem label="Salesforce (CSV)" color="bg-blue-600" onClick={() => handleExport('SALESFORCE')} icon={<Globe size={14} />} />
+                                    <CRMMenuItem label="RD Station (CSV)" color="bg-blue-400" onClick={() => handleExport('RD_STATION')} icon={<Download size={14} />} />
+                                    <CRMMenuItem label="Planilha Genérica" color="bg-slate-700" onClick={() => handleExport('GENERIC')} icon={<Download size={14} />} />
                                 </div>
                             </div>
                         )}

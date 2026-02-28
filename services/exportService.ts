@@ -14,7 +14,7 @@ export class ExportService {
             case 'HUBSPOT':
                 headers = ['First Name', 'Last Name', 'Company Name', 'Email', 'Phone Number', 'Website URL', 'Industry', 'City', 'Lead Insights'];
                 rows = leads.map(l => {
-                    const [firstName, ...lastNames] = l.name.split(' ');
+                    const [firstName, ...lastNames] = (l.name || '').split(' ');
                     const lastName = lastNames.join(' ') || '.';
                     return [
                         this.sanitize(firstName),
@@ -47,8 +47,8 @@ export class ExportService {
             case 'SALESFORCE':
                 headers = ['FirstName', 'LastName', 'Company', 'Email', 'Phone', 'Website', 'Industry', 'City', 'Description'];
                 rows = leads.map(l => {
-                    const [firstName, ...lastNames] = l.name.split(' ');
-                    const lastName = lastNames.join(' ') || l.name;
+                    const [firstName, ...lastNames] = (l.name || '').split(' ');
+                    const lastName = lastNames.join(' ') || (l.name || '.');
                     return [
                         this.sanitize(firstName),
                         this.sanitize(lastName),
@@ -64,21 +64,23 @@ export class ExportService {
                 break;
 
             case 'RD_STATION':
-                headers = ['Nome', 'Empresa', 'Email', 'Telefone', 'Site', 'Setor', 'Cidade', 'Estado', 'Anotações IA'];
+                headers = ['Nome da Oportunidade', 'Nome da Organização', 'Nome do contato', 'Telefone do contato', 'E-mail do contato', 'Segmento do cliente', 'Anotação', 'Cidade', 'Estado', 'URL do site'];
                 rows = leads.map(l => {
                     const locationParts = l.location.split(',').map(p => p.trim());
                     const cidade = locationParts[0] || '';
                     const estado = locationParts[1] || '';
+                    const empresa = l.details?.tradeName || l.name;
                     return [
-                        this.sanitize(l.name),
-                        this.sanitize(l.details?.tradeName || l.name),
-                        this.sanitize(l.email || l.details?.email || ''),
-                        this.sanitize(l.phone || ''),
-                        this.sanitize(l.website || ''),
-                        this.sanitize(l.industry || ''),
-                        this.sanitize(cidade),
-                        this.sanitize(estado),
-                        this.sanitize(l.ai_insights || '')
+                        this.sanitize(`Venda - ${empresa}`), // Nome da Oportunidade (gera um card no CRM)
+                        this.sanitize(empresa), // Nome da Organização
+                        this.sanitize(l.name), // Nome do contato
+                        this.sanitize(l.phone || ''), // Telefone do contato
+                        this.sanitize(l.email || l.details?.email || ''), // E-mail do contato
+                        this.sanitize(l.industry || ''), // Segmento do cliente
+                        this.sanitize(l.ai_insights || ''), // Anotação
+                        this.sanitize(cidade), // Cidade
+                        this.sanitize(estado), // Estado
+                        this.sanitize(l.website || '') // URL do site
                     ];
                 });
                 break;
@@ -86,7 +88,7 @@ export class ExportService {
             case 'BREVO':
                 headers = ['EMAIL', 'FIRSTNAME', 'LASTNAME', 'SMS', 'COMPANY', 'WEBSITE', 'CITY', 'ATTRIBUTES'];
                 rows = leads.map(l => {
-                    const [firstName, ...lastNames] = l.name.split(' ');
+                    const [firstName, ...lastNames] = (l.name || '').split(' ');
                     const lastName = lastNames.join(' ') || '.';
                     return [
                         this.sanitize(l.email || l.details?.email || ''),
@@ -117,12 +119,13 @@ export class ExportService {
                 ]);
         }
 
+        const separator = ',';
         const csvContent = [
-            headers.join(','),
-            ...rows.map(r => r.join(','))
+            headers.join(separator),
+            ...rows.map(r => r.join(separator))
         ].join('\n');
 
-        const blob = new Blob([`\ufeff${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;

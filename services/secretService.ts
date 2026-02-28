@@ -5,6 +5,10 @@ export interface TenantSecrets {
     gemini?: string;
     openai?: string;
     serper?: string;
+    rdStation?: string;
+    hubspot?: string;
+    pipedrive?: string;
+    salesforce?: string;
 }
 
 export class SecretService {
@@ -23,11 +27,21 @@ export class SecretService {
         }
 
         try {
+            // Get core secrets
             const { data, error } = await supabase
                 .from('tenant_api_keys')
                 .select('gemini_key, openai_key, serper_key')
                 .eq('tenant_id', tenantId)
                 .maybeSingle();
+
+            // Get CRM tokens safely from generic JSON config avoiding schema constraints errors
+            const { data: configData } = await supabase
+                .from('white_label_configs')
+                .select('api_keys')
+                .eq('tenant_id', tenantId)
+                .maybeSingle();
+
+            const crmKeys = configData?.api_keys || {};
 
             if (error) {
                 console.warn('[Security] Erro ao buscar segredos:', error.message);
@@ -37,7 +51,11 @@ export class SecretService {
             const secrets = {
                 gemini: data?.gemini_key || (import.meta as any).env.VITE_GEMINI_API_KEY || undefined,
                 openai: data?.openai_key || (import.meta as any).env.VITE_OPENAI_API_KEY || undefined,
-                serper: data?.serper_key || (import.meta as any).env.VITE_SERPER_API_KEY || undefined
+                serper: data?.serper_key || (import.meta as any).env.VITE_SERPER_API_KEY || undefined,
+                rdStation: crmKeys?.rd_station_token || undefined,
+                hubspot: crmKeys?.hubspot_token || undefined,
+                pipedrive: crmKeys?.pipedrive_token || undefined,
+                salesforce: crmKeys?.salesforce_token || undefined
             };
 
             // Armazenar no cache para evitar múltiplas chamadas

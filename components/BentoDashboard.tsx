@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { useBranding } from './BrandingProvider';
 import { Lead, LeadStatus } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface BentoDashboardProps {
   leads: Lead[];
@@ -21,6 +22,55 @@ interface BentoDashboardProps {
 const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavigate }) => {
   const { config } = useBranding();
   const primaryColor = config.colors.primary;
+
+  const [stats, setStats] = React.useState({
+    total: 0,
+    enriched: 0,
+    newLeads: 0,
+    enriching: 0,
+    scoreSum: 0
+  });
+
+  React.useEffect(() => {
+    let isMounted = true;
+    const loadStats = async () => {
+      try {
+        const tenantId = config?.tenantId;
+        if (!tenantId) return;
+
+        // Fetch counts efficiently
+        const [totalRes, enrichedRes, newRes, enrichingRes] = await Promise.all([
+          supabase.from('leads').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+          supabase.from('leads').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', LeadStatus.ENRICHED),
+          supabase.from('leads').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', LeadStatus.NEW),
+          supabase.from('leads').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', LeadStatus.ENRICHING)
+        ]);
+
+        // To calculate score, we must select the p2c_score of all enriched/scored leads. 
+        // For performance, we limit to 1000 or do an aggregate if we had RPC.
+        const { data: scoreData } = await supabase.from('leads').select('p2c_score').eq('tenant_id', tenantId).gt('p2c_score', 0).limit(1000);
+        let scoreSum = 0;
+        if (scoreData) {
+          scoreSum = scoreData.reduce((acc, l) => acc + (l.p2c_score || 0), 0);
+        }
+
+        if (isMounted) {
+          setStats({
+            total: totalRes.count || leads.length,
+            enriched: enrichedRes.count || 0,
+            newLeads: newRes.count || 0,
+            enriching: enrichingRes.count || 0,
+            scoreSum: scoreSum
+          });
+        }
+      } catch (e) {
+        console.error('Error loading dashboard stats:', e);
+      }
+    };
+
+    loadStats();
+    return () => { isMounted = false; };
+  }, [config?.tenantId, leads.length]);
 
   // Gerar dados do gráfico baseados nos leads reais (últimos 7 dias)
   const chartData = React.useMemo(() => {
@@ -55,16 +105,17 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
     return last7Days;
   }, [leads]);
 
-  const totalLeads = leads.length;
-  const enrichedCount = leads.filter(l => l.status === LeadStatus.ENRICHED).length;
-  const newLeadsCount = leads.filter(l => l.status === LeadStatus.NEW).length;
-  const enrichingCount = leads.filter(l => l.status === LeadStatus.ENRICHING).length;
+  // Usamos os stats reais vindos do DB
+  const totalLeads = stats.total > leads.length ? stats.total : leads.length;
+  const enrichedCount = stats.enriched;
+  const newLeadsCount = stats.newLeads;
+  const enrichingCount = stats.enriching;
 
-  // Cálculos de Receita (Revenue OS)
-  const pipelineValue = leads.reduce((acc, l) => acc + (l.p2c_score ? (l.p2c_score * 1500) : 0), 0); // Ex: 1500 por lead qualificado
+  // Cálculos de Receita (Revenue OS) utilizando score real da base inteira
+  const pipelineValue = stats.scoreSum > 0 ? (stats.scoreSum * 1500) : (leads.reduce((acc, l) => acc + (l.p2c_score ? (l.p2c_score * 1500) : 0), 0));
   const estimatedBalance = pipelineValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const qualityScore = totalLeads > 0
-    ? (leads.reduce((acc, l) => acc + (l.p2c_score || 0), 0) / totalLeads * 100).toFixed(1)
+    ? ((stats.scoreSum || leads.reduce((acc, l) => acc + (l.p2c_score || 0), 0)) / totalLeads * 100).toFixed(1)
     : "0.0";
 
   const consumptionPercent = Math.min(100, (totalLeads * 0.5));
