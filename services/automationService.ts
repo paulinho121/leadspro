@@ -7,38 +7,39 @@ export class AutomationService {
     /**
      * Processa uma mensagem recebida e verifica se existem regras de automação
      */
+    /**
+     * Reber mensagem e agendar processamento assíncrono
+     * Isso garante que o webhook responda rápido (< 200ms)
+     */
     static async handleIncomingMessage(tenantId: string, leadId: string, content: string) {
-        // 1. Analisar a intenção da mensagem usando IA
+        // 1. Analisar a intenção rapidamente
         const analysis = await SdrService.analyzeResponse(content);
 
-        // 2. Registrar a interação recebida
-        await supabase.from('ai_sdr_interactions').insert({
+        // 2. Registrar a interação
+        const { data: interaction } = await supabase.from('ai_sdr_interactions').insert({
             tenant_id: tenantId,
             lead_id: leadId,
             channel: 'whatsapp',
             direction: 'inbound',
             content,
             ai_analysis: analysis
+        }).select().single();
+
+        // 3. AGENDAR PROCESSAMENTO PROFISSIONAL (Queue System)
+        // Em vez de rodar síncrono, enviamos para a fila
+        await supabase.from('background_tasks').insert({
+            tenant_id: tenantId,
+            type: 'PROCESS_AUTOMATION_RULE',
+            payload: {
+                lead_id: leadId,
+                interaction_id: interaction?.id,
+                analysis: analysis,
+                trigger_type: 'incoming_message'
+            },
+            status: 'pending'
         });
 
-        // 3. Buscar regras de automação ativas para este gatilho
-        const { data: rules } = await supabase
-            .from('automation_rules')
-            .select('*')
-            .eq('tenant_id', tenantId)
-            .eq('trigger_type', 'incoming_message')
-            .eq('is_active', true);
-
-        if (!rules || rules.length === 0) return;
-
-        // 4. Avaliar cada regra (Simple Engine)
-        for (const rule of rules) {
-            const shouldExecute = this.evaluateConditions(analysis, rule.conditions);
-
-            if (shouldExecute) {
-                await this.executeAction(tenantId, leadId, rule.action_type, rule.action_payload);
-            }
-        }
+        console.log(`[Automation] Mensagem de ${leadId} agendada para processamento assíncrono.`);
     }
 
     /**

@@ -117,10 +117,15 @@ export interface OutreachCampaign {
   status: 'draft' | 'scheduled' | 'running' | 'paused' | 'completed';
   channel: 'whatsapp' | 'email';
   template_content: string;
+  template_subject?: string;
   scheduled_at?: string;
   total_leads: number;
   processed_leads: number;
   created_at: string;
+  use_ai_personalization?: boolean;
+  ab_testing_enabled?: boolean;
+  ab_variants?: any[];
+  daily_limit?: number;
 }
 
 export interface AutomationRule {

@@ -7,7 +7,8 @@ import {
     X, Layout, Zap, AlertTriangle,
     ShieldCheck, BarChart3, Fingerprint,
     MessageCircle, Globe, Terminal,
-    Sparkles, Activity, Mail, Edit2, Trash2, MoreVertical
+    Sparkles, Activity, Mail, Edit2, Trash2, MoreVertical,
+    Bot, RotateCcw
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { OutreachCampaign, Lead } from '../types';
@@ -30,7 +31,8 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
         template_subject: '',
         template_content: '',
         target_status: 'ENRICHED',
-        target_industry: 'all' as string
+        target_industry: 'all' as string,
+        use_ai_personalization: false,
     });
 
     const loadCampaigns = async () => {
@@ -74,24 +76,24 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
     }, [tenantId]);
 
     const handleSaveCampaign = async () => {
-        if (!newCampaign.name || !newCampaign.template_content) return;
+        if (!newCampaign.name) return;
+        // Se não for IA, exige template
+        if (!newCampaign.use_ai_personalization && !newCampaign.template_content) return;
 
         try {
             if (editingCampaignId) {
-                // UPDATE
                 const { error } = await supabase
                     .from('outreach_campaigns')
                     .update({
                         name: newCampaign.name,
                         channel: newCampaign.channel,
                         template_subject: newCampaign.template_subject,
-                        template_content: newCampaign.template_content
+                        template_content: newCampaign.template_content,
+                        use_ai_personalization: newCampaign.use_ai_personalization,
                     })
                     .eq('id', editingCampaignId);
-
                 if (error) throw error;
             } else {
-                // CREATE
                 const { data: campaign, error } = await supabase
                     .from('outreach_campaigns')
                     .insert([{
@@ -100,6 +102,7 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                         channel: newCampaign.channel,
                         template_subject: newCampaign.template_subject,
                         template_content: newCampaign.template_content,
+                        use_ai_personalization: newCampaign.use_ai_personalization,
                         status: 'draft'
                     }])
                     .select()
@@ -120,7 +123,12 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                 const { data: leads } = await query;
 
                 if (leads && leads.length > 0) {
-                    await CampaignService.startCampaign(tenantId, campaign.id, leads.map(l => l.id));
+                    await CampaignService.startCampaign(
+                        tenantId,
+                        campaign.id,
+                        leads.map(l => l.id),
+                        { useAI: newCampaign.use_ai_personalization }
+                    );
                 }
             }
 
@@ -165,7 +173,8 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
             template_subject: '',
             template_content: '',
             target_status: 'ENRICHED',
-            target_industry: 'all'
+            target_industry: 'all',
+            use_ai_personalization: false,
         });
         setShowModal(true);
     };
@@ -219,12 +228,31 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                             {/* Card Header */}
                             <div className="flex justify-between items-start mb-8">
                                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-xl ${camp.channel === 'whatsapp'
-                                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
-                                    : 'bg-blue-500/10 border-blue-500/20 text-blue-500'
+                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                                        : 'bg-blue-500/10 border-blue-500/20 text-blue-500'
                                     }`}>
                                     {camp.channel === 'whatsapp' ? <MessageCircle size={24} /> : <Mail size={24} />}
                                 </div>
                                 <div className="flex items-center gap-2">
+                                    {/* Pause / Resume */}
+                                    {camp.status === 'running' && (
+                                        <button
+                                            onClick={async () => { await CampaignService.pauseCampaign(camp.id); loadCampaigns(); }}
+                                            className="p-2 bg-amber-500/10 rounded-xl hover:bg-amber-500/20 text-amber-500 transition-all"
+                                            title="Pausar Campanha"
+                                        >
+                                            <Pause size={14} />
+                                        </button>
+                                    )}
+                                    {camp.status === 'paused' && (
+                                        <button
+                                            onClick={async () => { await CampaignService.resumeCampaign(camp.id); loadCampaigns(); }}
+                                            className="p-2 bg-emerald-500/10 rounded-xl hover:bg-emerald-500/20 text-emerald-500 transition-all"
+                                            title="Retomar Campanha"
+                                        >
+                                            <Play size={14} />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => openEditModal(camp)}
                                         className="p-2 bg-white/5 rounded-xl hover:bg-primary/20 hover:text-primary transition-all text-slate-500"
@@ -240,11 +268,13 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                                         <Trash2 size={16} />
                                     </button>
                                     <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${camp.status === 'running' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 animate-pulse' :
-                                        camp.status === 'completed' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                                            'bg-white/5 text-slate-500 border-white/10'
+                                            camp.status === 'paused' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                camp.status === 'completed' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                                    'bg-white/5 text-slate-500 border-white/10'
                                         }`}>
                                         {camp.status === 'running' ? 'Executando' :
-                                            camp.status === 'completed' ? 'Finalizado' : 'Rascunho'}
+                                            camp.status === 'paused' ? 'Pausado' :
+                                                camp.status === 'completed' ? 'Finalizado' : 'Rascunho'}
                                     </div>
                                 </div>
                             </div>
@@ -253,7 +283,14 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                                 <h4 className="text-lg font-bold text-white tracking-tight line-clamp-1 mb-1 italic uppercase">
                                     {camp.name}
                                 </h4>
-                                <p className="text-[9px] text-slate-500 font-mono uppercase tracking-widest">{camp.channel} Channel</p>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-[9px] text-slate-500 font-mono uppercase tracking-widest">{camp.channel} Channel</p>
+                                    {(camp as any).use_ai_personalization && (
+                                        <span className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 border border-primary/20 rounded-full text-[7px] font-black text-primary uppercase tracking-widest">
+                                            <Bot size={8} /> IA
+                                        </span>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="space-y-6">
@@ -385,6 +422,29 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                                     </>
                                 )}
                             </div>
+
+                            {/* Toggle IA */}
+                            {!editingCampaignId && (
+                                <div className="p-5 bg-primary/5 border border-primary/10 rounded-2xl flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <Bot size={18} className="text-primary" />
+                                        <div>
+                                            <p className="text-[10px] font-black text-white uppercase tracking-widest">Personalização com IA</p>
+                                            <p className="text-[8px] text-slate-500">Cada lead recebe uma mensagem única gerada pelo Gemini</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setNewCampaign(prev => ({ ...prev, use_ai_personalization: !prev.use_ai_personalization }))}
+                                        className={`relative w-12 h-6 rounded-full border transition-all duration-300 ${newCampaign.use_ai_personalization
+                                                ? 'bg-primary/30 border-primary/50'
+                                                : 'bg-slate-800 border-white/10'
+                                            }`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 rounded-full shadow-lg transition-all duration-300 ${newCampaign.use_ai_personalization ? 'left-7 bg-primary' : 'left-1 bg-slate-600'
+                                            }`} />
+                                    </button>
+                                </div>
+                            )}
 
                             {newCampaign.channel === 'email' && (
                                 <div className="space-y-3">
