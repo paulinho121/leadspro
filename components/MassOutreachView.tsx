@@ -8,7 +8,7 @@ import {
     ShieldCheck, BarChart3, Fingerprint,
     MessageCircle, Globe, Terminal,
     Sparkles, Activity, Mail, Edit2, Trash2, MoreVertical,
-    Bot, RotateCcw
+    Bot, RotateCcw, Radio
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { OutreachCampaign, Lead } from '../types';
@@ -28,6 +28,7 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [leadCount, setLeadCount] = useState<number | null>(null);
+    const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
     const [newCampaign, setNewCampaign] = useState({
         name: '',
         channel: 'whatsapp' as 'whatsapp' | 'email',
@@ -74,9 +75,86 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
         }
     };
 
+    // ─── REALTIME: atualização ao vivo de status e progresso ─────────────────
     useEffect(() => {
-        if (tenantId) loadCampaigns();
+        if (!tenantId) return;
+
+        loadCampaigns();
+
+        // 1. Escuta mudanças na tabela outreach_campaigns (status, processed_leads, total_leads)
+        const campaignChannel = supabase
+            .channel(`campaigns_rt_${tenantId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'outreach_campaigns',
+                    filter: `tenant_id=eq.${tenantId}`,
+                },
+                (payload) => {
+                    console.log('[Realtime] outreach_campaigns →', payload.eventType, (payload.new as any)?.status);
+                    if (payload.eventType === 'DELETE') {
+                        setCampaigns(prev => prev.filter(c => c.id !== (payload.old as any).id));
+                    } else if (payload.eventType === 'INSERT') {
+                        setCampaigns(prev => [payload.new as OutreachCampaign, ...prev]);
+                    } else if (payload.eventType === 'UPDATE') {
+                        setCampaigns(prev =>
+                            prev.map(c =>
+                                c.id === (payload.new as any).id ? { ...c, ...(payload.new as any) } : c
+                            )
+                        );
+                    }
+                }
+            )
+            .subscribe((status) => {
+                setIsRealtimeConnected(status === 'SUBSCRIBED');
+                console.log('[Realtime] campaigns channel:', status);
+            });
+
+        // 2. Escuta updates na message_queue — incrementa progresso mensagem a mensagem
+        const queueChannel = supabase
+            .channel(`queue_rt_${tenantId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'message_queue',
+                    filter: `tenant_id=eq.${tenantId}`,
+                },
+                (payload) => {
+                    const updated = payload.new as any;
+                    // Só conta quando a mensagem foi processada (enviada ou falhou)
+                    if (updated.status !== 'sent' && updated.status !== 'failed') return;
+
+                    console.log('[Realtime] queue update → campaign:', updated.campaign_id, '| status:', updated.status);
+
+                    setCampaigns(prev =>
+                        prev.map(c => {
+                            if (c.id !== updated.campaign_id) return c;
+                            const newProcessed = Math.min((c.processed_leads || 0) + 1, c.total_leads || 1);
+                            const isNowComplete = newProcessed >= (c.total_leads || 1);
+                            return {
+                                ...c,
+                                processed_leads: newProcessed,
+                                status: isNowComplete ? 'completed' : c.status,
+                            };
+                        })
+                    );
+                }
+            )
+            .subscribe((status) => {
+                console.log('[Realtime] queue channel:', status);
+            });
+
+        return () => {
+            supabase.removeChannel(campaignChannel);
+            supabase.removeChannel(queueChannel);
+            setIsRealtimeConnected(false);
+        };
     }, [tenantId]);
+    // ─────────────────────────────────────────────────────────────────────────
 
     const handleSaveCampaign = async () => {
         setSaveError(null);
@@ -234,7 +312,15 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-8 mt-6 md:mt-0 relative z-10">
+                <div className="flex items-center gap-4 mt-6 md:mt-0 relative z-10">
+                    {/* Realtime Badge */}
+                    <div className={`hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${isRealtimeConnected
+                            ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                            : 'bg-white/5 border-white/10 text-slate-600'
+                        }`}>
+                        <Radio size={11} className={isRealtimeConnected ? 'animate-pulse' : ''} />
+                        {isRealtimeConnected ? 'Ao Vivo' : 'Conectando...'}
+                    </div>
                     <div className="hidden lg:flex flex-col items-center px-8 border-r border-white/5">
                         <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1">Operações Ativas</span>
                         <span className="text-2xl font-black text-white tabular-nums leading-none">

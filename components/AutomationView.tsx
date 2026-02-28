@@ -4,7 +4,7 @@ import {
     Play, Pause, Plus, Trash2, Calendar,
     MessageSquare, Mail, ChevronRight, Zap,
     Clock, Target, Sparkles, X, Megaphone,
-    Layout, Activity, Server, Cpu, BarChart3
+    Layout, Activity, Server, Cpu
 } from 'lucide-react';
 import { OutreachSequence, SequenceStep } from '../types';
 import { supabase } from '../lib/supabase';
@@ -13,7 +13,6 @@ import AutomationRulesView from './AutomationRulesView';
 import MassOutreachView from './MassOutreachView';
 import CommunicationSettingsView from './CommunicationSettingsView';
 import VisualWorkflowBuilder from './VisualWorkflowBuilder';
-import AutomationHealthDashboard from './AutomationHealthDashboard';
 
 interface AutomationViewProps {
     tenantId: string;
@@ -25,7 +24,7 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys }) =>
     const [sequences, setSequences] = useState<OutreachSequence[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showNewModal, setShowNewModal] = useState(false);
-    const [activeTab, setActiveTab] = useState<'sequences' | 'rules' | 'campaigns' | 'settings' | 'visual' | 'monitor'>('campaigns');
+    const [activeTab, setActiveTab] = useState<'sequences' | 'rules' | 'campaigns' | 'settings' | 'visual'>('campaigns');
     const [newSequence, setNewSequence] = useState({
         name: '',
         steps: [] as SequenceStep[]
@@ -153,12 +152,7 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys }) =>
                     >
                         <Server size={14} /> Integração
                     </button>
-                    <button
-                        onClick={() => setActiveTab('monitor')}
-                        className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all italic ${activeTab === 'monitor' ? 'bg-primary text-slate-900 shadow-xl shadow-primary/20 scale-[1.02]' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
-                    >
-                        <BarChart3 size={14} /> Monitor
-                    </button>
+
                 </div>
             </div>
 
@@ -167,7 +161,7 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys }) =>
                 {activeTab === 'rules' && <AutomationRulesView tenantId={tenantId} />}
                 {activeTab === 'settings' && <CommunicationSettingsView tenantId={tenantId} />}
                 {activeTab === 'visual' && <VisualWorkflowBuilder tenantId={tenantId} />}
-                {activeTab === 'monitor' && <AutomationHealthDashboard tenantId={tenantId} />}
+
 
                 {activeTab === 'sequences' && (
                     <div className="space-y-10 animate-in fade-in duration-500">

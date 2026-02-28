@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Bell, LayoutDashboard, Search, Database, Rocket, TrendingUp,
   Megaphone, ShieldCheck, Menu, X, LogOut, BrainCircuit, Activity,
-  HelpCircle, AlertTriangle, ScrollText, Cpu, ChevronRight,
+  HelpCircle, AlertTriangle, ScrollText, Cpu, ChevronRight, BarChart3,
   Send as SendIcon, CheckCircle, Info, DollarSign as MoneyIcon
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -22,6 +22,7 @@ import ActivityHistory from './components/ActivityHistory';
 import NotificationsList from './components/NotificationsList';
 import SecurityGuard from './components/SecurityGuard';
 import BillingView from './components/BillingView';
+import AutomationHealthDashboard from './components/AutomationHealthDashboard';
 import { DiscoveryService } from './services/discoveryService';
 import { CommunicationService } from './services/communicationService';
 import { EnrichmentService } from './services/enrichmentService';
@@ -499,6 +500,8 @@ const App: React.FC = () => {
         return <PipelineView tenantId={userTenantId} userId={session?.user?.id} apiKeys={tenantSecrets} />;
       case 'automation':
         return <AutomationView tenantId={userTenantId} apiKeys={tenantSecrets} />;
+      case 'monitor':
+        return <AutomationHealthDashboard tenantId={userTenantId} />;
       case 'billing':
         return <BillingView tenantId={userTenantId} />;
       default:
@@ -571,6 +574,7 @@ const App: React.FC = () => {
           <NavItem icon={<Rocket size={20} />} label="Enriquecidos" active={activeTab === 'enriched'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
           <NavItem icon={<TrendingUp size={20} />} label="Pipeline" active={activeTab === 'pipeline'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('pipeline'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
           <NavItem icon={<Megaphone size={20} />} label="Automação" active={activeTab === 'automation'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('automation'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<BarChart3 size={20} />} label="Monitor" active={activeTab === 'monitor'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('monitor'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
           <NavItem icon={<MoneyIcon size={20} />} label="Faturamento" active={activeTab === 'billing'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('billing'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
 
 

@@ -94,6 +94,7 @@ const VisualWorkflowBuilder = ({ tenantId }: { tenantId: string }) => {
     const [selectedNode, setSelectedNode] = useState<Node | null>(null);
     const [workflowName, setWorkflowName] = useState('Estratégia Neural Principal');
     const [isSaving, setIsSaving] = useState(false);
+    const [openPanel, setOpenPanel] = useState<'variables' | 'conditions' | null>(null);
 
     // Carregar workflow inicial do banco
     useEffect(() => {
@@ -182,6 +183,34 @@ const VisualWorkflowBuilder = ({ tenantId }: { tenantId: string }) => {
         );
         setSelectedNode((prev) => prev ? { ...prev, data: { ...prev.data, label } } : null);
     };
+
+    const updateNodeData = (key: string, value: any) => {
+        if (!selectedNode) return;
+        setNodes((nds) =>
+            nds.map((node) => {
+                if (node.id === selectedNode.id) {
+                    return { ...node, data: { ...node.data, [key]: value } };
+                }
+                return node;
+            })
+        );
+        setSelectedNode((prev) => prev ? { ...prev, data: { ...prev.data, [key]: value } } : null);
+    };
+
+    const insertVariable = (variable: string) => {
+        const current = selectedNode?.data?.label || '';
+        updateNodeLabel(current + ' ' + variable);
+    };
+
+    const DYNAMIC_VARIABLES = [
+        { tag: '{name}', label: 'Nome', desc: 'Nome do lead/empresa' },
+        { tag: '{phone}', label: 'Telefone', desc: 'Número de WhatsApp' },
+        { tag: '{email}', label: 'Email', desc: 'Endereço de e-mail' },
+        { tag: '{industry}', label: 'Setor', desc: 'Segmento de atuação' },
+        { tag: '{city}', label: 'Cidade', desc: 'Localização do lead' },
+        { tag: '{insights}', label: 'Insights IA', desc: 'Análise gerada pela IA' },
+    ];
+
 
     return (
         <div className="h-[800px] w-full bg-slate-950/30 rounded-[3.5rem] border border-white/5 relative overflow-hidden group shadow-[0_50px_100px_rgba(0,0,0,0.5)] animate-fade-in flex">
@@ -287,20 +316,86 @@ const VisualWorkflowBuilder = ({ tenantId }: { tenantId: string }) => {
 
                             <div className="space-y-4">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4 italic">Configurações Avançadas</label>
-                                <div className="grid grid-cols-1 gap-3">
-                                    <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center justify-between group/opt hover:bg-white/[0.04] transition-all cursor-pointer">
-                                        <div className="flex items-center gap-3">
-                                            <Settings size={16} className="text-slate-600 group-hover/opt:text-primary transition-colors" />
-                                            <span className="text-xs font-bold text-slate-400">Variáveis Dinâmicas</span>
-                                        </div>
-                                        <ChevronRight size={14} className="text-slate-700" />
+                                <div className="space-y-3">
+                                    {/* Variáveis Dinâmicas */}
+                                    <div className="rounded-2xl border border-white/5 overflow-hidden">
+                                        <button
+                                            onClick={() => setOpenPanel(openPanel === 'variables' ? null : 'variables')}
+                                            className="w-full p-4 bg-white/[0.02] flex items-center justify-between group/opt hover:bg-white/[0.04] transition-all"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Settings size={16} className="text-slate-600 group-hover/opt:text-primary transition-colors" />
+                                                <span className="text-xs font-bold text-slate-400">Variáveis Dinâmicas</span>
+                                            </div>
+                                            <ChevronRight size={14} className={`text-slate-700 transition-transform duration-300 ${openPanel === 'variables' ? 'rotate-90' : ''}`} />
+                                        </button>
+                                        {openPanel === 'variables' && (
+                                            <div className="p-4 bg-black/20 border-t border-white/5 space-y-3 animate-in slide-in-from-top-2 duration-300">
+                                                <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Clique para inserir no nome do componente</p>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {DYNAMIC_VARIABLES.map(v => (
+                                                        <button
+                                                            key={v.tag}
+                                                            onClick={() => insertVariable(v.tag)}
+                                                            title={v.desc}
+                                                            className="group/var p-3 bg-white/[0.03] hover:bg-primary/10 border border-white/5 hover:border-primary/30 rounded-xl text-left transition-all"
+                                                        >
+                                                            <span className="block text-[10px] font-black text-primary/80 group-hover/var:text-primary font-mono">{v.tag}</span>
+                                                            <span className="block text-[9px] text-slate-600 mt-0.5">{v.label}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center justify-between group/opt hover:bg-white/[0.04] transition-all cursor-pointer">
-                                        <div className="flex items-center gap-3">
-                                            <Filter size={16} className="text-slate-600 group-hover/opt:text-primary transition-colors" />
-                                            <span className="text-xs font-bold text-slate-400">Condições Lógicas</span>
-                                        </div>
-                                        <ChevronRight size={14} className="text-slate-700" />
+
+                                    {/* Condições Lógicas */}
+                                    <div className="rounded-2xl border border-white/5 overflow-hidden">
+                                        <button
+                                            onClick={() => setOpenPanel(openPanel === 'conditions' ? null : 'conditions')}
+                                            className="w-full p-4 bg-white/[0.02] flex items-center justify-between group/opt hover:bg-white/[0.04] transition-all"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Filter size={16} className="text-slate-600 group-hover/opt:text-primary transition-colors" />
+                                                <span className="text-xs font-bold text-slate-400">Condições Lógicas</span>
+                                            </div>
+                                            <ChevronRight size={14} className={`text-slate-700 transition-transform duration-300 ${openPanel === 'conditions' ? 'rotate-90' : ''}`} />
+                                        </button>
+                                        {openPanel === 'conditions' && (
+                                            <div className="p-4 bg-black/20 border-t border-white/5 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                                                <div className="space-y-2">
+                                                    <label className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Intenção do Lead</label>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {['positive', 'negative', 'neutral', 'question'].map(intent => (
+                                                            <button
+                                                                key={intent}
+                                                                onClick={() => updateNodeData('condition_intent', intent)}
+                                                                className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all border ${selectedNode?.data?.condition_intent === intent
+                                                                        ? 'bg-primary/20 border-primary/40 text-primary'
+                                                                        : 'bg-white/[0.02] border-white/5 text-slate-500 hover:border-white/20'
+                                                                    }`}
+                                                            >
+                                                                {intent === 'positive' ? '✅ Positiva' : intent === 'negative' ? '❌ Negativa' : intent === 'neutral' ? '➖ Neutro' : '❓ Dúvida'}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Executar Somente Se</label>
+                                                    <select
+                                                        value={selectedNode?.data?.condition_only || 'always'}
+                                                        onChange={e => updateNodeData('condition_only', e.target.value)}
+                                                        className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-white text-xs font-bold focus:outline-none focus:border-primary/40"
+                                                    >
+                                                        <option value="always">Sempre executar</option>
+                                                        <option value="first_contact">Primeiro contato</option>
+                                                        <option value="no_reply_48h">Sem resposta 48h</option>
+                                                        <option value="has_email">Lead tem email</option>
+                                                        <option value="has_phone">Lead tem telefone</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

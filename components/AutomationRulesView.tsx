@@ -18,6 +18,8 @@ const AutomationRulesView: React.FC<AutomationRulesViewProps> = ({ tenantId }) =
     const [rules, setRules] = useState<AutomationRule[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
     const [newRule, setNewRule] = useState<Partial<AutomationRule>>({
         name: '',
         trigger_type: 'incoming_message',
@@ -25,6 +27,7 @@ const AutomationRulesView: React.FC<AutomationRulesViewProps> = ({ tenantId }) =
         conditions: { intent: 'positive' },
         action_payload: { template: '' }
     });
+
 
     const loadRules = async () => {
         setIsLoading(true);
@@ -46,7 +49,18 @@ const AutomationRulesView: React.FC<AutomationRulesViewProps> = ({ tenantId }) =
     }, [tenantId]);
 
     const handleCreateRule = async () => {
-        if (!newRule.name) return;
+        setSaveError(null);
+
+        if (!newRule.name?.trim()) {
+            setSaveError('Informe um nome para a regra antes de ativar.');
+            return;
+        }
+        if (newRule.action_type === 'send_reply' && !newRule.action_payload?.template?.trim()) {
+            setSaveError('Adicione o script da mensagem antes de ativar.');
+            return;
+        }
+
+        setIsSaving(true);
         try {
             const { error } = await supabase
                 .from('automation_rules')
@@ -57,6 +71,7 @@ const AutomationRulesView: React.FC<AutomationRulesViewProps> = ({ tenantId }) =
                 }]);
             if (error) throw error;
             setShowModal(false);
+            setSaveError(null);
             setNewRule({
                 name: '',
                 trigger_type: 'incoming_message',
@@ -65,8 +80,11 @@ const AutomationRulesView: React.FC<AutomationRulesViewProps> = ({ tenantId }) =
                 action_payload: { template: '' }
             });
             loadRules();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Erro ao criar regra:', err);
+            setSaveError(err?.message || 'Erro ao salvar. Verifique o console.');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -259,7 +277,7 @@ const AutomationRulesView: React.FC<AutomationRulesViewProps> = ({ tenantId }) =
                                     <div className="relative">
                                         <select
                                             className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-primary/40 appearance-none text-xs font-bold tracking-tight cursor-pointer"
-                                            value={newRule.conditions.intent}
+                                            value={newRule.conditions?.intent || 'positive'}
                                             onChange={e => setNewRule({ ...newRule, conditions: { intent: e.target.value } })}
                                         >
                                             <option value="positive">INTENÇÃO POSITIVA</option>
@@ -298,24 +316,38 @@ const AutomationRulesView: React.FC<AutomationRulesViewProps> = ({ tenantId }) =
                                     <textarea
                                         className="w-full bg-black/40 border border-white/5 rounded-[2rem] px-8 py-6 text-white focus:outline-none focus:border-primary/40 h-32 text-sm font-medium leading-relaxed shadow-inner placeholder:text-slate-800"
                                         placeholder="Olá! Que ótimo seu interesse. Gostaria de agendar uma reunião?"
-                                        value={newRule.action_payload.template}
+                                        value={newRule.action_payload?.template || ''}
                                         onChange={e => setNewRule({ ...newRule, action_payload: { ...newRule.action_payload, template: e.target.value } })}
                                     />
                                     <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest ml-6">Personalização dinâmica ativa: Use variáveis como {'{'}name{'}'} para engajamento.</p>
                                 </div>
                             )}
 
-                            <div className="flex flex-col sm:flex-row gap-6 pt-10">
+                            {/* Erro de validação */}
+                            {saveError && (
+                                <div className="flex items-start gap-3 px-6 py-4 bg-red-500/10 border border-red-500/20 rounded-2xl animate-in fade-in duration-200">
+                                    <AlertCircle size={14} className="text-red-500 shrink-0 mt-0.5" />
+                                    <p className="text-[10px] text-red-400 font-bold leading-relaxed">{saveError}</p>
+                                </div>
+                            )}
+
+                            <div className="flex flex-col sm:flex-row gap-6 pt-4">
                                 <button
-                                    onClick={() => setShowModal(false)}
-                                    className="flex-1 py-5 bg-white/5 text-slate-500 font-black text-[10px] uppercase tracking-[0.3em] rounded-2xl hover:bg-white/10 transition-all italic"
+                                    onClick={() => { setShowModal(false); setSaveError(null); }}
+                                    disabled={isSaving}
+                                    className="flex-1 py-5 bg-white/5 text-slate-500 font-black text-[10px] uppercase tracking-[0.3em] rounded-2xl hover:bg-white/10 transition-all italic disabled:opacity-50"
                                 >Cancelar Operação</button>
                                 <button
+                                    id="btn-ativar-engine-neural"
                                     onClick={handleCreateRule}
-                                    className="group flex-1 py-5 bg-primary text-slate-900 font-black text-[10px] uppercase tracking-[0.3em] rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 italic"
+                                    disabled={isSaving}
+                                    className="group flex-1 py-5 bg-primary text-slate-900 font-black text-[10px] uppercase tracking-[0.3em] rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 italic disabled:opacity-60 disabled:scale-100"
                                 >
-                                    <Activity size={16} className="group-hover:animate-spin" />
-                                    Ativar Engine Neural
+                                    {isSaving ? (
+                                        <><Activity size={16} className="animate-spin" /> Ativando...</>
+                                    ) : (
+                                        <><Activity size={16} className="group-hover:animate-spin" /> Ativar Engine Neural</>
+                                    )}
                                 </button>
                             </div>
                         </div>

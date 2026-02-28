@@ -5,7 +5,7 @@ import {
     Shield, CheckCircle2, AlertCircle,
     Terminal, Globe, Key, Zap,
     Activity, Lock, Cpu, Server,
-    ChevronDown
+    ChevronDown, Wifi, WifiOff, Loader2
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -19,6 +19,12 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // --- Estados para Teste de Conexão ---
+    const [testingWa, setTestingWa] = useState(false);
+    const [testResultWa, setTestResultWa] = useState<{ ok: boolean; msg: string } | null>(null);
+    const [testingEmail, setTestingEmail] = useState(false);
+    const [testResultEmail, setTestResultEmail] = useState<{ ok: boolean; msg: string } | null>(null);
 
     const [selectedWaProvider, setSelectedWaProvider] = useState<WhatsAppProvider>('whatsapp_evolution');
 
@@ -94,6 +100,96 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
             }
         } catch (err) {
             setWaSettings({ apiUrl: '', apiKey: '', instanceName: '', clientToken: '' });
+        }
+    };
+
+    // --- Teste de Conexão WhatsApp ---
+    const handleTestWaConnection = async () => {
+        setTestingWa(true);
+        setTestResultWa(null);
+        try {
+            if (selectedWaProvider === 'whatsapp_zapi') {
+                // Z-API: GET /instances/{instanceId}/status com Client-Token header
+                if (!waSettings.instanceName || !waSettings.apiKey) {
+                    setTestResultWa({ ok: false, msg: 'Preencha o Instance ID e o Token antes de testar.' });
+                    return;
+                }
+                const baseUrl = waSettings.apiUrl || 'https://api.z-api.io';
+                const url = `${baseUrl.replace(/\/$/, '')}/instances/${waSettings.instanceName}/token/${waSettings.apiKey}/status`;
+                const res = await fetch(url, {
+                    headers: waSettings.clientToken ? { 'Client-Token': waSettings.clientToken } : {}
+                });
+                if (res.ok) {
+                    const json = await res.json().catch(() => ({}));
+                    const connected = json?.connected ?? json?.status === 'CONNECTED';
+                    setTestResultWa({
+                        ok: true,
+                        msg: connected ? '✅ Z-API conectada e instância ativa!' : '⚠️ Z-API acessível, mas instância pode estar desconectada.'
+                    });
+                } else {
+                    setTestResultWa({ ok: false, msg: `Z-API retornou HTTP ${res.status} — verifique as credenciais.` });
+                }
+            } else if (selectedWaProvider === 'whatsapp_evolution') {
+                // Evolution API: GET /instance/fetchInstances
+                if (!waSettings.apiUrl || !waSettings.apiKey) {
+                    setTestResultWa({ ok: false, msg: 'Preencha o Endpoint e a Chave de Acesso antes de testar.' });
+                    return;
+                }
+                const url = `${waSettings.apiUrl.replace(/\/$/, '')}/instance/fetchInstances`;
+                const res = await fetch(url, { headers: { apikey: waSettings.apiKey } });
+                if (res.ok) {
+                    setTestResultWa({ ok: true, msg: '✅ Evolution API acessível e autenticada!' });
+                } else {
+                    setTestResultWa({ ok: false, msg: `Evolution API retornou HTTP ${res.status} — verifique o endpoint e a API key.` });
+                }
+            } else {
+                // Duílio ou outro: tentativa genérica
+                if (!waSettings.apiUrl) {
+                    setTestResultWa({ ok: false, msg: 'Preencha o Endpoint antes de testar.' });
+                    return;
+                }
+                const res = await fetch(waSettings.apiUrl, { method: 'GET' }).catch(() => null);
+                if (res && res.ok) {
+                    setTestResultWa({ ok: true, msg: '✅ Endpoint acessível!' });
+                } else {
+                    setTestResultWa({ ok: false, msg: 'Não foi possível alcançar o endpoint. Verifique a URL.' });
+                }
+            }
+        } catch (err: any) {
+            // Erro de CORS ou rede — comum ao chamar APIs externas direto do browser
+            if (err?.name === 'TypeError' || String(err).includes('Failed to fetch') || String(err).includes('NetworkError')) {
+                setTestResultWa({ ok: false, msg: '⚠️ CORS ou rede bloqueou a requisição. Verifique se a URL está correta, ou teste pelo Postman/cURL.' });
+            } else {
+                setTestResultWa({ ok: false, msg: `Erro: ${err?.message || err}` });
+            }
+        } finally {
+            setTestingWa(false);
+        }
+    };
+
+    // --- Teste de Conexão Email (Resend) ---
+    const handleTestEmailConnection = async () => {
+        setTestingEmail(true);
+        setTestResultEmail(null);
+        try {
+            if (!emailSettings.resendKey) {
+                setTestResultEmail({ ok: false, msg: 'Insira o token Resend antes de testar.' });
+                return;
+            }
+            const res = await fetch('https://api.resend.com/domains', {
+                headers: { Authorization: `Bearer ${emailSettings.resendKey}` }
+            });
+            if (res.ok) {
+                setTestResultEmail({ ok: true, msg: '✅ Token Resend válido e autenticado!' });
+            } else if (res.status === 401) {
+                setTestResultEmail({ ok: false, msg: '❌ Token inválido ou sem permissão.' });
+            } else {
+                setTestResultEmail({ ok: false, msg: `Resend retornou HTTP ${res.status}.` });
+            }
+        } catch (err: any) {
+            setTestResultEmail({ ok: false, msg: `Erro de rede: ${err?.message || err}` });
+        } finally {
+            setTestingEmail(false);
         }
     };
 
@@ -257,6 +353,31 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                             </div>
                         )}
                     </div>
+
+                    {/* Botão Testar Conexão WhatsApp */}
+                    <div className="mt-8 pt-6 border-t border-white/5">
+                        <button
+                            id="btn-test-wa-connection"
+                            onClick={handleTestWaConnection}
+                            disabled={testingWa}
+                            className="group w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/40 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed italic"
+                        >
+                            {testingWa ? (
+                                <><Loader2 size={14} className="animate-spin" /> Testando conexão...</>
+                            ) : (
+                                <><Wifi size={14} /> Testar Conexão da API</>
+                            )}
+                        </button>
+                        {testResultWa && (
+                            <div className={`mt-3 flex items-start gap-3 px-5 py-3.5 rounded-2xl border text-[10px] font-bold leading-relaxed ${testResultWa.ok
+                                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                    : 'bg-red-500/10 border-red-500/20 text-red-400'
+                                }`}>
+                                {testResultWa.ok ? <Wifi size={14} className="shrink-0 mt-0.5" /> : <WifiOff size={14} className="shrink-0 mt-0.5" />}
+                                <span>{testResultWa.msg}</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Email Module */}
@@ -297,6 +418,31 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                                 </p>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Botão Testar Conexão Email */}
+                    <div className="mt-8 pt-6 border-t border-white/5">
+                        <button
+                            id="btn-test-email-connection"
+                            onClick={handleTestEmailConnection}
+                            disabled={testingEmail}
+                            className="group w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all border border-blue-500/20 bg-blue-500/5 text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/40 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed italic"
+                        >
+                            {testingEmail ? (
+                                <><Loader2 size={14} className="animate-spin" /> Testando conexão...</>
+                            ) : (
+                                <><Wifi size={14} /> Testar Conexão Resend</>
+                            )}
+                        </button>
+                        {testResultEmail && (
+                            <div className={`mt-3 flex items-start gap-3 px-5 py-3.5 rounded-2xl border text-[10px] font-bold leading-relaxed ${testResultEmail.ok
+                                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                    : 'bg-red-500/10 border-red-500/20 text-red-400'
+                                }`}>
+                                {testResultEmail.ok ? <Wifi size={14} className="shrink-0 mt-0.5" /> : <WifiOff size={14} className="shrink-0 mt-0.5" />}
+                                <span>{testResultEmail.msg}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

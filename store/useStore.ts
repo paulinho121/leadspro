@@ -3,7 +3,7 @@ import { create } from 'zustand';
 
 interface AppState {
     // UI State
-    activeTab: 'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched' | 'master' | 'history' | 'pipeline' | 'automation' | 'billing';
+    activeTab: 'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched' | 'master' | 'history' | 'pipeline' | 'automation' | 'billing' | 'monitor';
     isSidebarOpen: boolean;
 
     // Account State
