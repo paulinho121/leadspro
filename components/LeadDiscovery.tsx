@@ -431,7 +431,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                 // Trigger reload se necessário ou mostrar toast
               }}
             />
-          ) : isScanning ? (
+          ) : isScanning || hasFinished ? (
             <div className="relative w-full h-64 lg:h-80 rounded-[2rem] overflow-hidden animate-in zoom-in-95 duration-500 border border-white/5 shadow-2xl glass flex items-center justify-center p-8">
               <div className="absolute inset-x-0 bottom-0 pointer-events-none">
                 <div
@@ -466,12 +466,15 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                 </div>
 
                 <div className="bg-white/5 rounded-full px-6 py-2 border border-white/10 flex items-center gap-3 mt-4">
-                  <span className="flex h-3 w-3 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                  </span>
+                  {isScanning && (
+                    <span className="flex h-3 w-3 relative">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                    </span>
+                  )}
                   <span className="text-xs font-black text-slate-300 uppercase tracking-[0.2em]">
-                    EXTRACTING: <span className="text-white font-mono text-lg ml-2">{leadsFound} / {filters.limit || 50}</span> LEADS
+                    {hasFinished ? 'BUSCA CONCLUÍDA: ' : 'EXTRACTING: '}
+                    <span className="text-white font-mono text-lg ml-2">{leadsFound} / {filters.limit || 50}</span> LEADS
                   </span>
                 </div>
               </div>
@@ -647,40 +650,50 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
           {/* 3. Global Action Button (Apenas se não for IMPORT) */}
           {mode !== 'IMPORT' && (
             <div className="space-y-6 pt-2">
-              <button
-                onClick={handleSearch}
-                disabled={(!isScanning && (!filters.keyword || (mode !== 'ENRICH' && mode !== 'SHERLOCK' && !filters.location))) || (isScanning && stopSignal)}
-                className={`w-full py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 transition-all relative overflow-hidden group/btn shadow-2xl ${isScanning
-                  ? 'bg-red-600 text-white border-red-400 shadow-red-900/40 hover:bg-red-700 animate-pulse'
-                  : 'bg-primary text-slate-900 shadow-primary/20 hover:scale-[1.01] active:scale-[0.99]'
-                  }`}
-              >
-                {isScanning ? (
-                  <>
-                    <div className="absolute inset-0 bg-black/20 animate-scan pointer-events-none"></div>
-                    {stopSignal ? (
-                      <><Loader2 size={28} className="animate-spin" /><span>FINALIZANDO CICLO...</span></>
-                    ) : (
-                      <><Square size={28} fill="currentColor" className="animate-pulse" /><span>PARAR VARREDURA AGORA ({leadsFound})</span></>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-white/40 blur-lg rounded-full animate-pulse group-hover/btn:blur-xl transition-all"></div>
-                      <Zap size={28} fill="currentColor" className="relative z-10 group-hover/btn:rotate-12 transition-transform" />
-                    </div>
-                    <span className="relative z-10 flex flex-col items-center">
-                      <span>{mode === 'ENRICH' ? 'ENRIQUECER CNPJ AGORA' : 'INICIAR NEURAL EXTRACTION'}</span>
-                      {filters.limit > 0 && mode !== 'ENRICH' && (
-                        <span className="text-[10px] font-bold text-slate-900/70 tracking-widest mt-1">
-                          COMPROMETERÁ ATÉ {mode === 'MAPS' ? Math.ceil((filters.limit || 50) / 20) * 5 : mode === 'CNPJ' ? Math.ceil((filters.limit || 50) / 15) * 10 : Math.ceil((filters.limit || 50) / 15) * 15} CRÉDITOS
-                        </span>
+              {hasFinished ? (
+                <button
+                  onClick={() => setHasFinished(false)}
+                  className="w-full py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 transition-all bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 hover:text-white group/btn shadow-xl"
+                >
+                  <Search size={28} className="group-hover/btn:scale-110 transition-transform" />
+                  <span>NOVA BUSCA</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleSearch}
+                  disabled={(!isScanning && (!filters.keyword || (mode !== 'ENRICH' && mode !== 'SHERLOCK' && !filters.location))) || (isScanning && stopSignal)}
+                  className={`w-full py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 transition-all relative overflow-hidden group/btn shadow-2xl ${isScanning
+                    ? 'bg-red-600 text-white border-red-400 shadow-red-900/40 hover:bg-red-700 animate-pulse'
+                    : 'bg-primary text-slate-900 shadow-primary/20 hover:scale-[1.01] active:scale-[0.99]'
+                    }`}
+                >
+                  {isScanning ? (
+                    <>
+                      <div className="absolute inset-0 bg-black/20 animate-scan pointer-events-none"></div>
+                      {stopSignal ? (
+                        <><Loader2 size={28} className="animate-spin" /><span>FINALIZANDO CICLO...</span></>
+                      ) : (
+                        <><Square size={28} fill="currentColor" className="animate-pulse" /><span>PARAR VARREDURA AGORA ({leadsFound})</span></>
                       )}
-                    </span>
-                  </>
-                )}
-              </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-white/40 blur-lg rounded-full animate-pulse group-hover/btn:blur-xl transition-all"></div>
+                        <Zap size={28} fill="currentColor" className="relative z-10 group-hover/btn:rotate-12 transition-transform" />
+                      </div>
+                      <span className="relative z-10 flex flex-col items-center">
+                        <span>{mode === 'ENRICH' ? 'ENRIQUECER CNPJ AGORA' : 'INICIAR NEURAL EXTRACTION'}</span>
+                        {filters.limit > 0 && mode !== 'ENRICH' && (
+                          <span className="text-[10px] font-bold text-slate-900/70 tracking-widest mt-1">
+                            COMPROMETERÁ ATÉ {mode === 'MAPS' ? Math.ceil((filters.limit || 50) / 20) * 5 : mode === 'CNPJ' ? Math.ceil((filters.limit || 50) / 15) * 10 : Math.ceil((filters.limit || 50) / 15) * 15} CRÉDITOS
+                          </span>
+                        )}
+                      </span>
+                    </>
+                  )}
+                </button>
+              )}
 
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4">
                 <div className="flex items-center gap-3">

@@ -468,8 +468,17 @@ const LeadLab: React.FC<LeadLabProps> = ({
                   {labLeads.filter(l => l.status === LeadStatus.NEW).length}
                 </h4>
                 <div className="flex items-center gap-2">
-                  <Loader2 size={12} className="animate-spin text-slate-600 group-hover:text-slate-400" />
-                  <span className="text-[10px] text-slate-600 group-hover:text-slate-400 font-bold uppercase tracking-widest font-mono transition-colors">Scanning...</span>
+                  {isEnriching ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin text-amber-500" />
+                      <span className="text-[10px] text-amber-500 font-bold uppercase tracking-widest font-mono">Processando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-2 h-2 rounded-full bg-slate-600 group-hover:bg-slate-500"></div>
+                      <span className="text-[10px] text-slate-600 group-hover:text-slate-500 font-bold uppercase tracking-widest font-mono transition-colors">Aguardando Ação</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
