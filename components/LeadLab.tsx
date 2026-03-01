@@ -287,7 +287,11 @@ const LeadLab: React.FC<LeadLabProps> = ({
   const filteredLeads = useMemo(() => labLeads.filter(l => {
     const matchesStatus = filterStatus === 'ALL' || l.status === filterStatus;
     const matchesNiche = !selectedNiche || l.industry === selectedNiche;
-    const matchesLocation = !selectedLocation || (l.location && l.location.includes(selectedLocation ?? ''));
+    const matchesLocation = !selectedLocation || (l.location && (() => {
+      const parts = l.location.split(',');
+      const cityOrState = parts.length > 1 ? `${parts[0].trim()}, ${parts[1].trim()}` : parts[0].trim();
+      return cityOrState === selectedLocation;
+    })());
     return matchesStatus && matchesNiche && matchesLocation;
   }), [labLeads, filterStatus, selectedNiche, selectedLocation]);
 
