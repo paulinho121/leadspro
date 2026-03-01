@@ -687,11 +687,11 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
               <button
                 onClick={() => {
                   setNeuralError(null);
-                  window.location.hash = '#partner'; // Tenta navegar para o menu de parceiro se existir rota por hash
+                  window.location.hash = neuralError.type === 'CREDITS' ? '#billing' : '#partner';
                 }}
                 className="w-full py-5 bg-primary text-slate-900 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all"
               >
-                CONFIGURAR AGORA
+                {neuralError.type === 'CREDITS' ? 'COMPRAR CRÉDITOS' : 'CONFIGURAR AGORA'}
               </button>
             </div>
 
