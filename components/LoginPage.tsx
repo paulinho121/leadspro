@@ -141,10 +141,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, isRecoveringPassw
                 provider: 'google',
                 options: {
                     redirectTo: window.location.origin,
-                    queryParams: {
-                        access_type: 'offline',
-                        prompt: 'consensus',
-                    },
                 }
             });
             if (error) throw error;
