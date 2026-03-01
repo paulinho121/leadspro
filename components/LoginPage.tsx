@@ -137,10 +137,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, isRecoveringPassw
         setLoading(true);
         setError(null);
         try {
+            const redirectUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                ? window.location.origin
+                : `https://${window.location.host}`;
+
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: window.location.origin,
+                    redirectTo: redirectUrl,
                 }
             });
             if (error) throw error;
