@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /index.html
+Disallow: /admin
+Disallow: /*?tenantId=
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://leadmatrix.com.br/sitemap.xml

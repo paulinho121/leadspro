@@ -161,20 +161,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, isRecoveringPassw
 
             {/* Card */}
             <div className="w-full max-w-md p-8 rounded-[2.5rem] glass border border-white/10 relative z-10 shadow-2xl backdrop-blur-xl animate-fade-in-up mb-10">
-                <div className="text-center mb-10">
-                    <div className="w-20 h-20 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
-                        {config.logoUrl ? (
-                            <img src={config.logoUrl} alt="Logo" className="w-12 h-12 object-contain" />
-                        ) : (
-                            <TrendingUp size={40} className="text-primary" />
-                        )}
+                <div className="text-center mb-12 flex flex-col items-center justify-center w-full">
+                    {/* Container de animação base suave (flutuação) */}
+                    <div className="animate-float">
+                        <img
+                            src="/logo-login.png"
+                            alt="Logo LeadMatrix"
+                            className="max-w-[350px] md:max-w-[420px] w-full h-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.05)] hover:drop-shadow-[0_0_30px_rgba(255,255,255,0.15)] transition-all duration-700 hover:scale-105"
+                        />
                     </div>
-                    <h1 className="text-2xl font-black text-white tracking-tight mb-2 uppercase italic tracking-widest">
-                        {config.platformName}
-                    </h1>
-                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">
-                        {isRecoveringPassword ? 'Atualizar Chave Criptográfica' : isResetting ? 'Recuperação de Acesso' : isRegistering ? 'Criação de Nodo Neural Master' : 'Acesso à Matrix Neural Master'}
-                    </p>
                 </div>
 
                 <form onSubmit={handleAuth} className="space-y-6">

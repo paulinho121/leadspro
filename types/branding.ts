@@ -20,8 +20,8 @@ export interface BrandingConfig {
 export const DEFAULT_BRANDING: BrandingConfig = {
     id: 'default',
     tenantId: 'default',
-    platformName: 'LeadFlow',
-    logoUrl: '/logo.png',
+    platformName: 'LeadMatrix',
+    logoUrl: '',
     colors: {
         primary: '#f97316', // Laranja do "Pro" e do ícone de pulso
         secondary: '#0f172a', // Navy profundo do "Lead"

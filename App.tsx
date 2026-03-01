@@ -620,11 +620,17 @@ const App: React.FC = () => {
             )}
           </div>
           <div className={`transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 md:hidden invisible'}`}>
-            <h1 className="text-xl font-black tracking-tighter leading-none flex items-center">
-              <span className="text-white">Lead</span>
-              <span className="text-primary">Flow</span>
-            </h1>
-            <p className="text-[9px] font-black text-primary/60 uppercase tracking-[0.3em] mt-1">Matrix v3.5</p>
+            {config.logoUrl && config.platformName !== 'LeadFlow Neural' ? (
+              <>
+                <h1 className="text-xl font-black tracking-tighter leading-none flex items-center">
+                  <span className="text-white truncate max-w-[120px]">{config.platformName}</span>
+                </h1>
+              </>
+            ) : (
+              <div className="flex flex-col justify-center">
+                <img src="/og-image.png" alt="LeadMatrix" className="w-32 h-10 object-cover object-center rounded-lg shadow-lg" style={{ clipPath: 'inset(10% 25% 10% 25%)' }} />
+              </div>
+            )}
           </div>
         </div>
 
