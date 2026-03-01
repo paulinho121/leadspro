@@ -175,11 +175,11 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                                         <Zap size={14} className="text-primary" />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-bold text-white leading-none mb-1">Extrações</p>
-                                        <p className="text-[10px] text-slate-500">5 créditos / req</p>
+                                        <p className="text-xs font-bold text-white leading-none mb-1">Extrações Mapa</p>
+                                        <p className="text-[10px] text-slate-500">~0.25 crédito / lead</p>
                                     </div>
                                 </div>
-                                <span className="text-sm font-mono font-bold text-white">~{Math.floor(balance / 5)}</span>
+                                <span className="text-sm font-mono font-bold text-white">~{Math.floor(balance * 4)} Leads</span>
                             </div>
 
                             <div className="flex items-center justify-between">
@@ -188,11 +188,11 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                                         <Sparkles size={14} className="text-secondary" />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-bold text-white leading-none mb-1">Enriquecimentos</p>
+                                        <p className="text-xs font-bold text-white leading-none mb-1">Análises I.A</p>
                                         <p className="text-[10px] text-slate-500">10 créditos / lead</p>
                                     </div>
                                 </div>
-                                <span className="text-sm font-mono font-bold text-white">~{Math.floor(balance / 10)}</span>
+                                <span className="text-sm font-mono font-bold text-white">~{Math.floor(balance / 10)} Leads</span>
                             </div>
                         </div>
                     </div>
