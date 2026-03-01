@@ -608,29 +608,13 @@ const App: React.FC = () => {
         ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0 w-72 md:w-20'}`}>
 
         <div className="p-6 flex items-center gap-4 group cursor-pointer overflow-hidden" onClick={() => setActiveTab('dashboard')}>
-          <div className={`bg-primary/20 p-2 rounded-2xl group-hover:scale-110 group-hover:bg-primary/30 transition-all duration-500 shadow-2xl shadow-primary/20 flex items-center justify-center shrink-0 ${config.logoUrl ? 'bg-white/5' : ''}`}>
-            {config.logoUrl ? (
-              <img
-                src={config.logoUrl}
-                alt="Logo"
-                className="w-8 h-8 object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-              />
-            ) : (
-              <BrainCircuit className="text-primary" size={32} />
-            )}
+          <div className="bg-primary/10 p-2 rounded-2xl group-hover:scale-110 group-hover:bg-primary/20 border border-primary/20 transition-all duration-500 shadow-[0_0_20px_rgba(249,115,22,0.15)] flex items-center justify-center shrink-0">
+            <BrainCircuit className="text-primary" size={30} />
           </div>
-          <div className={`transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 md:hidden invisible'}`}>
-            {config.logoUrl && config.platformName !== 'LeadFlow Neural' ? (
-              <>
-                <h1 className="text-xl font-black tracking-tighter leading-none flex items-center">
-                  <span className="text-white truncate max-w-[120px]">{config.platformName}</span>
-                </h1>
-              </>
-            ) : (
-              <div className="flex flex-col justify-center">
-                <img src="/og-image.png" alt="LeadMatrix" className="w-32 h-10 object-cover object-center rounded-lg shadow-lg" style={{ clipPath: 'inset(10% 25% 10% 25%)' }} />
-              </div>
-            )}
+          <div className={`transition-all duration-300 ${isSidebarOpen ? 'opacity-100 flex-1' : 'opacity-0 md:hidden invisible w-0'}`}>
+            <h1 className="text-[22px] font-black tracking-wider leading-none uppercase italic text-white drop-shadow-lg">
+              LeadMatrix
+            </h1>
           </div>
         </div>
 
