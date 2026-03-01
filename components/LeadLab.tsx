@@ -57,7 +57,7 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
       }}
     >
       {/* IDENTIFICAÇÃO - 35% */}
-      <td className="px-6 py-3 align-middle w-[35%] overflow-hidden shrink-0">
+      <td className="px-4 py-3 align-middle w-[33%] overflow-hidden shrink-0">
         <div className="flex items-center gap-4 w-full overflow-hidden">
           <div className="relative shrink-0">
             {lead.details?.placeImage && !imgError ? (
@@ -92,8 +92,8 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
         </div>
       </td>
 
-      {/* ATIVIDADE & LOCAL - 25% */}
-      <td className="px-6 py-3 align-middle w-[25%] shrink-0">
+      {/* ATIVIDADE & LOCAL - 22% */}
+      <td className="px-4 py-3 align-middle w-[22%] shrink-0">
         <div className="flex flex-col justify-center overflow-hidden">
           <div className="flex items-center gap-2 text-slate-300 font-bold text-[12px] tracking-tight truncate">
             <MapPin size={12} className="text-primary/40 shrink-0" />
@@ -106,7 +106,7 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
       </td>
 
       {/* STATUS NEURAL - 15% */}
-      <td className="px-6 py-3 text-center align-middle w-[15%] shrink-0">
+      <td className="px-4 py-3 text-center align-middle w-[15%] shrink-0">
         <div className="flex justify-center">
           <span className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] rounded border transition-all duration-300 ${lead.status === LeadStatus.ENRICHED
             ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
@@ -117,16 +117,16 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
         </div>
       </td>
 
-      {/* AÇÕES E DATA - 25% */}
-      <td className="px-6 py-3 text-right align-middle w-[25%] shrink-0">
+      {/* AÇÕES E DATA - 30% */}
+      <td className="px-4 py-3 text-right align-middle w-[30%] shrink-0">
         <div className="flex items-center justify-end gap-3 h-full w-full">
-          <div className="flex flex-col items-end justify-center mr-4 hidden xl:block">
+          <div className="flex flex-col items-end justify-center mr-2 hidden xl:flex">
             <span className="text-[10px] text-slate-400 font-bold font-mono">
               {DATE_FMT.format(new Date(lead.lastUpdated))}
             </span>
             <span className="text-[8px] text-slate-600 font-black uppercase tracking-[0.2em]">Scan</span>
           </div>
-          <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-all duration-300 translate-x-1 group-hover:translate-x-0 border-l border-white/5 pl-4 shrink-0">
+          <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-all duration-300 translate-x-1 group-hover:translate-x-0 border-l border-white/5 pl-3 shrink-0">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -634,10 +634,10 @@ const LeadLab: React.FC<LeadLabProps> = ({
             <table className="w-full table-fixed text-left border-separate border-spacing-0 min-w-[1100px]">
               <thead className="sticky top-0 z-20 glass-strong backdrop-blur-3xl shadow-sm">
                 <tr className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em]">
-                  <th className="px-6 py-4 border-b border-white/[0.05] w-[35%] bg-slate-950/40">Empresa (Identificação)</th>
-                  <th className="px-6 py-4 border-b border-white/[0.05] w-[25%] bg-slate-950/40">Local & Indústria</th>
-                  <th className="px-6 py-4 border-b border-white/[0.05] w-[15%] text-center bg-slate-950/40">Status Neural</th>
-                  <th className="px-6 py-4 border-b border-white/[0.05] w-[25%] text-right bg-slate-950/40">Ações Rápidas</th>
+                  <th className="px-4 py-4 border-b border-white/[0.05] w-[33%] bg-slate-950/40">Empresa (Identificação)</th>
+                  <th className="px-4 py-4 border-b border-white/[0.05] w-[22%] bg-slate-950/40">Local & Indústria</th>
+                  <th className="px-4 py-4 border-b border-white/[0.05] w-[15%] text-center bg-slate-950/40">Status Neural</th>
+                  <th className="px-4 py-4 border-b border-white/[0.05] w-[30%] text-right bg-slate-950/40">Ações Rápidas</th>
                 </tr>
               </thead>
               <tbody className="relative" style={{ height: `${rowVirtualizer.getTotalSize()}px` }}>
