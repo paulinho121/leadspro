@@ -50,7 +50,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
   const [loadingCities, setLoadingCities] = useState(false);
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
 
-  const [neuralError, setNeuralError] = useState<{ type: 'MISSING' | 'INVALID' | 'CREDITS' | 'GENERIC', message: string } | null>(null);
+  const [neuralError, setNeuralError] = useState<{ type: 'MISSING' | 'INVALID' | 'CREDITS' | 'API_LIMIT' | 'GENERIC', message: string } | null>(null);
 
   const [stopSignal, setStopSignal] = useState(false);
   const isStoppingRef = useRef(false);
@@ -299,10 +299,15 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
         type: 'INVALID',
         message: 'Chave de API inválida ou expirada. Verifique se copiou a chave corretamente no painel do provedor.'
       });
-    } else if (msg.includes('429') || msg.includes('rate limit') || msg.includes('quota') || msg.includes('INSUFFICIENT_CREDITS')) {
+    } else if (msg.includes('INSUFFICIENT_CREDITS')) {
       setNeuralError({
         type: 'CREDITS',
-        message: 'Limite de créditos atingido. Adquira mais créditos ou verifique sua conta no provedor da API.'
+        message: 'Você esgotou os créditos da sua assinatura. Adquira mais no seu painel ou aguarde a renovação mensal.'
+      });
+    } else if (msg.includes('429') || msg.includes('rate limit') || msg.includes('quota')) {
+      setNeuralError({
+        type: 'API_LIMIT',
+        message: 'A sua Chave de API de Integração atingiu o limite de requisições ou sofreu Rate Limit no provedor externo (Google/Serper/Gemini).'
       });
     } else {
       setNeuralError({
@@ -670,7 +675,8 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
               <h4 className="text-3xl font-black text-white tracking-tighter">
                 {neuralError.type === 'MISSING' ? 'Motor Desativado' :
                   neuralError.type === 'INVALID' ? 'Falha de Autenticação' :
-                    neuralError.type === 'CREDITS' ? 'Créditos Esgotados' : 'Instabilidade Neural'}
+                    neuralError.type === 'CREDITS' ? 'Créditos Esgotados' :
+                      neuralError.type === 'API_LIMIT' ? 'Limite na API Externa' : 'Instabilidade Neural'}
               </h4>
               <p className="text-slate-400 text-base leading-relaxed">
                 {neuralError.message}
@@ -691,7 +697,8 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                 }}
                 className="w-full py-5 bg-primary text-slate-900 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all"
               >
-                {neuralError.type === 'CREDITS' ? 'COMPRAR CRÉDITOS' : 'CONFIGURAR AGORA'}
+                {neuralError.type === 'CREDITS' ? 'COMPRAR CRÉDITOS' :
+                  neuralError.type === 'API_LIMIT' ? 'VERIFICAR PROVEDOR' : 'CONFIGURAR AGORA'}
               </button>
             </div>
 
