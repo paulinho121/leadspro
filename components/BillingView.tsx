@@ -228,6 +228,7 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                             credits={plan.credits}
                             price={plan.price}
                             description={plan.description}
+                            features={plan.features}
                             icon={plan.id === 'starter' ? <Zap size={20} /> : plan.id === 'business' ? <TrendingUp size={20} /> : <Sparkles size={20} />}
                             recommended={plan.recommended}
                             onTopUp={() => handleTopUp(plan)}
@@ -382,7 +383,7 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
     );
 };
 
-const PricingCard = ({ title, credits, price, description, icon, recommended = false, isCustom = false, onTopUp, isLoading = false }: any) => (
+const PricingCard = ({ title, credits, price, description, icon, recommended = false, isCustom = false, onTopUp, isLoading = false, features = [] }: any) => (
     <div
         onClick={onTopUp}
         className={`glass rounded-[2rem] p-6 border transition-all duration-500 relative flex flex-col group cursor-pointer ${recommended ? 'border-primary shadow-xl shadow-primary/10 overflow-hidden scale-[1.02] hover:scale-[1.04]' : 'border-white/5 hover:border-white/20 hover:scale-[1.02]'} ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
@@ -407,7 +408,18 @@ const PricingCard = ({ title, credits, price, description, icon, recommended = f
                         <span className="text-[10px] font-bold text-slate-500 uppercase">R$</span>
                         <span className="text-3xl font-black text-white tracking-tighter">{price}</span>
                     </div>
-                    <p className="text-[10px] font-black text-primary uppercase tracking-widest">{credits.toLocaleString()} Créditos</p>
+                    <p className="text-[10px] font-black text-primary uppercase tracking-widest">{credits.toLocaleString()} Créditos / Mês</p>
+                </div>
+            )}
+
+            {features && features.length > 0 && (
+                <div className="pt-4 space-y-3 border-t border-white/5 mt-4">
+                    {features.map((feature: string, idx: number) => (
+                        <div key={idx} className="flex items-start gap-2.5">
+                            <CheckCircle2 size={14} className="text-primary shrink-0 mt-0.5" />
+                            <span className="text-xs font-bold text-slate-300 leading-tight">{feature}</span>
+                        </div>
+                    ))}
                 </div>
             )}
         </div>

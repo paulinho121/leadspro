@@ -413,9 +413,31 @@ const App: React.FC = () => {
       for (const lead of targets) {
         if (stopEnrichmentSignal.current) break;
         try {
-          const { insights, details, socialData } = await EnrichmentService.enrichLead(lead, tenantSecrets, userTenantId);
-          await handleEnrichComplete(lead.id, insights, details, socialData);
-        } catch (err) { }
+          // Permite cancelar imediatamente o carregamento visual e prosseguir para a finalização
+          let abortCheckerId: any = null;
+          const abortPromise = new Promise<never>((_, reject) => {
+            abortCheckerId = setInterval(() => {
+              if (stopEnrichmentSignal.current) {
+                clearInterval(abortCheckerId);
+                reject(new Error("ENRICHMENT_STOPPED_BY_USER"));
+              }
+            }, 200);
+          });
+
+          const enrichmentPromise = EnrichmentService.enrichLead(lead, tenantSecrets, userTenantId);
+          const result: any = await Promise.race([enrichmentPromise, abortPromise]);
+
+          clearInterval(abortCheckerId);
+
+          if (!stopEnrichmentSignal.current && result) {
+            await handleEnrichComplete(lead.id, result.insights, result.details, result.socialData);
+          }
+        } catch (err: any) {
+          if (err.message === "ENRICHMENT_STOPPED_BY_USER") {
+            break;
+          }
+          console.warn('[Enrichment] Erro no lead:', lead.id, err);
+        }
       }
     } finally {
       setIsEnriching(false);
