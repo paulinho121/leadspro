@@ -56,12 +56,12 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
         minWidth: '1100px'
       }}
     >
-      {/* IDENTIFICAÇÃO & AÇÕES - 40% (420px) */}
-      <td className="px-10 py-5 align-middle w-[40%] min-w-[420px] overflow-hidden shrink-0">
-        <div className="flex items-center gap-5 w-full overflow-hidden">
+      {/* IDENTIFICAÇÃO - 35% */}
+      <td className="px-6 py-3 align-middle w-[35%] overflow-hidden shrink-0">
+        <div className="flex items-center gap-4 w-full overflow-hidden">
           <div className="relative shrink-0">
             {lead.details?.placeImage && !imgError ? (
-              <div className="w-12 h-12 rounded-[1rem] overflow-hidden border border-white/[0.05] shadow-[0_5px_15px_rgba(0,0,0,0.5)] relative group-hover:border-primary/20 transition-colors">
+              <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/[0.05] shadow-[0_3px_10px_rgba(0,0,0,0.5)] relative group-hover:border-primary/20 transition-colors">
                 <img
                   src={lead.details.placeImage}
                   alt="Fachada"
@@ -71,138 +71,134 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
               </div>
             ) : (
               <div
-                className={`w-2.5 h-2.5 rounded-full ml-4 transition-colors duration-500`}
+                className={`w-2 h-2 rounded-full mx-4 transition-colors duration-500`}
                 style={{
                   backgroundColor: lead.status === LeadStatus.ENRICHED ? 'var(--color-primary)' : '#334155',
-                  boxShadow: lead.status === LeadStatus.ENRICHED ? '0 0 15px var(--color-primary)' : 'none',
+                  boxShadow: lead.status === LeadStatus.ENRICHED ? '0 0 10px var(--color-primary)' : 'none',
                 }}
               />
             )}
           </div>
           <div className="min-w-0 flex-1 flex flex-col justify-center overflow-hidden">
-            <div className="font-black text-white text-[15px] group-hover:text-primary transition-all duration-300 leading-tight mb-1 truncate block w-full drop-shadow-md">
+            <div className="font-bold text-white text-[14px] group-hover:text-primary transition-all duration-300 leading-tight mb-0.5 truncate block w-full drop-shadow-md">
               {lead.details?.tradeName || lead.name}
             </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest bg-black/20 px-1.5 py-0.5 rounded">ID</span>
-                <span className="text-[10px] text-slate-500 font-mono tracking-widest opacity-60">
-                  {lead.id.slice(0, 8).toUpperCase()}
-                </span>
-              </div>
-
-              {/* ACÕES RÁPIDAS - Visíveis no Hover */}
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0 border-l border-white/5 pl-4 shrink-0">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const clean = lead.phone?.replace(/\D/g, '');
-                    if (!clean) return;
-                    const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
-                    const company = lead.details?.tradeName || lead.name;
-                    const city = lead.location.split(',')[0];
-                    const message = `Olá! Vi que a ${company} atua em ${city}. Gostaria de conversar.`;
-                    window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
-                  }}
-                  className="p-1.5 bg-emerald-500/5 text-emerald-500/70 hover:bg-emerald-500 hover:text-white rounded-lg transition-all shadow-sm"
-                  title="WhatsApp"
-                >
-                  <MessageCircle size={14} />
-                </button>
-
-                <button
-                  onClick={(e) => { e.stopPropagation(); onEnrich(lead); }}
-                  className="p-1.5 bg-primary/5 text-primary/70 hover:bg-primary hover:text-slate-900 rounded-lg transition-all shadow-sm"
-                  title="Análise Neural"
-                >
-                  <FlaskConical size={14} />
-                </button>
-
-                {lead.socialLinks?.linkedin && (
-                  <a
-                    href={lead.socialLinks.linkedin}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-1.5 bg-blue-600/5 text-blue-500/70 hover:bg-blue-600 hover:text-white rounded-lg transition-all shadow-sm"
-                    title="LinkedIn"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Linkedin size={14} />
-                  </a>
-                )}
-
-                {lead.status === LeadStatus.ENRICHED && onConvertToDeal && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onConvertToDeal(lead.id); }}
-                    className="p-1.5 bg-violet-500/5 text-violet-500/70 hover:bg-violet-500 hover:text-white rounded-lg transition-all shadow-sm"
-                    title="Pipeline"
-                  >
-                    <TrendingUp size={14} />
-                  </button>
-                )}
-
-                <button
-                  onClick={(e) => { e.stopPropagation(); onPark(lead.id); }}
-                  className="p-1.5 bg-amber-500/5 text-amber-500/70 hover:bg-amber-500 hover:text-slate-900 rounded-lg transition-all shadow-sm"
-                  title="Mover para Administração"
-                >
-                  <Archive size={14} />
-                </button>
-
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDiscard(lead.id); }}
-                  className="p-1.5 bg-red-500/5 text-red-500/70 hover:bg-red-500 hover:text-white rounded-lg transition-all shadow-sm"
-                  title="Descartar Lead"
-                >
-                  <Ban size={14} />
-                </button>
-
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDelete?.(lead.id); }}
-                  className="p-1.5 bg-slate-500/5 text-slate-500 hover:bg-slate-500 hover:text-white rounded-lg transition-all shadow-sm ml-2"
-                  title="Excluir do Banco (Hard Delete)"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[9px] text-slate-500 font-mono tracking-widest opacity-60">
+                ID: {lead.id.slice(0, 8).toUpperCase()}
+              </span>
             </div>
           </div>
         </div>
       </td>
 
-      {/* ATIVIDADE & LOCAL - 25% (250px) */}
-      <td className="px-10 py-5 align-middle w-[25%] min-w-[250px] shrink-0">
+      {/* ATIVIDADE & LOCAL - 25% */}
+      <td className="px-6 py-3 align-middle w-[25%] shrink-0">
         <div className="flex flex-col justify-center overflow-hidden">
           <div className="flex items-center gap-2 text-slate-300 font-bold text-[12px] tracking-tight truncate">
             <MapPin size={12} className="text-primary/40 shrink-0" />
             <span className="truncate drop-shadow-sm">{lead.location}</span>
           </div>
-          <div className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] mt-1.5 pl-[20px] opacity-70 truncate">
+          <div className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1 pl-[20px] opacity-70 truncate">
             {lead.industry}
           </div>
         </div>
       </td>
 
-      {/* STATUS NEURAL */}
-      <td className="px-10 py-5 text-center align-middle w-[15%] min-w-[150px] shrink-0">
+      {/* STATUS NEURAL - 15% */}
+      <td className="px-6 py-3 text-center align-middle w-[15%] shrink-0">
         <div className="flex justify-center">
-          <span className={`px-4 py-2 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl border transition-all duration-300 ${lead.status === LeadStatus.ENRICHED
-            ? 'bg-primary/10 text-primary border-primary/30 shadow-[0_0_15px_rgba(249,115,22,0.15)]'
-            : 'bg-white/[0.02] text-slate-500 border-white/5'
+          <span className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] rounded border transition-all duration-300 ${lead.status === LeadStatus.ENRICHED
+            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+            : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
             }`}>
-            {lead.status === LeadStatus.ENRICHED ? 'Neural Enabled' : 'Raw Trace'}
+            {lead.status === LeadStatus.ENRICHED ? 'Optimized' : 'Pending Review'}
           </span>
         </div>
       </td>
 
-      {/* DATA DE REGISTRO - 20% (200px) */}
-      <td className="px-10 py-5 text-right align-middle w-[20%] min-w-[200px] shrink-0">
-        <div className="flex flex-col items-end justify-center">
-          <span className="text-[11px] text-slate-300 font-black tracking-widest font-mono">
-            {DATE_FMT.format(new Date(lead.lastUpdated))}
-          </span>
-          <span className="text-[9px] text-slate-600 font-black uppercase tracking-[0.2em] mt-1">Data Fixada</span>
+      {/* AÇÕES E DATA - 25% */}
+      <td className="px-6 py-3 text-right align-middle w-[25%] shrink-0">
+        <div className="flex items-center justify-end gap-3 h-full w-full">
+          <div className="flex flex-col items-end justify-center mr-4 hidden xl:block">
+            <span className="text-[10px] text-slate-400 font-bold font-mono">
+              {DATE_FMT.format(new Date(lead.lastUpdated))}
+            </span>
+            <span className="text-[8px] text-slate-600 font-black uppercase tracking-[0.2em]">Scan</span>
+          </div>
+          <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-all duration-300 translate-x-1 group-hover:translate-x-0 border-l border-white/5 pl-4 shrink-0">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const clean = lead.phone?.replace(/\D/g, '');
+                if (!clean) return;
+                const fullPhone = clean.startsWith('55') ? clean : `55${clean}`;
+                const company = lead.details?.tradeName || lead.name;
+                const city = lead.location.split(',')[0];
+                const message = `Olá! Vi que a ${company} atua em ${city}. Gostaria de conversar.`;
+                window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
+              }}
+              className="p-1.5 bg-emerald-500/5 text-emerald-500/70 hover:bg-emerald-500 hover:text-white rounded-lg transition-all shadow-sm"
+              title="WhatsApp"
+            >
+              <MessageCircle size={14} />
+            </button>
+
+            <button
+              onClick={(e) => { e.stopPropagation(); onEnrich(lead); }}
+              className="p-1.5 bg-primary/5 text-primary/70 hover:bg-primary hover:text-slate-900 rounded-lg transition-all shadow-sm"
+              title="Análise Neural"
+            >
+              <FlaskConical size={14} />
+            </button>
+
+            {lead.socialLinks?.linkedin && (
+              <a
+                href={lead.socialLinks.linkedin}
+                target="_blank"
+                rel="noreferrer"
+                className="p-1.5 bg-blue-600/5 text-blue-500/70 hover:bg-blue-600 hover:text-white rounded-lg transition-all shadow-sm"
+                title="LinkedIn"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Linkedin size={14} />
+              </a>
+            )}
+
+            {lead.status === LeadStatus.ENRICHED && onConvertToDeal && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onConvertToDeal(lead.id); }}
+                className="p-1.5 bg-violet-500/5 text-violet-500/70 hover:bg-violet-500 hover:text-white rounded-lg transition-all shadow-sm"
+                title="Pipeline"
+              >
+                <TrendingUp size={14} />
+              </button>
+            )}
+
+            <button
+              onClick={(e) => { e.stopPropagation(); onPark(lead.id); }}
+              className="p-1.5 bg-amber-500/5 text-amber-500/70 hover:bg-amber-500 hover:text-slate-900 rounded-lg transition-all shadow-sm"
+              title="Mover para Administração"
+            >
+              <Archive size={14} />
+            </button>
+
+            <button
+              onClick={(e) => { e.stopPropagation(); onDiscard(lead.id); }}
+              className="p-1.5 bg-red-500/5 text-red-500/70 hover:bg-red-500 hover:text-white rounded-lg transition-all shadow-sm"
+              title="Descartar Lead"
+            >
+              <Ban size={14} />
+            </button>
+
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete?.(lead.id); }}
+              className="p-1.5 bg-slate-500/5 text-slate-500 hover:bg-slate-500 hover:text-white rounded-lg transition-all shadow-sm"
+              title="Excluir do Banco (Hard Delete)"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
         </div>
       </td>
     </tr>
@@ -364,8 +360,8 @@ const LeadLab: React.FC<LeadLabProps> = ({
               </div>
             </div>
 
-            <div className="space-y-10">
-              <div className="space-y-5">
+            <div className="flex flex-col divide-y divide-white/[0.05]">
+              <div className="space-y-5 pb-6">
                 <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.25em] ml-2 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse shadow-[0_0_8px_var(--color-primary)]"></span>
                   Status do Processo
@@ -398,7 +394,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-5">
+              <div className="space-y-5 py-6">
                 <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.25em] ml-2 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
                   Nichos Industriais
@@ -412,10 +408,10 @@ const LeadLab: React.FC<LeadLabProps> = ({
                       className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-[9.5px] font-black tracking-widest uppercase border group
                         ${selectedNiche === niche
                           ? 'bg-gradient-to-r from-white/10 to-white/5 text-white border-white/10 translate-x-1 shadow-md'
-                          : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.02] border-transparent'}`}
+                          : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.02] hover:border-white/5 hover:-translate-y-0.5 border-transparent'}`}
                     >
-                      <span className="line-clamp-2 text-left pr-3 leading-snug group-hover:pl-1 transition-all">{niche.toLowerCase()}</span>
-                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-lg shrink-0 ${selectedNiche === niche ? 'bg-white/10 text-white' : 'bg-black/20 group-hover:bg-white/5 group-hover:text-white transition-colors'}`}>
+                      <span className="line-clamp-2 text-left pr-3 leading-snug group-hover:text-white transition-all">{niche.toLowerCase()}</span>
+                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-lg shrink-0 ${selectedNiche === niche ? 'bg-white/10 text-white' : 'bg-black/20 group-hover:bg-white/10 group-hover:text-white transition-colors'}`}>
                         {nicheCount.get(niche) ?? 0}
                       </span>
                     </button>
@@ -424,7 +420,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
               </div>
 
               {locations.length > 0 && (
-                <div className="space-y-5">
+                <div className="space-y-5 pt-6">
                   <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.25em] ml-2 flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
                     Geolocalização
@@ -438,12 +434,12 @@ const LeadLab: React.FC<LeadLabProps> = ({
                         className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-[9.5px] font-black tracking-widest uppercase border group
                           ${selectedLocation === loc
                             ? 'bg-gradient-to-r from-white/10 to-white/5 text-white border-white/10 translate-x-1 shadow-md'
-                            : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.02] border-transparent'}`}
+                            : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.02] hover:border-white/5 hover:-translate-y-0.5 border-transparent'}`}
                       >
-                        <span className="truncate text-left pr-3 leading-snug group-hover:pl-1 transition-all flex items-center gap-2">
+                        <span className="truncate text-left pr-3 leading-snug group-hover:text-white transition-all flex items-center gap-2">
                           <MapPin size={10} className="text-slate-600 group-hover:text-primary transition-colors" /> {loc}
                         </span>
-                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-lg shrink-0 ${selectedLocation === loc ? 'bg-white/10 text-white' : 'bg-black/20 group-hover:bg-white/5 group-hover:text-white transition-colors'}`}>
+                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-lg shrink-0 ${selectedLocation === loc ? 'bg-white/10 text-white' : 'bg-black/20 group-hover:bg-white/10 group-hover:text-white transition-colors'}`}>
                           {locationCount.get(loc) ?? 0}
                         </span>
                       </button>
@@ -470,15 +466,15 @@ const LeadLab: React.FC<LeadLabProps> = ({
             </div>
             <div className="flex flex-col h-full justify-between gap-6 relative z-10">
               <div>
-                <span className="text-[10px] font-black text-primary uppercase tracking-[0.25em] mb-2 block">Maturidade Neural</span>
+                <span className="text-[10px] font-bold text-slate-400/80 uppercase tracking-widest mb-2 block">Cognitive Maturity</span>
                 <div className="flex items-baseline gap-2">
-                  <h4 className="text-5xl font-black text-white tracking-tighter">
+                  <h4 className="text-5xl lg:text-6xl font-black text-white tracking-tighter">
                     {labLeads.length > 0 ? Math.round((labLeads.filter(l => l.status === LeadStatus.ENRICHED).length / labLeads.length) * 100) : 0}
                   </h4>
-                  <span className="text-xl font-bold text-primary/70">%</span>
+                  <span className="text-2xl font-bold text-primary/70">%</span>
                 </div>
               </div>
-              <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-white/5">
+              <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-white/5">
                 <div
                   className="bg-primary h-full transition-all duration-1000 relative"
                   style={{ width: `${labLeads.length > 0 ? (labLeads.filter(l => l.status === LeadStatus.ENRICHED).length / labLeads.length) * 100 : 0}%` }}
@@ -493,12 +489,11 @@ const LeadLab: React.FC<LeadLabProps> = ({
           <div className="glass rounded-[2rem] p-8 border border-white/5 relative overflow-hidden group shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
             <div className="flex flex-col h-full justify-between relative z-10">
-              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.25em] mb-4 block">Enriquecidos (IA)</span>
+              <span className="text-[10px] font-bold text-slate-400/80 uppercase tracking-widest mb-4 block">Enriched Profiles</span>
               <div className="flex items-baseline gap-4 mt-auto">
-                <h4 className="text-5xl font-black text-white tracking-tighter">
+                <h4 className="text-5xl lg:text-6xl font-black text-white tracking-tighter">
                   {labLeads.filter(l => l.status === LeadStatus.ENRICHED).length}
                 </h4>
-                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest break-words max-w-[80px] leading-tight flex-1">Leads<br />Qualificados</span>
               </div>
             </div>
             <div className="absolute -bottom-4 -right-4 text-emerald-500 opacity-5 group-hover:opacity-10 transition-all duration-700 w-32 h-32 flex items-center justify-center">
@@ -507,30 +502,48 @@ const LeadLab: React.FC<LeadLabProps> = ({
           </div>
 
           {/* Card 3: Fila Pendente */}
-          <div className="glass rounded-[2rem] p-8 border border-white/5 relative overflow-hidden group shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+          <div className="glass rounded-[2rem] p-8 flex flex-col justify-between border border-white/5 relative overflow-hidden group shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
             <div className="absolute inset-0 bg-gradient-to-br from-slate-800/20 to-transparent"></div>
             <div className="flex flex-col h-full justify-between relative z-10">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.25em] mb-4 block">Fila Pendente</span>
-              <div className="flex items-baseline gap-4 mt-auto">
-                <h4 className="text-5xl font-black text-white/40 tracking-tighter group-hover:text-white transition-colors duration-500">
-                  {labLeads.filter(l => l.status === LeadStatus.NEW).length}
-                </h4>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-bold text-slate-400/80 uppercase tracking-widest block">Queue in Review</span>
                 <div className="flex items-center gap-2">
                   {isEnriching ? (
                     <>
                       <Loader2 size={12} className="animate-spin text-amber-500" />
-                      <span className="text-[10px] text-amber-500 font-bold uppercase tracking-widest font-mono">Processando...</span>
+                      <span className="text-[9px] text-amber-500 font-bold uppercase tracking-widest font-mono">Processando...</span>
                     </>
                   ) : (
                     <>
-                      <div className="w-2 h-2 rounded-full bg-slate-600 group-hover:bg-slate-500"></div>
-                      <span className="text-[10px] text-slate-600 group-hover:text-slate-500 font-bold uppercase tracking-widest font-mono transition-colors">Aguardando Ação</span>
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-slate-500"></div>
+                      <span className="text-[9px] text-slate-600 group-hover:text-slate-500 font-bold uppercase tracking-widest font-mono transition-colors">Aguardando Ação</span>
                     </>
                   )}
                 </div>
               </div>
+              <div className="flex flex-col mt-auto gap-4">
+                <h4 className={`text-5xl lg:text-6xl font-black tracking-tighter transition-colors duration-500 ${labLeads.filter(l => l.status === LeadStatus.NEW).length > 50 ? 'text-orange-500 drop-shadow-[0_0_15px_rgba(249,115,22,0.3)]' : 'text-white/60 group-hover:text-white'}`}>
+                  {labLeads.filter(l => l.status === LeadStatus.NEW).length}
+                </h4>
+                {/* Embedded Search Input */}
+                <div className="relative group/search w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within/search:text-primary transition-colors" />
+                  <input
+                    type="text"
+                    placeholder="Search leads..."
+                    className="w-full bg-black/20 border border-white/5 rounded-xl py-2 pl-9 pr-3 text-[11px] text-white focus:outline-none focus:border-primary/40 transition-colors uppercase tracking-widest font-bold placeholder:text-slate-600"
+                    onClick={() => setIsPaletteOpen(true)}
+                    readOnly
+                  />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden xl:flex items-center">
+                    <kbd className="text-[8px] font-black font-mono bg-white/5 px-1.5 py-0.5 rounded text-slate-500 shadow-inner tracking-widest">
+                      CTRL+K
+                    </kbd>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="absolute -bottom-4 -right-4 text-white opacity-[0.02] group-hover:opacity-[0.05] transition-all duration-700 w-32 h-32 flex items-center justify-center">
+            <div className="absolute -bottom-4 -right-4 text-white opacity-[0.02] group-hover:opacity-[0.05] transition-all duration-700 w-32 h-32 flex items-center justify-center pointer-events-none">
               <Database size={100} />
             </div>
           </div>
@@ -608,18 +621,6 @@ const LeadLab: React.FC<LeadLabProps> = ({
             >
               <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
             </button>
-
-            {/* Comando Inteligente */}
-            <button
-              onClick={() => setIsPaletteOpen(true)}
-              className="flex items-center gap-3 p-5 bg-white/[0.02] hover:bg-primary/10 text-slate-400 hover:text-primary rounded-[1.25rem] border border-white/5 hover:border-primary/20 transition-all shadow-xl group"
-              title="Busca Inteligente (Ctrl+K)"
-            >
-              <Search size={18} className="group-hover:scale-110 transition-transform" />
-              <kbd className="hidden xl:flex items-center gap-1 text-[9px] font-black font-mono bg-white/5 group-hover:bg-primary/10 px-2 py-1 rounded border border-white/10 text-slate-500 group-hover:text-primary shadow-inner tracking-widest uppercase">
-                Ctrl + K
-              </kbd>
-            </button>
           </div>
         </div>
 
@@ -628,11 +629,11 @@ const LeadLab: React.FC<LeadLabProps> = ({
           <div className="overflow-x-auto overflow-y-auto custom-scrollbar flex-1 relative" ref={parentRef}>
             <table className="w-full table-fixed text-left border-separate border-spacing-0 min-w-[1100px]">
               <thead className="sticky top-0 z-20 glass-strong backdrop-blur-3xl shadow-sm">
-                <tr className="text-slate-500 font-black text-[9px] uppercase tracking-[0.3em]">
-                  <th className="px-10 py-7 border-b border-white/[0.05] w-[40%] bg-slate-950/40">Identificação & Ações</th>
-                  <th className="px-10 py-7 border-b border-white/[0.05] w-[25%] bg-slate-950/40">Atividade & Local</th>
-                  <th className="px-10 py-7 border-b border-white/[0.05] w-[15%] text-center bg-slate-950/40">Status Neural</th>
-                  <th className="px-10 py-7 border-b border-white/[0.05] w-[20%] text-right bg-slate-950/40">Data do Scan</th>
+                <tr className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em]">
+                  <th className="px-6 py-4 border-b border-white/[0.05] w-[35%] bg-slate-950/40">Empresa (Identificação)</th>
+                  <th className="px-6 py-4 border-b border-white/[0.05] w-[25%] bg-slate-950/40">Local & Indústria</th>
+                  <th className="px-6 py-4 border-b border-white/[0.05] w-[15%] text-center bg-slate-950/40">Status Neural</th>
+                  <th className="px-6 py-4 border-b border-white/[0.05] w-[25%] text-right bg-slate-950/40">Ações Rápidas</th>
                 </tr>
               </thead>
               <tbody className="relative" style={{ height: `${rowVirtualizer.getTotalSize()}px` }}>
@@ -750,14 +751,14 @@ const FilterOption = ({ active, onClick, label, count, icon, variant }: {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all border text-left
-        ${styleClasses} ${!active && 'border-transparent text-slate-500'}`}
+      className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all border text-left group
+        ${styleClasses} ${!active && 'border-transparent text-slate-500 hover:border-white/5 hover:-translate-y-0.5'}`}
     >
       <div className="flex items-center gap-3">
-        <span className={`${active ? 'text-primary' : 'text-slate-700'}`}>{icon}</span>
-        <span className="text-[11px] font-black uppercase tracking-widest">{label}</span>
+        <span className={`${active ? 'text-primary' : 'text-slate-600 group-hover:text-slate-400 transition-colors'}`}>{icon}</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
       </div>
-      <span className={`text-[9px] font-mono px-2 py-0.5 rounded-md ${active ? 'bg-white/10 text-white' : 'bg-white/5'}`}>
+      <span className={`text-[9px] font-mono px-2 py-0.5 rounded-md ${active ? 'bg-white/10 text-white' : 'bg-white/5 group-hover:bg-white/10 transition-colors'}`}>
         {count}
       </span>
     </button>
