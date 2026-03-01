@@ -394,16 +394,16 @@ const App: React.FC = () => {
     const targets = leadsToEnrich || leads.filter(l => l.status === LeadStatus.NEW);
     if (targets.length === 0) return;
 
-    if (targets.length > 5 && userTenantId) {
-      try {
-        await QueueService.submitTask(userTenantId, 'ENRICH_BATCH', {
-          leads_ids: targets.map(l => l.id),
-          total_count: targets.length
-        });
-        toast.success(`${targets.length} leads em processamento`, 'Lote enviado para a fila neural.');
-        return;
-      } catch (err) { }
-    }
+    // if (targets.length > 5 && userTenantId) {
+    //   try {
+    //     await QueueService.submitTask(userTenantId, 'ENRICH_BATCH', {
+    //       leads_ids: targets.map(l => l.id),
+    //       total_count: targets.length
+    //     });
+    //     toast.success(`${targets.length} leads em processamento`, 'Lote enviado para a fila neural.');
+    //     return;
+    //   } catch (err) { }
+    // }
 
     setActiveTab('lab');
     setIsEnriching(true);
