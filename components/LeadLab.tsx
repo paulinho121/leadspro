@@ -118,15 +118,15 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
       </td>
 
       {/* AÇÕES E DATA - 30% */}
-      <td className="px-4 py-3 text-right align-middle w-[30%] shrink-0">
-        <div className="flex items-center justify-end gap-3 h-full w-full">
-          <div className="flex flex-col items-end justify-center mr-2 hidden xl:flex">
+      <td className="px-4 py-3 text-right align-middle w-[30%] shrink-0 relative">
+        <div className="flex items-center justify-end h-full w-full">
+          <div className="flex flex-col items-end justify-center mr-3 hidden xl:flex shrink-0">
             <span className="text-[10px] text-slate-400 font-bold font-mono">
               {DATE_FMT.format(new Date(lead.lastUpdated))}
             </span>
             <span className="text-[8px] text-slate-600 font-black uppercase tracking-[0.2em]">Scan</span>
           </div>
-          <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-all duration-300 translate-x-1 group-hover:translate-x-0 border-l border-white/5 pl-3 shrink-0">
+          <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-all duration-300 border-l border-white/5 pl-3 shrink-0">
             <button
               onClick={(e) => {
                 e.stopPropagation();
