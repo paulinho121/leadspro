@@ -361,12 +361,12 @@ const LeadLab: React.FC<LeadLabProps> = ({
             </div>
 
             <div className="flex flex-col divide-y divide-white/[0.05]">
-              <div className="space-y-5 pb-6">
+              <div className="space-y-4 pb-6">
                 <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.25em] ml-2 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse shadow-[0_0_8px_var(--color-primary)]"></span>
                   Status do Processo
                 </label>
-                <div className="flex flex-col gap-2.5">
+                <div className="flex flex-col gap-1">
                   <FilterOption
                     active={filterStatus === 'ALL'}
                     onClick={() => setFilterStatus('ALL')}
@@ -378,7 +378,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                   <FilterOption
                     active={filterStatus === LeadStatus.NEW}
                     onClick={() => setFilterStatus(LeadStatus.NEW)}
-                    label="Descobertas"
+                    label="Descobertas (Raw)"
                     count={leads.filter(l => l.status === LeadStatus.NEW).length}
                     variant="secondary"
                     icon={<Zap size={14} />}
@@ -386,7 +386,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                   <FilterOption
                     active={filterStatus === LeadStatus.ENRICHED}
                     onClick={() => setFilterStatus(LeadStatus.ENRICHED)}
-                    label="Qualificados"
+                    label="Qualificados (IA)"
                     count={leads.filter(l => l.status === LeadStatus.ENRICHED).length}
                     variant="accent"
                     icon={<Sparkles size={14} />}
@@ -394,24 +394,27 @@ const LeadLab: React.FC<LeadLabProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-5 py-6">
+              <div className="space-y-4 py-6">
                 <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.25em] ml-2 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
                   Nichos Industriais
                 </label>
-                <div className="flex flex-col gap-1.5 max-h-[25vh] overflow-y-auto custom-scrollbar pr-2">
+                <div className="flex flex-col gap-0.5 max-h-[25vh] overflow-y-auto custom-scrollbar pr-2">
                   {niches.map(niche => (
                     <button
                       key={niche}
                       onClick={() => setSelectedNiche(selectedNiche === niche ? null : niche)}
                       title={niche}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-[9.5px] font-black tracking-widest uppercase border group
+                      className={`flex items-center justify-between py-2 px-3 rounded-lg transition-all text-[12px] group w-full text-left
                         ${selectedNiche === niche
-                          ? 'bg-gradient-to-r from-white/10 to-white/5 text-white border-white/10 translate-x-1 shadow-md'
-                          : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.02] hover:border-white/5 hover:-translate-y-0.5 border-transparent'}`}
+                          ? 'bg-white/[0.04] text-white font-bold'
+                          : 'text-slate-400 font-medium hover:text-slate-200 hover:bg-white/[0.02]'}`}
                     >
-                      <span className="line-clamp-2 text-left pr-3 leading-snug group-hover:text-white transition-all">{niche.toLowerCase()}</span>
-                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-lg shrink-0 ${selectedNiche === niche ? 'bg-white/10 text-white' : 'bg-black/20 group-hover:bg-white/10 group-hover:text-white transition-colors'}`}>
+                      <div className="flex items-center gap-2 overflow-hidden flex-1">
+                        {selectedNiche === niche && <div className="w-1 h-1 rounded-full bg-primary shrink-0"></div>}
+                        <span className="truncate flex-1 tracking-wide" style={{ textTransform: 'capitalize' }}>{niche.toLowerCase()}</span>
+                      </div>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md shrink-0 ml-2 transition-colors ${selectedNiche === niche ? 'bg-primary/20 text-primary' : 'text-slate-500 group-hover:bg-white/5 group-hover:text-slate-300'}`}>
                         {nicheCount.get(niche) ?? 0}
                       </span>
                     </button>
@@ -420,26 +423,27 @@ const LeadLab: React.FC<LeadLabProps> = ({
               </div>
 
               {locations.length > 0 && (
-                <div className="space-y-5 pt-6">
+                <div className="space-y-4 pt-6">
                   <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.25em] ml-2 flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
                     Geolocalização
                   </label>
-                  <div className="flex flex-col gap-1.5 max-h-[20vh] overflow-y-auto custom-scrollbar pr-2">
+                  <div className="flex flex-col gap-0.5 max-h-[20vh] overflow-y-auto custom-scrollbar pr-2">
                     {locations.map(loc => (
                       <button
                         key={loc}
                         onClick={() => setSelectedLocation(selectedLocation === loc ? null : loc)}
                         title={loc}
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-[9.5px] font-black tracking-widest uppercase border group
+                        className={`flex items-center justify-between py-2 px-3 rounded-lg transition-all text-[12px] group w-full text-left
                           ${selectedLocation === loc
-                            ? 'bg-gradient-to-r from-white/10 to-white/5 text-white border-white/10 translate-x-1 shadow-md'
-                            : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.02] hover:border-white/5 hover:-translate-y-0.5 border-transparent'}`}
+                            ? 'bg-white/[0.04] text-white font-bold'
+                            : 'text-slate-400 font-medium hover:text-slate-200 hover:bg-white/[0.02]'}`}
                       >
-                        <span className="truncate text-left pr-3 leading-snug group-hover:text-white transition-all flex items-center gap-2">
-                          <MapPin size={10} className="text-slate-600 group-hover:text-primary transition-colors" /> {loc}
-                        </span>
-                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-lg shrink-0 ${selectedLocation === loc ? 'bg-white/10 text-white' : 'bg-black/20 group-hover:bg-white/10 group-hover:text-white transition-colors'}`}>
+                        <div className="flex items-center gap-2 overflow-hidden flex-1">
+                          <MapPin size={12} className={`shrink-0 ${selectedLocation === loc ? 'text-primary' : 'text-slate-600 group-hover:text-slate-400'}`} />
+                          <span className="truncate flex-1 tracking-wide" style={{ textTransform: 'capitalize' }}>{loc.toLowerCase()}</span>
+                        </div>
+                        <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md shrink-0 ml-2 transition-colors ${selectedLocation === loc ? 'bg-primary/20 text-primary' : 'text-slate-500 group-hover:bg-white/5 group-hover:text-slate-300'}`}>
                           {locationCount.get(loc) ?? 0}
                         </span>
                       </button>
@@ -740,25 +744,27 @@ const FilterOption = ({ active, onClick, label, count, icon, variant }: {
   icon?: React.ReactNode;
   variant: 'primary' | 'secondary' | 'accent' | 'default';
 }) => {
-  let styleClasses = '';
+  let activeColor = '';
   switch (variant) {
-    case 'primary': styleClasses = active ? 'bg-primary/10 border-primary/30 text-white' : 'hover:bg-primary/5'; break;
-    case 'secondary': styleClasses = active ? 'bg-blue-500/10 border-blue-500/30 text-white' : 'hover:bg-blue-500/5'; break;
-    case 'accent': styleClasses = active ? 'bg-violet-500/10 border-violet-500/30 text-white' : 'hover:bg-violet-500/5'; break;
-    default: styleClasses = active ? 'bg-white/10 border-white/20 text-white' : 'hover:bg-white/5'; break;
+    case 'primary': activeColor = 'text-primary'; break;
+    case 'secondary': activeColor = 'text-blue-500'; break;
+    case 'accent': activeColor = 'text-violet-500'; break;
+    default: activeColor = 'text-white'; break;
   }
 
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all border text-left group
-        ${styleClasses} ${!active && 'border-transparent text-slate-500 hover:border-white/5 hover:-translate-y-0.5'}`}
+      className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl transition-all text-left group
+        ${active ? 'bg-white/[0.04]' : 'hover:bg-white/[0.02] hover:-translate-y-0.5'}`}
     >
       <div className="flex items-center gap-3">
-        <span className={`${active ? 'text-primary' : 'text-slate-600 group-hover:text-slate-400 transition-colors'}`}>{icon}</span>
-        <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
+        <span className={`${active ? activeColor : 'text-slate-600 group-hover:text-slate-400 transition-colors'}`}>{icon}</span>
+        <span className={`text-[12px] tracking-wide ${active ? 'font-bold text-white' : 'font-medium text-slate-400 group-hover:text-slate-200'}`}>
+          {label}
+        </span>
       </div>
-      <span className={`text-[9px] font-mono px-2 py-0.5 rounded-md ${active ? 'bg-white/10 text-white' : 'bg-white/5 group-hover:bg-white/10 transition-colors'}`}>
+      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md transition-colors ${active ? 'bg-primary/20 text-primary' : 'text-slate-500 group-hover:bg-white/5 group-hover:text-slate-300'}`}>
         {count}
       </span>
     </button>
