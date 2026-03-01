@@ -312,15 +312,29 @@ const LeadLab: React.FC<LeadLabProps> = ({
   });
 
   const { niches, nicheCount } = useMemo(() => {
-    // O(n) single-pass count using Map instead of O(n²) nested .filter
     const countMap = new Map<string, number>();
     for (const l of labLeads) {
       if (l.industry) countMap.set(l.industry, (countMap.get(l.industry) ?? 0) + 1);
     }
     const sorted = Array.from(countMap.entries())
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10);
+      .slice(0, 25);
     return { niches: sorted.map(([n]) => n), nicheCount: countMap };
+  }, [labLeads]);
+
+  const { locations, locationCount } = useMemo(() => {
+    const countMap = new Map<string, number>();
+    for (const l of labLeads) {
+      if (l.location) {
+        const parts = l.location.split(',');
+        const cityOrState = parts.length > 1 ? `${parts[0].trim()}, ${parts[1].trim()}` : parts[0].trim();
+        countMap.set(cityOrState, (countMap.get(cityOrState) ?? 0) + 1);
+      }
+    }
+    const sorted = Array.from(countMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15);
+    return { locations: sorted.map(([loc]) => loc), locationCount: countMap };
   }, [labLeads]);
 
   return (
@@ -385,24 +399,54 @@ const LeadLab: React.FC<LeadLabProps> = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
                   Nichos Industriais
                 </label>
-                <div className="flex flex-col gap-2 max-h-[35vh] overflow-y-auto custom-scrollbar pr-2">
+                <div className="flex flex-col gap-1.5 max-h-[25vh] overflow-y-auto custom-scrollbar pr-2">
                   {niches.map(niche => (
                     <button
                       key={niche}
                       onClick={() => setSelectedNiche(selectedNiche === niche ? null : niche)}
-                      className={`flex items-center justify-between p-4 rounded-[1.25rem] transition-all text-[11px] font-black tracking-widest uppercase border group
+                      title={niche}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-[9.5px] font-black tracking-widest uppercase border group
                         ${selectedNiche === niche
-                          ? 'bg-gradient-to-r from-white/10 to-white/5 text-white border-white/10 translate-x-1 shadow-lg'
+                          ? 'bg-gradient-to-r from-white/10 to-white/5 text-white border-white/10 translate-x-1 shadow-md'
                           : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.02] border-transparent'}`}
                     >
-                      <span className="truncate pr-4 leading-tight group-hover:pl-1 transition-all">{niche.toLowerCase()}</span>
-                      <span className={`text-[9px] font-mono px-2 py-1 rounded-lg shrink-0 ${selectedNiche === niche ? 'bg-white/10 text-white' : 'bg-black/20 group-hover:bg-white/5 group-hover:text-white transition-colors'}`}>
+                      <span className="line-clamp-2 text-left pr-3 leading-snug group-hover:pl-1 transition-all">{niche.toLowerCase()}</span>
+                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-lg shrink-0 ${selectedNiche === niche ? 'bg-white/10 text-white' : 'bg-black/20 group-hover:bg-white/5 group-hover:text-white transition-colors'}`}>
                         {nicheCount.get(niche) ?? 0}
                       </span>
                     </button>
                   ))}
                 </div>
               </div>
+
+              {locations.length > 0 && (
+                <div className="space-y-5">
+                  <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.25em] ml-2 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
+                    Geolocalização
+                  </label>
+                  <div className="flex flex-col gap-1.5 max-h-[20vh] overflow-y-auto custom-scrollbar pr-2">
+                    {locations.map(loc => (
+                      <button
+                        key={loc}
+                        onClick={() => setSelectedLocation(selectedLocation === loc ? null : loc)}
+                        title={loc}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-[9.5px] font-black tracking-widest uppercase border group
+                          ${selectedLocation === loc
+                            ? 'bg-gradient-to-r from-white/10 to-white/5 text-white border-white/10 translate-x-1 shadow-md'
+                            : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.02] border-transparent'}`}
+                      >
+                        <span className="truncate text-left pr-3 leading-snug group-hover:pl-1 transition-all flex items-center gap-2">
+                          <MapPin size={10} className="text-slate-600 group-hover:text-primary transition-colors" /> {loc}
+                        </span>
+                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-lg shrink-0 ${selectedLocation === loc ? 'bg-white/10 text-white' : 'bg-black/20 group-hover:bg-white/5 group-hover:text-white transition-colors'}`}>
+                          {locationCount.get(loc) ?? 0}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
