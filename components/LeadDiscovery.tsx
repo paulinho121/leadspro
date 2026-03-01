@@ -431,6 +431,51 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                 // Trigger reload se necessário ou mostrar toast
               }}
             />
+          ) : isScanning ? (
+            <div className="relative w-full h-64 lg:h-80 rounded-[2rem] overflow-hidden animate-in zoom-in-95 duration-500 border border-white/5 shadow-2xl glass flex items-center justify-center p-8">
+              <div className="absolute inset-x-0 bottom-0 pointer-events-none">
+                <div
+                  className="w-full bg-gradient-to-t from-primary/40 to-transparent transition-all duration-1000"
+                  style={{ height: `${Math.min(100, (leadsFound / (filters.limit || 50)) * 100)}%` }}
+                ></div>
+                <div className="w-full h-1 bg-primary/40"></div>
+              </div>
+
+              <div className="relative z-10 flex flex-col items-center justify-center text-center space-y-4">
+                <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-full border-4 border-white/10 flex items-center justify-center bg-black/50 backdrop-blur-xl relative shadow-[0_0_50px_rgba(var(--color-primary),0.2)]">
+                  <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeDasharray="289" strokeDashoffset={289 - (289 * Math.min(100, (leadsFound / (filters.limit || 50)) * 100)) / 100} className="transition-all duration-1000 text-primary" />
+                  </svg>
+                  <span className="text-3xl lg:text-4xl font-black text-white">{Math.round((leadsFound / (filters.limit || 50)) * 100)}%</span>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="text-xl focus font-black text-white tracking-widest uppercase">
+                    {mode === 'MAPS' ? 'VARREDURA NEURAL ATIVA' : mode === 'CNPJ' ? 'CONSULTA GOVERNAMENTAL ATIVA' : 'BUSCA AVANÇADA ATIVA'}
+                  </h3>
+                  <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+                    ALVO: <span className="text-white">{filters.keyword}</span>
+                  </p>
+                  {(mode === 'MAPS' || mode === 'CNPJ' || mode === 'SHERLOCK') && filters.location && (
+                    <p className="text-sm font-bold text-emerald-400 uppercase tracking-widest flex items-center justify-center gap-2 mt-2">
+                      <MapPin size={14} />
+                      {selectedCity === 'TODO_ESTADO' ? `VARRENDO O ESTADO INTEIRO (${selectedState})` : filters.location}
+                    </p>
+                  )}
+                </div>
+
+                <div className="bg-white/5 rounded-full px-6 py-2 border border-white/10 flex items-center gap-3 mt-4">
+                  <span className="flex h-3 w-3 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                  </span>
+                  <span className="text-xs font-black text-slate-300 uppercase tracking-[0.2em]">
+                    EXTRACTING: <span className="text-white font-mono text-lg ml-2">{leadsFound} / {filters.limit || 50}</span> LEADS
+                  </span>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-1">
               {/* Conteúdo original do Inputs Grid permanece aqui */}
