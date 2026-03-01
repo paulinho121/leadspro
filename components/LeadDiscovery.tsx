@@ -200,6 +200,8 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
 
           try {
             console.log(`[Neural Discovery] Loop de varredura executando com modo: ${searchMode}, keyword: ${cleanKeyword}, local: ${currentSearchLocation}`);
+            const currentLimit = filters.limit || 50;
+            const remainingNeededBeforeApi = currentLimit - currentTotalFound;
 
             if (searchMode === 'MAPS') {
               results = await DiscoveryService.performDeepScan(cleanKeyword, currentSearchLocation, config.tenantId, apiKeys, currentPage);
@@ -573,6 +575,19 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                       />
                       <span className="absolute right-5 top-5 text-[10px] font-black text-slate-600 uppercase">LEADS</span>
                     </div>
+                    {/* Exibição Transparente de Custo de Créditos */}
+                    {mode !== 'IMPORT' && filters.limit > 0 && (
+                      <div className="flex items-center gap-2 mt-2 ml-2">
+                        <Zap size={12} className="text-secondary" />
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                          Custo Estimado: <span className="text-white font-black">
+                            {mode === 'MAPS' ? Math.ceil((filters.limit || 50) / 20) * 5 :
+                              mode === 'CNPJ' ? Math.ceil((filters.limit || 50) / 15) * 10 :
+                                mode === 'SHERLOCK' ? Math.ceil((filters.limit || 50) / 15) * 15 : 10} Créditos
+                          </span>
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -605,7 +620,14 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
                       <div className="absolute inset-0 bg-white/40 blur-lg rounded-full animate-pulse group-hover/btn:blur-xl transition-all"></div>
                       <Zap size={28} fill="currentColor" className="relative z-10 group-hover/btn:rotate-12 transition-transform" />
                     </div>
-                    <span className="relative z-10">{mode === 'ENRICH' ? 'ENRIQUECER CNPJ AGORA' : 'INICIAR NEURAL EXTRACTION'}</span>
+                    <span className="relative z-10 flex flex-col items-center">
+                      <span>{mode === 'ENRICH' ? 'ENRIQUECER CNPJ AGORA' : 'INICIAR NEURAL EXTRACTION'}</span>
+                      {filters.limit > 0 && mode !== 'ENRICH' && (
+                        <span className="text-[10px] font-bold text-slate-900/70 tracking-widest mt-1">
+                          COMPROMETERÁ ATÉ {mode === 'MAPS' ? Math.ceil((filters.limit || 50) / 20) * 5 : mode === 'CNPJ' ? Math.ceil((filters.limit || 50) / 15) * 10 : Math.ceil((filters.limit || 50) / 15) * 15} CRÉDITOS
+                        </span>
+                      )}
+                    </span>
                   </>
                 )}
               </button>
