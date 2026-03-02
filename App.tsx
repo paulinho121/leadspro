@@ -486,9 +486,18 @@ const App: React.FC = () => {
   const handleConvertToDeal = React.useCallback(async (leadId: string) => {
     if (!userTenantId) return;
     try {
+      await RevenueService.createDeal(userTenantId, leadId);
       toast.success('Lead convertido!', 'Oportunidade adicionada ao Pipeline.');
       setActiveTab('pipeline');
-    } catch (err) { }
+    } catch (err: any) {
+      console.error('[Revenue] Fail to convert:', err);
+      if (err.message?.includes('unique constraint') || err.code === '23505') {
+        toast.error('Lead duplicado', 'Este lead já existe no seu Pipeline.');
+        setActiveTab('pipeline');
+      } else {
+        toast.error('Falha na conversão', 'Ocorreu um erro ao mover o lead para o pipeline.');
+      }
+    }
   }, [userTenantId, setActiveTab]);
 
   const handleParkLead = React.useCallback(async (leadId: string) => {
@@ -514,9 +523,14 @@ const App: React.FC = () => {
   const handleBulkConvertToDeal = React.useCallback(async (leadIds: string[]) => {
     if (!userTenantId || leadIds.length === 0) return;
     try {
+      await RevenueService.createBulkDeals(userTenantId, leadIds);
       toast.success(`${leadIds.length} leads convertidos!`, 'Oportunidades adicionadas ao Pipeline.');
       setActiveTab('pipeline');
-    } catch (err) { }
+    } catch (err: any) {
+      console.error('[Revenue] Fail to bulk convert:', err);
+      toast.error('Falha na conversão em lote', 'Alguns leads podem já estar no pipeline.');
+      setActiveTab('pipeline');
+    }
   }, [userTenantId, setActiveTab]);
 
   const handleSendTicket = async () => {
