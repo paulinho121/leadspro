@@ -646,14 +646,15 @@ const App: React.FC = () => {
           <NavItem icon={<MoneyIcon size={20} />} label="Faturamento" active={activeTab === 'billing'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('billing'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
 
 
+          <div className="pt-8 pb-4">
+            {isSidebarOpen && <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Sistemas</p>}
+            <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mx-4 mb-4"></div>
+          </div>
+
+          <NavItem icon={<ShieldCheck size={20} />} label="Branding" active={activeTab === 'partner'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+
           {isMaster && (
             <>
-              <div className="pt-8 pb-4">
-                {isSidebarOpen && <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Sistemas</p>}
-                <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mx-4 mb-4"></div>
-              </div>
-
-              <NavItem icon={<ShieldCheck size={20} />} label="Branding" active={activeTab === 'partner'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
               <NavItem icon={<Activity size={20} />} label="Histórico" active={activeTab === 'history'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('history'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
               <NavItem icon={<ShieldCheck className="text-primary" size={20} />} label="Master" active={activeTab === 'master'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('master'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
             </>
@@ -851,26 +852,7 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        {missingKeys && activeTab !== 'partner' && (
-          <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 md:px-10 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in-down shrink-0 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent pointer-events-none"></div>
-            <div className="flex items-center gap-3 relative z-10">
-              <div className="p-2 bg-amber-500/20 rounded-lg animate-pulse shrink-0">
-                <AlertTriangle className="text-amber-500" size={14} />
-              </div>
-              <div className="flex flex-col">
-                <p className="text-[10px] text-white font-black uppercase tracking-[0.2em] leading-none mb-0.5">Chaves de API pendentes</p>
-                <p className="text-[9px] text-amber-500/60 font-medium hidden sm:block">Configure suas chaves Serper/Gemini para extrações neurais.</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setActiveTab('partner')}
-              className="bg-amber-500 text-slate-900 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-amber-500/20 relative z-10 border border-amber-400/50 active:scale-95 shrink-0 w-full sm:w-auto"
-            >
-              CONFIGURAR
-            </button>
-          </div>
-        )}
+
 
         <section className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar pb-24 md:pb-10 no-scrollbar">
           <div className="max-w-7xl mx-auto min-h-full flex flex-col">

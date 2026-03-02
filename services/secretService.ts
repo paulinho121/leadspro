@@ -27,14 +27,14 @@ export class SecretService {
         }
 
         try {
-            // Get core secrets
+            // 1. Tentar buscar chaves específicas do Tenant
             const { data, error } = await supabase
                 .from('tenant_api_keys')
                 .select('gemini_key, openai_key, serper_key')
                 .eq('tenant_id', tenantId)
                 .maybeSingle();
 
-            // Get CRM tokens safely from generic JSON config avoiding schema constraints errors
+            // 2. Tentar buscar chaves do CRM (sempre específicas)
             const { data: configData } = await supabase
                 .from('white_label_configs')
                 .select('api_keys')
@@ -43,22 +43,23 @@ export class SecretService {
 
             const crmKeys = configData?.api_keys || {};
 
-            if (error) {
-                console.warn('[Security] Erro ao buscar segredos:', error.message);
+            // 3. SE as chaves core estiverem vazias, tentar buscar as chaves GLOBAIS do Master
+            let platformKeys: any = null;
+            if (!data?.gemini_key && !data?.serper_key) {
+                const { data: globalKeys } = await supabase.rpc('get_platform_api_keys').maybeSingle();
+                if (globalKeys) platformKeys = globalKeys;
             }
 
-            // Fallback para variáveis de ambiente se não houver no banco ou se o tenant for o default
             const secrets = {
-                gemini: data?.gemini_key || (import.meta as any).env.VITE_GEMINI_API_KEY || undefined,
-                openai: data?.openai_key || (import.meta as any).env.VITE_OPENAI_API_KEY || undefined,
-                serper: data?.serper_key || (import.meta as any).env.VITE_SERPER_API_KEY || undefined,
+                gemini: data?.gemini_key || platformKeys?.gemini_key || (import.meta as any).env.VITE_GEMINI_API_KEY || undefined,
+                openai: data?.openai_key || platformKeys?.openai_key || (import.meta as any).env.VITE_OPENAI_API_KEY || undefined,
+                serper: data?.serper_key || platformKeys?.serper_key || (import.meta as any).env.VITE_SERPER_API_KEY || undefined,
                 rdStation: crmKeys?.rd_station_token || undefined,
                 hubspot: crmKeys?.hubspot_token || undefined,
                 pipedrive: crmKeys?.pipedrive_token || undefined,
                 salesforce: crmKeys?.salesforce_token || undefined
             };
 
-            // Armazenar no cache para evitar múltiplas chamadas
             this.secretsCache.set(tenantId, secrets);
             return secrets;
         } catch (err) {
