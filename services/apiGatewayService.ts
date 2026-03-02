@@ -124,6 +124,24 @@ export class ApiGatewayService {
         return await response.json();
     }
 
+    static async fetchSerperCredits(apiKey: string) {
+        const key = apiKey?.trim() || import.meta.env.VITE_SERPER_API_KEY?.trim();
+        if (!key) throw new Error("SERPER_API_KEY_MISSING");
+
+        const response = await fetch('https://google.serper.dev/credits', {
+            method: 'GET',
+            headers: {
+                'X-API-KEY': key,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Serper Credits Error: ${response.status}`);
+        }
+        return await response.json();
+    }
+
     private static async callGeminiReal(endpoint: string, payload: any, apiKey: string, model: string = 'gemini-1.5-flash') {
         const key = apiKey?.trim() || import.meta.env.VITE_GEMINI_API_KEY?.trim();
         if (!key) throw new Error("GEMINI_API_KEY_MISSING");

@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
 import { DEFAULT_BRANDING } from '../types/branding';
 import { SecretService } from '../services/secretService';
 import { toast } from './Toast';
+import { ApiGatewayService } from '../services/apiGatewayService';
+import { Wallet } from 'lucide-react';
 
 const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' | 'api', isMaster?: boolean }> = ({ initialTab = 'branding', isMaster = false }) => {
     const { config, refreshBranding } = useBranding();
@@ -26,6 +28,22 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
     const [isUploading, setIsUploading] = useState<'logo' | 'favicon' | null>(null);
     const [verifyingDomain, setVerifyingDomain] = useState(false);
     const [domainVerificationStatus, setDomainVerificationStatus] = useState<'success' | 'error' | null>(null);
+    const [serperBalance, setSerperBalance] = useState<number | null>(null);
+    const [loadingBalance, setLoadingBalance] = useState(false);
+
+    const fetchBalance = async (key: string) => {
+        if (!key) return;
+        setLoadingBalance(true);
+        try {
+            const data = await ApiGatewayService.fetchSerperCredits(key);
+            setSerperBalance(data.credits);
+        } catch (err) {
+            console.error('Error fetching serper balance:', err);
+            setSerperBalance(null);
+        } finally {
+            setLoadingBalance(false);
+        }
+    };
 
     // User Management State
     const [users, setUsers] = useState<any[]>([]);
@@ -254,6 +272,11 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                 }
 
                 setFormData(brandingData);
+
+                // Fetch Serper balance if key exists
+                if (secrets?.serper) {
+                    fetchBalance(secrets.serper);
+                }
             };
 
             loadData();
@@ -715,8 +738,13 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                                     label="Serper.dev API (Search Engine)"
                                     placeholder="8c2a..."
                                     value={formData.apiKeys?.serper || ''}
-                                    onChange={(val) => setFormData({ ...formData, apiKeys: { ...formData.apiKeys, serper: val } })}
+                                    onChange={(val) => {
+                                        setFormData({ ...formData, apiKeys: { ...formData.apiKeys, serper: val } });
+                                        if (val.length > 20) fetchBalance(val);
+                                    }}
                                     description="Obrigatória para extração real de geolocalização e busca visual (places, telefones, reviews)."
+                                    balance={activeSettingsTab === 'api' ? serperBalance : undefined}
+                                    loadingBalance={loadingBalance}
                                 />
                                 <ApiConfigItem
                                     label="Google Gemini API"
@@ -931,8 +959,10 @@ const ApiConfigItem: React.FC<{
     placeholder: string;
     description: string;
     value: string;
-    onChange: (val: string) => void
-}> = ({ label, placeholder, description, value, onChange }) => {
+    onChange: (val: string) => void;
+    balance?: number | null;
+    loadingBalance?: boolean;
+}> = ({ label, placeholder, description, value, onChange, balance, loadingBalance }) => {
     const [showKey, setShowKey] = useState(false);
 
     const maskKey = (key: string) => {
@@ -950,10 +980,42 @@ const ApiConfigItem: React.FC<{
                     </div>
                     <h4 className="font-bold text-white tracking-tight">{label}</h4>
                 </div>
-                <div className={`px-2 py-1 ${value ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'} text-[10px] font-black rounded uppercase tracking-widest border border-current/10 animate-pulse`}>
+                <div className={`px-2 py-1 ${value ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'} text-[10px] font-black rounded uppercase tracking-widest border border-current/10 whitespace-nowrap`}>
                     {value ? 'Configurado' : 'Pendente'}
                 </div>
             </div>
+
+            {value && balance !== undefined && (
+                <div className="flex items-center gap-2 bg-primary/5 border border-primary/10 rounded-xl p-3 animate-in fade-in slide-in-from-top-2 duration-500">
+                    <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                        <Wallet size={14} className="text-primary" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-primary uppercase tracking-widest">Saldo Disponível</p>
+                        <p className="text-sm font-bold text-white">
+                            {loadingBalance ? (
+                                <span className="flex items-center gap-2 text-slate-500">
+                                    <Loader2 className="animate-spin" size={12} />
+                                    Sincronizando...
+                                </span>
+                            ) : (
+                                <>
+                                    {balance?.toLocaleString('pt-BR')} créditos
+                                    <span className="text-[10px] text-slate-500 font-medium ml-2">
+                                        (~{Math.floor((balance || 0) / 1)} buscas)
+                                    </span>
+                                </>
+                            )}
+                        </p>
+                    </div>
+                    {balance !== null && balance < 500 && (
+                        <div className="ml-auto bg-red-500/10 text-red-500 text-[10px] font-black px-2 py-1 rounded-lg animate-pulse uppercase">
+                            Saldo Baixo!
+                        </div>
+                    )}
+                </div>
+            )}
+
             <p className="text-xs text-slate-500 font-medium leading-relaxed">{description}</p>
 
             <div className="relative group/input">
