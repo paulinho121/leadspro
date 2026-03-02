@@ -16,6 +16,9 @@ interface Tenant {
     plan: string;
     is_active: boolean;
     created_at: string;
+    leadsCount?: number;
+    enrichedCount?: number;
+    creditBalance?: number;
 }
 
 interface UserProfile {
@@ -67,6 +70,45 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
         message: '',
         type: 'info'
     });
+
+    const [selectedTenantForCredits, setSelectedTenantForCredits] = useState<Tenant | null>(null);
+    const [creditAdjustment, setCreditAdjustment] = useState({
+        amount: 0,
+        type: 'add' as 'add' | 'remove'
+    });
+    const [isUpdatingCredits, setIsUpdatingCredits] = useState(false);
+
+    const handleUpdateCredits = async () => {
+        if (!selectedTenantForCredits || creditAdjustment.amount <= 0) return;
+
+        setIsUpdatingCredits(true);
+        try {
+            const finalAmount = creditAdjustment.type === 'add' ? creditAdjustment.amount : -creditAdjustment.amount;
+
+            // 1. Update wallet
+            const { error: walletError } = await supabase.rpc('adjust_tenant_credits', {
+                p_tenant_id: selectedTenantForCredits.id,
+                p_amount: finalAmount,
+                p_description: `Ajuste manual via Master Console: ${creditAdjustment.type === 'add' ? '+' : '-'}${creditAdjustment.amount} créditos`
+            });
+
+            if (walletError) throw walletError;
+
+            toast.success(
+                'Créditos atualizados!',
+                `${creditAdjustment.amount} créditos ${creditAdjustment.type === 'add' ? 'adicionados' : 'removidos'} de ${selectedTenantForCredits.name}.`
+            );
+
+            setSelectedTenantForCredits(null);
+            setCreditAdjustment({ amount: 0, type: 'add' });
+            fetchData();
+        } catch (err: any) {
+            console.error('Error updating credits:', err);
+            toast.error('Erro ao atualizar créditos', err.message);
+        } finally {
+            setIsUpdatingCredits(false);
+        }
+    };
 
     const fetchData = async () => {
         console.log('[Master Console] Iniciando sincronização de dados...');
@@ -158,6 +200,19 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                     ...t,
                     leadsCount: leadsPerTenant[t.id]?.total || 0,
                     enrichedCount: leadsPerTenant[t.id]?.enriched || 0
+                })));
+            }
+
+            // 6. Fetch Wallets (Credits)
+            const { data: walletsData } = await supabase
+                .from('tenant_wallets')
+                .select('tenant_id, credit_balance');
+
+            if (walletsData) {
+                const walletMap = Object.fromEntries(walletsData.map(w => [w.tenant_id, w.credit_balance]));
+                setTenants(prev => prev.map(t => ({
+                    ...t,
+                    creditBalance: walletMap[t.id] || 0
                 })));
             }
 
@@ -387,6 +442,7 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                                             <th className="p-5 text-[10px] font-black text-slate-500 uppercase border-b border-white/5">Empresa / Slug</th>
                                             <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/5">Plano</th>
                                             <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/5">Leads / Enriq.</th>
+                                            <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/5">SALDO</th>
                                             <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/5">Usuários</th>
                                             <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-center border-b border-white/10 border-l">Status</th>
                                             <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-right border-b border-white/5">Ações</th>
@@ -421,6 +477,12 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                                                                 <span className="text-[9px] text-primary font-bold uppercase">{(tenant as any).enrichedCount || 0} Enriq.</span>
                                                             </div>
                                                         </td>
+                                                        <td className="p-5 text-center">
+                                                            <div className="flex flex-col items-center">
+                                                                <span className="text-sm font-black text-emerald-400">{tenant.creditBalance?.toLocaleString() || 0}</span>
+                                                                <span className="text-[8px] text-slate-500 font-bold uppercase">CRÉDITOS</span>
+                                                            </div>
+                                                        </td>
                                                         <td className="p-5 text-center font-bold text-white text-sm">
                                                             {tenantUsers.length}
                                                         </td>
@@ -434,6 +496,16 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                                                         </td>
                                                         <td className="p-5 text-right">
                                                             <div className="flex items-center justify-end gap-2">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setSelectedTenantForCredits(tenant);
+                                                                    }}
+                                                                    className="p-2 rounded-xl text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                                                                    title="Gerenciar Créditos"
+                                                                >
+                                                                    <DollarSign size={18} />
+                                                                </button>
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
@@ -846,6 +918,82 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                     </div>
                 </div>
             </div>
+            {/* Modal de Créditos */}
+            {selectedTenantForCredits && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="glass w-full max-w-md rounded-[2.5rem] border border-emerald-500/30 overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-8 bg-emerald-500/5 border-b border-white/5 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-emerald-500/10 rounded-2xl">
+                                    <Zap className="text-emerald-500" size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-black text-xl uppercase italic">Ajuste de Créditos</h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{selectedTenantForCredits.name}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setSelectedTenantForCredits(null)} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+                                <X size={20} className="text-slate-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-8 space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <p className="text-[9px] text-slate-500 font-black uppercase mb-1">Saldo Atual</p>
+                                    <p className="text-2xl font-black text-white">{selectedTenantForCredits.creditBalance?.toLocaleString() || 0}</p>
+                                </div>
+                                <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
+                                    <p className="text-[9px] text-emerald-500/50 font-black uppercase mb-1">Novo Saldo</p>
+                                    <p className="text-2xl font-black text-emerald-400">
+                                        {(selectedTenantForCredits.creditBalance || 0) + (creditAdjustment.type === 'add' ? creditAdjustment.amount : -creditAdjustment.amount)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Operação</label>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setCreditAdjustment({ ...creditAdjustment, type: 'add' })}
+                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${creditAdjustment.type === 'add' ? 'bg-emerald-500 text-slate-900 border-emerald-500' : 'bg-white/5 text-slate-500 border-white/5'}`}
+                                    >
+                                        Adicionar (+)
+                                    </button>
+                                    <button
+                                        onClick={() => setCreditAdjustment({ ...creditAdjustment, type: 'remove' })}
+                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${creditAdjustment.type === 'remove' ? 'bg-red-500 text-white border-red-500' : 'bg-white/5 text-slate-500 border-white/5'}`}
+                                    >
+                                        Remover (-)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Quantidade de Créditos</label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
+                                    <input
+                                        type="number"
+                                        placeholder="Ex: 5000"
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-white text-xl font-black outline-none focus:border-emerald-500/50 transition-all"
+                                        value={creditAdjustment.amount || ''}
+                                        onChange={(e) => setCreditAdjustment({ ...creditAdjustment, amount: Math.max(0, parseInt(e.target.value) || 0) })}
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleUpdateCredits}
+                                disabled={isUpdatingCredits || creditAdjustment.amount <= 0}
+                                className="w-full py-5 bg-emerald-500 text-slate-900 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                            >
+                                {isUpdatingCredits ? 'ATUALIZANDO...' : 'CONFIRMAR AJUSTE'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

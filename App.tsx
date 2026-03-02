@@ -585,7 +585,7 @@ const App: React.FC = () => {
       case 'automation':
         return <Suspense fallback={<LazyFallback />}><AutomationView tenantId={userTenantId} apiKeys={tenantSecrets} /></Suspense>;
       case 'monitor':
-        return <Suspense fallback={<LazyFallback />}><AutomationHealthDashboard tenantId={userTenantId} /></Suspense>;
+        return <Suspense fallback={<LazyFallback />}><AutomationHealthDashboard tenantId={userTenantId} isMaster={isMaster} /></Suspense>;
       case 'billing':
         return <Suspense fallback={<LazyFallback />}><BillingView tenantId={userTenantId} /></Suspense>;
       default:

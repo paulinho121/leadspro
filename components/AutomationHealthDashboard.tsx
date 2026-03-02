@@ -45,9 +45,10 @@ interface HourlyStats {
 
 interface AutomationHealthDashboardProps {
     tenantId: string;
+    isMaster?: boolean;
 }
 
-const AutomationHealthDashboard: React.FC<AutomationHealthDashboardProps> = ({ tenantId }) => {
+const AutomationHealthDashboard: React.FC<AutomationHealthDashboardProps> = ({ tenantId, isMaster = false }) => {
     const [health, setHealth] = useState<HealthData | null>(null);
     const [workerHealth, setWorkerHealth] = useState<WorkerHealth | null>(null);
     const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
@@ -262,14 +263,16 @@ const AutomationHealthDashboard: React.FC<AutomationHealthDashboardProps> = ({ t
                         </div>
                     )}
 
-                    <button
-                        onClick={triggerWorker}
-                        disabled={isTriggeringWorker}
-                        className="flex items-center gap-2 px-6 py-3 bg-primary text-slate-900 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
-                    >
-                        {isTriggeringWorker ? <Loader size={14} className="animate-spin" /> : <Play size={14} />}
-                        {isTriggeringWorker ? 'Executando...' : 'Disparar Worker'}
-                    </button>
+                    {isMaster && (
+                        <button
+                            onClick={triggerWorker}
+                            disabled={isTriggeringWorker}
+                            className="flex items-center gap-2 px-6 py-3 bg-primary text-slate-900 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+                        >
+                            {isTriggeringWorker ? <Loader size={14} className="animate-spin" /> : <Play size={14} />}
+                            {isTriggeringWorker ? 'Executando...' : 'Disparar Worker'}
+                        </button>
+                    )}
                     <button
                         onClick={() => setIsLiveMode(!isLiveMode)}
                         className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest border transition-all ${isLiveMode ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-white/5 text-slate-500 border-white/5'}`}
@@ -295,17 +298,17 @@ const AutomationHealthDashboard: React.FC<AutomationHealthDashboardProps> = ({ t
                             <Activity size={28} className={`${getWorkerStatusColor()} ${workerHealth?.status === 'healthy' ? 'animate-pulse' : ''}`} />
                         </div>
                         <div>
-                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Worker Server-Side</p>
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Status Global dos Sistemas</p>
                             <h3 className={`text-2xl font-black uppercase italic tracking-tight ${getWorkerStatusColor()}`}>
                                 {workerHealth?.status === 'healthy' ? '● Operacional' :
                                     workerHealth?.status === 'degraded' ? '◐ Degradado' :
                                         workerHealth?.status === 'offline' ? '○ Offline' : '? Desconhecido'}
                             </h3>
-                            <p className="text-[9px] text-slate-500 font-mono mt-1">{getLastRunLabel()}</p>
+                            <p className="text-[9px] text-slate-500 font-mono mt-1">Última checagem: {getLastRunLabel()}</p>
                         </div>
                     </div>
 
-                    {workerHealth?.last_results && (
+                    {isMaster && workerHealth?.last_results && (
                         <div className="grid grid-cols-4 gap-6">
                             {[
                                 { label: 'Mensagens', value: workerHealth.last_results.messages, icon: <Send size={14} /> },
