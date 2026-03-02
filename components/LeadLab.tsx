@@ -489,9 +489,14 @@ const LeadLab: React.FC<LeadLabProps> = ({
             <div className="absolute right-6 top-6 opacity-10 group-hover:opacity-20 transition-opacity">
               <BrainCircuit size={48} className="text-primary" />
             </div>
-            <div className="flex flex-col h-full justify-between gap-4 relative z-10">
-              <div>
-                <span className="text-[9px] font-bold text-slate-400/80 uppercase tracking-widest mb-1 block">Cognitive Maturity</span>
+            <div className="flex flex-col h-full relative z-10">
+              {/* Header area with fixed height for alignment */}
+              <div className="h-4 mb-2 flex items-center">
+                <span className="text-[9px] font-bold text-slate-400/80 uppercase tracking-widest block">Cognitive Maturity</span>
+              </div>
+
+              {/* Number area centered */}
+              <div className="flex-1 flex items-center">
                 <div className="flex items-baseline gap-2">
                   <h4 className="text-4xl lg:text-5xl font-black text-white tracking-tighter">
                     {labLeads.length > 0 ? Math.round((labLeads.filter(l => l.status === LeadStatus.ENRICHED).length / labLeads.length) * 100) : 0}
@@ -499,12 +504,16 @@ const LeadLab: React.FC<LeadLabProps> = ({
                   <span className="text-2xl font-bold text-primary/70">%</span>
                 </div>
               </div>
-              <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-white/5">
-                <div
-                  className="bg-primary h-full transition-all duration-1000 relative"
-                  style={{ width: `${labLeads.length > 0 ? (labLeads.filter(l => l.status === LeadStatus.ENRICHED).length / labLeads.length) * 100 : 0}%` }}
-                >
-                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent to-white/30 truncate"></div>
+
+              {/* Footer area with consistent margin/height */}
+              <div className="mt-4 h-10 flex items-center">
+                <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-white/5">
+                  <div
+                    className="bg-primary h-full transition-all duration-1000 relative"
+                    style={{ width: `${labLeads.length > 0 ? (labLeads.filter(l => l.status === LeadStatus.ENRICHED).length / labLeads.length) * 100 : 0}%` }}
+                  >
+                    <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent to-white/30 truncate"></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -513,12 +522,22 @@ const LeadLab: React.FC<LeadLabProps> = ({
           {/* Card 2: Enriquecidos */}
           <div className="glass rounded-[1.5rem] p-5 border border-white/5 relative overflow-hidden group shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-            <div className="flex flex-col h-full justify-between relative z-10">
-              <span className="text-[9px] font-bold text-slate-400/80 uppercase tracking-widest mb-2 block">Enriched Profiles</span>
-              <div className="flex items-baseline gap-4 mt-auto">
+            <div className="flex flex-col h-full relative z-10">
+              {/* Header area with fixed height for alignment */}
+              <div className="h-4 mb-2 flex items-center">
+                <span className="text-[9px] font-bold text-slate-400/80 uppercase tracking-widest block">Enriched Profiles</span>
+              </div>
+
+              {/* Number area centered */}
+              <div className="flex-1 flex items-center">
                 <h4 className="text-4xl lg:text-5xl font-black text-white tracking-tighter">
                   {labLeads.filter(l => l.status === LeadStatus.ENRICHED).length}
                 </h4>
+              </div>
+
+              {/* Footer placeholder to maintain alignment with other cards */}
+              <div className="mt-4 h-10 flex items-center">
+                {/* Empty but reserves vertical space */}
               </div>
             </div>
             <div className="absolute -bottom-4 -right-4 text-emerald-500 opacity-5 group-hover:opacity-10 transition-all duration-700 w-32 h-32 flex items-center justify-center pointer-events-none">
@@ -529,8 +548,9 @@ const LeadLab: React.FC<LeadLabProps> = ({
           {/* Card 3: Fila Pendente */}
           <div className="glass rounded-[1.5rem] p-5 flex flex-col justify-between border border-white/5 relative overflow-hidden group shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
             <div className="absolute inset-0 bg-gradient-to-br from-slate-800/20 to-transparent"></div>
-            <div className="flex flex-col h-full justify-between relative z-10">
-              <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-col h-full relative z-10">
+              {/* Header area with fixed height for alignment */}
+              <div className="h-4 mb-2 flex items-center justify-between">
                 <span className="text-[9px] font-bold text-slate-400/80 uppercase tracking-widest block">Queue in Review</span>
                 <div className="flex items-center gap-2">
                   {isEnriching ? (
@@ -546,11 +566,16 @@ const LeadLab: React.FC<LeadLabProps> = ({
                   )}
                 </div>
               </div>
-              <div className="flex flex-col mt-auto gap-3">
+
+              {/* Number area centered */}
+              <div className="flex-1 flex items-center">
                 <h4 className={`text-4xl lg:text-5xl font-black tracking-tighter transition-colors duration-500 ${labLeads.filter(l => l.status === LeadStatus.NEW).length > 50 ? 'text-orange-500 drop-shadow-[0_0_15px_rgba(249,115,22,0.3)]' : 'text-white/60 group-hover:text-white'}`}>
                   {labLeads.filter(l => l.status === LeadStatus.NEW).length}
                 </h4>
-                {/* Embedded Search Input */}
+              </div>
+
+              {/* Footer area with Search */}
+              <div className="mt-4 h-10 flex items-center">
                 <div className="relative group/search w-full">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within/search:text-primary transition-colors" />
                   <input
