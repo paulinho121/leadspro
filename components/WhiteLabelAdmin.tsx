@@ -6,9 +6,10 @@ import { DEFAULT_BRANDING } from '../types/branding';
 import { SecretService } from '../services/secretService';
 import { toast } from './Toast';
 
-const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' | 'api' }> = ({ initialTab = 'branding' }) => {
+const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' | 'api', isMaster?: boolean }> = ({ initialTab = 'branding', isMaster = false }) => {
     const { config, refreshBranding } = useBranding();
-    const [activeSettingsTab, setSettingsTab] = useState<'branding' | 'domain' | 'users' | 'api' | 'integrations'>(initialTab);
+    const effectiveInitialTab = (initialTab === 'api' && !isMaster) ? 'branding' : initialTab;
+    const [activeSettingsTab, setSettingsTab] = useState<'branding' | 'domain' | 'users' | 'api' | 'integrations'>(effectiveInitialTab);
     const [formData, setFormData] = useState<any>({
         platformName: '',
         logoUrl: '',
@@ -417,12 +418,14 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                         active={activeSettingsTab === 'users'}
                         onClick={() => setSettingsTab('users')}
                     />
-                    <SettingsTab
-                        icon={<Database size={18} />}
-                        label="Conexões API"
-                        active={activeSettingsTab === 'api'}
-                        onClick={() => setSettingsTab('api')}
-                    />
+                    {isMaster && (
+                        <SettingsTab
+                            icon={<Database size={18} />}
+                            label="Conexões API"
+                            active={activeSettingsTab === 'api'}
+                            onClick={() => setSettingsTab('api')}
+                        />
+                    )}
                     <SettingsTab
                         icon={<Link2 size={18} />}
                         label="Integrações (CRM)"
@@ -700,7 +703,7 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                         </div>
                     )}
 
-                    {activeSettingsTab === 'api' && (
+                    {activeSettingsTab === 'api' && isMaster && (
                         <div className="space-y-8 animate-in slide-in-from-right duration-300">
                             <div>
                                 <h3 className="text-xl font-bold text-white mb-2">Configurações de API Própria</h3>

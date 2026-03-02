@@ -568,7 +568,7 @@ const App: React.FC = () => {
           userTenantId={userTenantId}
         /></Suspense>;
       case 'partner':
-        return <Suspense fallback={<LazyFallback />}><WhiteLabelAdmin initialTab="api" /></Suspense>;
+        return <Suspense fallback={<LazyFallback />}><WhiteLabelAdmin initialTab="api" isMaster={isMaster} /></Suspense>;
       case 'master':
         return <Suspense fallback={<LazyFallback />}><MasterConsole onlineUsers={onlineUsers} /></Suspense>;
       case 'history':
