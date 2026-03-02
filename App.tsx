@@ -29,7 +29,10 @@ const lazyWithRetry = (importFn: () => Promise<any>) =>
     } catch (error) {
       if (!pageHasBeenForceRefreshed) {
         window.localStorage.setItem('page-has-been-force-refreshed', 'true');
-        return window.location.reload();
+        window.location.reload();
+        // Resolve com uma promessa que nunca termina para evitar erro no React.lazy 
+        // enquanto a página está recarregando
+        return new Promise(() => { });
       }
       throw error;
     }

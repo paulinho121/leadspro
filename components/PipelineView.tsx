@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from './Toast';
 import {
     LayoutDashboard, TrendingUp, DollarSign, Target,
@@ -7,28 +7,108 @@ import {
     CheckCircle2, Clock, AlertCircle, ArrowUpRight, Sparkles, MessageSquare,
     Zap, RefreshCw
 } from 'lucide-react';
-import { Deal, DealStage, Lead } from '../types';
+import { Deal, DealStage, Lead, OutreachSequence } from '../types';
 import { RevenueService } from '../services/revenueService';
 import { SdrService } from '../services/sdrService';
 import { SequenceService } from '../services/sequenceService';
 import { useBranding } from './BrandingProvider';
-import { OutreachSequence } from '../types';
 import { supabase } from '../lib/supabase';
+
+interface DealCardProps {
+    key?: string | number;
+    deal: Deal;
+    color: string;
+    onAiClick: () => void;
+    isGenerating: boolean;
+    onDragStart: (e: React.DragEvent) => void;
+}
+
+const DealCard = ({ deal, color, onAiClick, isGenerating, onDragStart }: DealCardProps) => {
+    const p2c = deal.lead?.p2c_score ? Number(deal.lead.p2c_score) : (deal.probability_to_close || 0);
+    const isHot = p2c > 0.7;
+
+    return (
+        <div
+            draggable
+            onDragStart={onDragStart}
+            className={`glass-strong p-5 rounded-3xl border transition-all group cursor-grab active:cursor-grabbing premium-card relative overflow-hidden ${isHot ? 'border-primary/30 shadow-lg shadow-primary/5' : 'border-white/5 hover:border-white/20'}`}
+        >
+            {isHot && (
+                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 blur-3xl -mr-12 -mt-12 pointer-events-none animate-pulse"></div>
+            )}
+
+            <div className="flex justify-between items-start mb-3 relative z-10">
+                <div className="min-w-0 pr-8">
+                    <h5 className="text-sm font-bold text-white tracking-tight group-hover:text-primary transition-colors truncate">
+                        {deal.lead?.name || 'Cliente Sem Nome'}
+                    </h5>
+                    {isHot && (
+                        <div className="flex items-center gap-1 mt-1">
+                            <Zap size={10} className="text-primary fill-primary" />
+                            <span className="text-[9px] font-black text-primary uppercase tracking-widest">Hot Lead</span>
+                        </div>
+                    )}
+                </div>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onAiClick(); }}
+                        disabled={isGenerating}
+                        className="p-1.5 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                        title="Draft Neural por SDR"
+                    >
+                        <Sparkles size={12} className={isGenerating ? 'animate-spin' : ''} />
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex items-center justify-between mt-4 relative z-10">
+                <div className="flex flex-col">
+                    <span className="text-[9px] text-slate-500 uppercase tracking-widest mb-1">Valor</span>
+                    <span className="text-xs font-black text-white">
+                        {(deal.estimated_value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                </div>
+
+                <div className="flex flex-col items-end">
+                    <span className="text-[9px] text-slate-500 uppercase tracking-widest mb-1">Conversão IA</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-bold" style={{ color: isHot ? 'var(--color-primary)' : color }}>
+                            {Math.round(p2c * 100)}%
+                        </span>
+                        <div className="w-12 h-1 bg-white/5 rounded-full overflow-hidden">
+                            <div
+                                className="h-full rounded-full transition-all duration-1000"
+                                style={{
+                                    width: `${p2c * 100}%`,
+                                    backgroundColor: isHot ? 'var(--color-primary)' : color
+                                }}
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between relative z-10">
+                <div className="flex -space-x-2">
+                    <div className="w-6 h-6 rounded-lg bg-primary/20 border border-white/10 flex items-center justify-center text-[8px] font-black text-primary" title="Análise Neural Ativa">AI</div>
+                    {deal.lead?.socialLinks?.instagram && (
+                        <div className="w-6 h-6 rounded-lg bg-pink-500/20 border border-white/10 flex items-center justify-center text-[8px] font-black text-pink-500">IG</div>
+                    )}
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-slate-500 font-mono">
+                    <Clock size={10} />
+                    <span>{deal.created_at ? new Date(deal.created_at).toLocaleDateString() : '-'}</span>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 interface PipelineViewProps {
     tenantId: string;
     userId?: string;
     apiKeys?: any;
 }
-
-const STAGES = [
-    { id: DealStage.DISCOVERY, label: 'Descoberta', color: '#94a3b8' },
-    { id: DealStage.PRESENTATION, label: 'Apresentação', color: '#3b82f6' },
-    { id: DealStage.PROPOSAL, label: 'Proposta', color: '#8b5cf6' },
-    { id: DealStage.NEGOTIATION, label: 'Negociação', color: '#f59e0b' },
-    { id: DealStage.WON, label: 'Ganho', color: '#10b981' },
-    { id: DealStage.LOST, label: 'Perdido', color: '#ef4444' }
-];
 
 const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }) => {
     const { config } = useBranding();
@@ -40,17 +120,27 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
     const [isGenerating, setIsGenerating] = useState(false);
     const [draggingDealId, setDraggingDealId] = useState<string | null>(null);
 
+    const STAGES = useMemo(() => [
+        { id: DealStage.DISCOVERY, label: 'Descoberta', color: '#94a3b8' },
+        { id: DealStage.PRESENTATION, label: 'Apresentação', color: '#3b82f6' },
+        { id: DealStage.PROPOSAL, label: 'Proposta', color: '#8b5cf6' },
+        { id: DealStage.NEGOTIATION, label: 'Negociação', color: '#f59e0b' },
+        { id: DealStage.WON, label: 'Ganho', color: '#10b981' },
+        { id: DealStage.LOST, label: 'Perdido', color: '#ef4444' }
+    ], []);
+
     const loadData = async () => {
+        if (!tenantId) return;
         setIsLoading(true);
         try {
             const data = await RevenueService.getDeals(tenantId);
             setDeals(data || []);
 
             const pipelineStats = await RevenueService.getPipelineValue(tenantId);
-            setStats(pipelineStats);
+            setStats(pipelineStats || { total: 0, weighted: 0 });
 
             const seqs = await SequenceService.getSequences(tenantId);
-            setSequences(seqs);
+            setSequences(seqs || []);
         } catch (err) {
             console.error('Error loading pipeline:', err);
         } finally {
@@ -59,7 +149,7 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
     };
 
     useEffect(() => {
-        if (tenantId) loadData();
+        loadData();
     }, [tenantId]);
 
     const handleGenerateAiMessage = async (deal: Deal) => {
@@ -70,13 +160,14 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
             setSelectedDealForAi({ deal, message: msg });
         } catch (err) {
             console.error('AI SDR Error:', err);
+            toast.error('Erro na IA', 'Não foi possível gerar a mensagem agora.');
         } finally {
             setIsGenerating(false);
         }
     };
 
     const handleEnrollInSequence = async (deal: Deal, sequenceId: string) => {
-        if (!deal.lead_id) return;
+        if (!deal.lead_id || !tenantId) return;
         try {
             await SequenceService.enrollLead(tenantId, deal.lead_id, sequenceId);
             toast.success('Cadência ativada!', 'Lead inscrito na sequência automatizada.');
@@ -86,7 +177,7 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
         }
     };
 
-    const getDealsByStage = (stage: DealStage) => deals.filter(d => d.stage === stage);
+    const getDealsByStage = (stageId: string) => deals.filter(d => d.stage === stageId);
 
     const handleDragStart = (e: React.DragEvent, dealId: string) => {
         setDraggingDealId(dealId);
@@ -104,7 +195,7 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
         const dealId = draggingDealId || e.dataTransfer.getData('dealId');
         if (!dealId) return;
 
-        // Otimismo visual: atualiza o estado local imediatamente
+        // Otimismo visual
         const updatedDeals = deals.map(d =>
             d.id === dealId ? { ...d, stage: newStage } : d
         );
@@ -113,19 +204,17 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
 
         try {
             await RevenueService.updateDealStage(dealId, newStage, userId);
-            // Recarregar estatísticas após mudança de estágio
             const pipelineStats = await RevenueService.getPipelineValue(tenantId);
-            setStats(pipelineStats);
+            setStats(pipelineStats || { total: 0, weighted: 0 });
         } catch (err) {
             console.error('Erro ao mover lead:', err);
-            // Reverter se falhar
             loadData();
         }
     };
 
     return (
-        <div className="p-4 md:p-10 space-y-6 md:space-y-8 animate-fade-in h-full flex flex-col relative overflow-guard">
-            {/* Header com Stats de Receita e Ações */}
+        <div className="p-4 md:p-10 space-y-6 md:space-y-8 animate-fade-in h-full flex flex-col relative">
+            {/* Header com Stats */}
             <div className="flex flex-col gap-4 md:gap-6">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 flex-1">
                     <div className="glass p-6 rounded-3xl border border-white/5 relative overflow-hidden group">
@@ -134,7 +223,7 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
                         </div>
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Valor Total do Pipeline</p>
                         <h3 className="text-3xl font-black text-white tracking-tighter">
-                            {stats.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            {(stats.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </h3>
                     </div>
 
@@ -143,8 +232,8 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
                             <Target size={48} />
                         </div>
                         <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">Previsão Realista (Ponderada)</p>
-                        <h3 className="text-3xl font-black text-white tracking-tighter" style={{ color: config.colors.primary }}>
-                            {stats.weighted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        <h3 className="text-3xl font-black text-white tracking-tighter" style={{ color: config?.colors?.primary || '#f97316' }}>
+                            {(stats.weighted || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </h3>
                     </div>
 
@@ -189,10 +278,10 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
 
                         <div
                             onDragOver={handleDragOver}
-                            onDrop={(e) => handleDrop(e, stage.id as DealStage)}
+                            onDrop={(e) => handleDrop(e, stage.id)}
                             className={`flex-1 bg-white/[0.02] border border-white/5 rounded-[2rem] p-4 space-y-4 overflow-y-auto custom-scrollbar transition-colors ${draggingDealId ? 'ring-2 ring-primary/20 bg-primary/5' : ''}`}
                         >
-                            {getDealsByStage(stage.id as DealStage).map(deal => (
+                            {getDealsByStage(stage.id).map(deal => (
                                 <DealCard
                                     key={deal.id}
                                     deal={deal}
@@ -209,8 +298,8 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
 
             {/* AI SDR OVERLAY */}
             {selectedDealForAi && (
-                <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-6">
-                    <div className="glass-strong max-w-lg w-full p-8 rounded-[2.5rem] border-white/10 shadow-2xl animate-in zoom-in-95 duration-300">
+                <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-6" onClick={() => setSelectedDealForAi(null)}>
+                    <div className="glass-strong max-w-lg w-full p-8 rounded-[2.5rem] border-white/10 shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-4 mb-6">
                             <div className="p-3 bg-primary/20 rounded-2xl text-primary">
                                 <Sparkles size={24} />
@@ -221,16 +310,15 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
                             </div>
                         </div>
 
-                        <div className="bg-white/5 rounded-3xl p-6 border border-white/5 mb-8">
+                        <div className="bg-white/5 rounded-3xl p-6 border border-white/5 mb-8 max-h-[300px] overflow-y-auto custom-scrollbar">
                             <p className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap font-sans">
                                 {selectedDealForAi.message}
                             </p>
                         </div>
 
-                        {/* Sequence Enrollment Option */}
                         {sequences.length > 0 && (
                             <div className="mb-8 p-4 bg-primary/5 rounded-2xl border border-primary/10">
-                                <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-3 ml-2">Automatizar Outreach Futuro?</p>
+                                <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-3 ml-2">Automatizar Outreach?</p>
                                 <select
                                     className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-primary/50"
                                     onChange={(e) => {
@@ -269,96 +357,6 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
                     </div>
                 </div>
             )}
-        </div>
-    );
-};
-
-interface DealCardProps {
-    key?: string | number;
-    deal: Deal;
-    color: string;
-    onAiClick: () => void;
-    isGenerating: boolean;
-    onDragStart: (e: React.DragEvent) => void;
-}
-
-const DealCard = ({ deal, color, onAiClick, isGenerating, onDragStart }: DealCardProps) => {
-    const p2c = deal.lead?.p2c_score ? Number(deal.lead.p2c_score) : deal.probability_to_close;
-    const isHot = p2c > 0.7;
-
-    return (
-        <div
-            draggable
-            onDragStart={onDragStart}
-            className={`glass-strong p-5 rounded-3xl border transition-all group cursor-grab active:cursor-grabbing premium-card relative overflow-hidden ${isHot ? 'border-primary/30 shadow-lg shadow-primary/5' : 'border-white/5 hover:border-white/20'}`}
-        >
-            {isHot && (
-                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 blur-3xl -mr-12 -mt-12 pointer-events-none animate-pulse"></div>
-            )}
-
-            <div className="flex justify-between items-start mb-3 relative z-10">
-                <div className="min-w-0 pr-8">
-                    <h5 className="text-sm font-bold text-white tracking-tight group-hover:text-primary transition-colors truncate">
-                        {deal.lead?.name || 'Cliente Sem Nome'}
-                    </h5>
-                    {isHot && (
-                        <div className="flex items-center gap-1 mt-1">
-                            <Zap size={10} className="text-primary fill-primary" />
-                            <span className="text-[9px] font-black text-primary uppercase tracking-widest">Hot Lead</span>
-                        </div>
-                    )}
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onAiClick(); }}
-                        disabled={isGenerating}
-                        className="p-1.5 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
-                        title="Draft Neural por SDR"
-                    >
-                        <Sparkles size={12} className={isGenerating ? 'animate-spin' : ''} />
-                    </button>
-                </div>
-            </div>
-
-            <div className="flex items-center justify-between mt-4 relative z-10">
-                <div className="flex flex-col">
-                    <span className="text-[9px] text-slate-500 uppercase tracking-widest mb-1">Valor</span>
-                    <span className="text-xs font-black text-white">
-                        {deal.estimated_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </span>
-                </div>
-
-                <div className="flex flex-col items-end">
-                    <span className="text-[9px] text-slate-500 uppercase tracking-widest mb-1">Conversão IA</span>
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold" style={{ color: isHot ? 'var(--color-primary)' : color }}>
-                            {Math.round(p2c * 100)}%
-                        </span>
-                        <div className="w-12 h-1 bg-white/5 rounded-full overflow-hidden">
-                            <div
-                                className="h-full rounded-full transition-all duration-1000"
-                                style={{
-                                    width: `${p2c * 100}%`,
-                                    backgroundColor: isHot ? 'var(--color-primary)' : color
-                                }}
-                            ></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between relative z-10">
-                <div className="flex -space-x-2">
-                    <div className="w-6 h-6 rounded-lg bg-primary/20 border border-white/10 flex items-center justify-center text-[8px] font-black text-primary" title="Análise Neural Ativa">AI</div>
-                    {deal.lead?.socialLinks?.instagram && (
-                        <div className="w-6 h-6 rounded-lg bg-pink-500/20 border border-white/10 flex items-center justify-center text-[8px] font-black text-pink-500">IG</div>
-                    )}
-                </div>
-                <div className="flex items-center gap-1 text-[10px] text-slate-500 font-mono">
-                    <Clock size={10} />
-                    <span>{new Date(deal.created_at).toLocaleDateString()}</span>
-                </div>
-            </div>
         </div>
     );
 };
