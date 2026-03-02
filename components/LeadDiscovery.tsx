@@ -12,9 +12,11 @@ import { supabase } from '../lib/supabase';
 
 interface LeadDiscoveryProps {
   onResultsFound: (results: any[]) => void;
-  onStartEnrichment: () => void;
+  onStartEnrichment: (leads: any[]) => void;
   apiKeys?: any;
   existingLeads?: any[];
+  creditBalance: number;
+  onNavigate: (tab: any) => void;
 }
 
 // Fallback estratégico para varredura se APIs falharem no online
@@ -30,7 +32,14 @@ const CITY_FALLBACK_SEED: Record<string, string[]> = {
   'PE': ['Recife', 'Jaboatão dos Guararapes', 'Olinda', 'Caruaru', 'Petrolina', 'Paulista'],
 };
 
-const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEnrichment, apiKeys, existingLeads = [] }) => {
+const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
+  onResultsFound,
+  onStartEnrichment,
+  apiKeys,
+  existingLeads = [],
+  creditBalance,
+  onNavigate
+}) => {
   const { config } = useBranding();
   const [mode, setMode] = useState<'MAPS' | 'CNPJ' | 'ENRICH' | 'SHERLOCK' | 'IMPORT'>('MAPS');
   const [filters, setFilters] = useState<SearchFilters>({
@@ -109,6 +118,15 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
   const handleSearch = async () => {
     if (isScanning) {
       handleStop();
+      return;
+    }
+
+    // BLOQUEIO DE CRÉDITOS: Se o saldo for 0 ou negativo, trava a busca
+    if (creditBalance <= 0) {
+      setNeuralError({
+        type: 'CREDITS',
+        message: 'Você esgotou os créditos da sua assinatura. Adquira mais no seu painel ou aguarde a renovação mensal para continuar utilizando o motor neural.'
+      });
       return;
     }
 
@@ -751,7 +769,11 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({ onResultsFound, onStartEn
               <button
                 onClick={() => {
                   setNeuralError(null);
-                  window.location.hash = neuralError.type === 'CREDITS' ? '#billing' : '#partner';
+                  if (neuralError.type === 'CREDITS') {
+                    onNavigate('billing');
+                  } else {
+                    onNavigate('partner');
+                  }
                 }}
                 className="w-full py-5 bg-primary text-slate-900 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all"
               >

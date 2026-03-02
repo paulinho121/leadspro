@@ -529,7 +529,14 @@ const App: React.FC = () => {
       case 'dashboard':
         return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab} />;
       case 'discovery':
-        return <LeadDiscovery onResultsFound={handleAddLeads} onStartEnrichment={handleBulkEnrich} apiKeys={tenantSecrets} existingLeads={leads} />;
+        return <LeadDiscovery
+          onResultsFound={handleAddLeads}
+          onStartEnrichment={handleBulkEnrich}
+          apiKeys={tenantSecrets}
+          existingLeads={leads}
+          creditBalance={creditBalance}
+          onNavigate={setActiveTab}
+        />;
       case 'lab':
         return <LeadLab
           leads={filteredLeads}
