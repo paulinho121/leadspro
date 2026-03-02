@@ -17,6 +17,7 @@ interface LeadDiscoveryProps {
   existingLeads?: any[];
   creditBalance: number;
   onNavigate: (tab: any) => void;
+  userTenantId: string;
 }
 
 // Fallback estratégico para varredura se APIs falharem no online
@@ -38,7 +39,8 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
   apiKeys,
   existingLeads = [],
   creditBalance,
-  onNavigate
+  onNavigate,
+  userTenantId
 }) => {
   const { config } = useBranding();
   const [mode, setMode] = useState<'MAPS' | 'CNPJ' | 'ENRICH' | 'SHERLOCK' | 'IMPORT'>('MAPS');
@@ -147,7 +149,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
       setIsScanning(true);
       setScanProgress(50);
       try {
-        const results = await DiscoveryService.performCNPJScan(cleanKeyword, 'Busca Individual', config.tenantId);
+        const results = await DiscoveryService.performCNPJScan(cleanKeyword, 'Busca Individual', userTenantId || config.tenantId);
         const insertedLeads = await onResultsFound(results);
         setLeadsFound(1);
         setIsScanning(false);
@@ -170,7 +172,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
     // Registrar atividade
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        ActivityService.log(config.tenantId, session.user.id, 'LEAD_CAPTURE', `Iniciada varredura por "${filters.keyword}" em ${filters.location || 'Brasil'}.`);
+        ActivityService.log(userTenantId || config.tenantId, session.user.id, 'LEAD_CAPTURE', `Iniciada varredura por "${filters.keyword}" em ${filters.location || 'Brasil'}.`);
       }
     });
 
@@ -222,15 +224,15 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
             const remainingNeededBeforeApi = currentLimit - currentTotalFound;
 
             if (searchMode === 'MAPS') {
-              results = await DiscoveryService.performDeepScan(cleanKeyword, currentSearchLocation, config.tenantId, apiKeys, currentPage);
+              results = await DiscoveryService.performDeepScan(cleanKeyword, currentSearchLocation, userTenantId || config.tenantId, apiKeys, currentPage);
             } else if (searchMode === 'SHERLOCK') {
               // No modo SHERLOCK, usamos o campo "industry" para passar as palavras-chave de contexto
               const contextKeywords = filters.industry;
               console.log(`[Sherlock] Chamando performCompetitorScan com Alvo: ${cleanKeyword} e Contexto: ${contextKeywords}`);
-              results = await DiscoveryService.performCompetitorScan(cleanKeyword, currentSearchLocation, config.tenantId, apiKeys, currentPage, contextKeywords);
+              results = await DiscoveryService.performCompetitorScan(cleanKeyword, currentSearchLocation, userTenantId || config.tenantId, apiKeys, currentPage, contextKeywords);
             } else {
               console.log(`[CNPJ] Chamando performCNPJScan com Q: ${cleanKeyword}`);
-              results = await DiscoveryService.performCNPJScan(cleanKeyword, currentSearchLocation, config.tenantId, apiKeys, currentPage);
+              results = await DiscoveryService.performCNPJScan(cleanKeyword, currentSearchLocation, userTenantId || config.tenantId, apiKeys, currentPage);
             }
           } finally {
             clearInterval(progressInterval);
@@ -443,7 +445,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
 
           {mode === 'IMPORT' ? (
             <LeadImporter
-              tenantId={config.tenantId}
+              tenantId={userTenantId || config.tenantId}
               onImportComplete={() => {
                 console.log('[Import] Notificando App sobre novos leads');
                 // Trigger reload se necessário ou mostrar toast

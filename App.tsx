@@ -536,6 +536,7 @@ const App: React.FC = () => {
           existingLeads={leads}
           creditBalance={creditBalance}
           onNavigate={setActiveTab}
+          userTenantId={userTenantId}
         />;
       case 'lab':
         return <LeadLab
