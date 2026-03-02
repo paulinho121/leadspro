@@ -205,42 +205,45 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
   );
 });
 
-const MobileLeadCard = ({ lead, onEnrich, onDelete, onConvertToDeal }: any) => {
+const MobileLeadCard = ({ lead, onEnrich, onDelete, onConvertToDeal, onPark, onDiscard }: any) => {
   const [imgError, setImgError] = useState(false);
 
   return (
-    <div className="mobile-card flex flex-col gap-4 mb-4 active:scale-[0.98] transition-all">
-      <div className="flex items-center gap-4">
+    <div className="mobile-card flex flex-col gap-3 mb-3 active:scale-[0.98] transition-all p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+      <div className="flex items-center gap-3">
         {lead.details?.placeImage && !imgError ? (
-          <img src={lead.details.placeImage} className="w-12 h-12 rounded-xl object-cover" onError={() => setImgError(true)} />
+          <img src={lead.details.placeImage} className="w-10 h-10 rounded-xl object-cover shrink-0" onError={() => setImgError(true)} />
         ) : (
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-            <Database size={20} />
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+            <Database size={18} />
           </div>
         )}
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-bold text-white truncate">{lead.details?.tradeName || lead.name}</h4>
-          <div className="flex items-center gap-2 mt-0.5">
-            <MapPin size={10} className="text-primary/60" />
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <MapPin size={9} className="text-primary/60 shrink-0" />
             <span className="text-[10px] text-slate-400 truncate">{lead.location}</span>
           </div>
         </div>
-        <div className={`w-2 h-2 rounded-full ${lead.status === LeadStatus.ENRICHED ? 'bg-primary shadow-[0_0_8px_var(--color-primary)]' : 'bg-slate-700'}`} />
+        <div className={`w-2 h-2 rounded-full shrink-0 ${lead.status === LeadStatus.ENRICHED ? 'bg-primary shadow-[0_0_8px_var(--color-primary)]' : 'bg-slate-700'}`} />
       </div>
 
-      <div className="flex items-center justify-between pt-2 border-t border-white/5">
-        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{lead.industry}</span>
-        <div className="flex items-center gap-2">
-          <button onClick={() => onEnrich(lead)} className="p-2 bg-primary/10 text-primary rounded-lg active:bg-primary active:text-slate-900 transition-colors">
-            <Zap size={14} />
+      <div className="flex items-center justify-between pt-2.5 border-t border-white/5">
+        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest truncate max-w-[120px]">{lead.industry}</span>
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => onEnrich(lead)} className="p-2 bg-primary/10 text-primary rounded-lg active:bg-primary active:text-slate-900 transition-colors" title="Enriquecer">
+            <Zap size={13} />
           </button>
           {lead.status === LeadStatus.ENRICHED && onConvertToDeal && (
-            <button onClick={() => onConvertToDeal(lead.id)} className="p-2 bg-violet-500/10 text-violet-500 rounded-lg">
-              <TrendingUp size={14} />
+            <button onClick={() => onConvertToDeal(lead.id)} className="p-2 bg-violet-500/10 text-violet-500 rounded-lg active:bg-violet-500 active:text-white transition-colors" title="Pipeline">
+              <TrendingUp size={13} />
             </button>
           )}
-          <button onClick={() => onDelete(lead.id)} className="p-2 bg-red-500/10 text-red-500 rounded-lg">
-            <Trash2 size={14} />
+          <button onClick={() => onPark?.(lead.id)} className="p-2 bg-amber-500/10 text-amber-500 rounded-lg active:bg-amber-500 active:text-slate-900 transition-colors" title="Arquivar">
+            <Archive size={13} />
+          </button>
+          <button onClick={() => onDelete(lead.id)} className="p-2 bg-red-500/10 text-red-500 rounded-lg active:bg-red-500 active:text-white transition-colors" title="Excluir">
+            <Trash2 size={13} />
           </button>
         </div>
       </div>
@@ -558,15 +561,23 @@ const LeadLab: React.FC<LeadLabProps> = ({
         <div className="flex flex-col xl:flex-row items-center justify-between gap-6 px-4 mt-2">
           <div className="flex items-center gap-6">
             <div className="w-2 h-16 bg-gradient-to-b from-primary to-orange-400 rounded-full hidden xl:block shadow-[0_0_20px_var(--color-primary)]"></div>
+            {/* Mobile: filter toggle button */}
+            <button
+              className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-slate-400 text-xs font-black uppercase tracking-widest active:scale-95 transition-all"
+              onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+            >
+              <Filter size={14} />
+              Filtros
+            </button>
             <div>
-              <h2 className="text-3xl lg:text-4xl font-black text-white tracking-tighter flex items-center gap-4">
+              <h2 className="text-xl md:text-3xl lg:text-4xl font-black text-white tracking-tighter flex flex-wrap items-center gap-2 md:gap-4">
                 Laboratório
                 <span className="text-[10px] font-mono text-primary bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 uppercase tracking-[0.2em] shadow-inner">
-                  {filteredLeads.length} de {labLeads.length}
-                  {totalCount > labLeads.length && <span className="text-slate-500"> ({totalCount} total)</span>}
+                  {filteredLeads.length}/{labLeads.length}
+                  {totalCount > labLeads.length && <span className="text-slate-500 ml-1">({totalCount})</span>}
                 </span>
               </h2>
-              <p className="text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2">Ambiente Científico de Extração e Refinamento Neural</p>
+              <p className="hidden md:block text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2">Ambiente Científico de Extração e Refinamento Neural</p>
             </div>
           </div>
 
@@ -662,7 +673,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
             </table>
 
             {/* Mobile Card Rendering */}
-            <div className="lg:hidden p-4 space-y-4">
+            <div className="lg:hidden p-3 space-y-1">
               {filteredLeads.map(lead => (
                 <MobileLeadCard
                   key={lead.id}
@@ -670,6 +681,8 @@ const LeadLab: React.FC<LeadLabProps> = ({
                   onEnrich={onEnrich}
                   onDelete={onDelete}
                   onConvertToDeal={onConvertToDeal}
+                  onPark={handlePark}
+                  onDiscard={handleDiscard}
                 />
               ))}
             </div>

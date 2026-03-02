@@ -111,13 +111,13 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
 
                     <div className="flex flex-col h-full justify-between relative z-10">
                         <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-2xl bg-primary/10 text-primary">
-                                    <Wallet size={24} />
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 rounded-2xl bg-primary/10 text-primary">
+                                    <Wallet size={20} />
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] leading-none mb-1">Saldo Atual</p>
-                                    <h2 className="text-xl font-black text-white tracking-tight">Wallet Intelligence</h2>
+                                    <h2 className="text-base md:text-xl font-black text-white tracking-tight">Wallet Intelligence</h2>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">
@@ -130,7 +130,7 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                             <div>
                                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">Créditos Disponíveis</p>
                                 <div className="flex items-center gap-4">
-                                    <span className="text-6xl font-black text-white tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                                    <span className="text-4xl md:text-6xl font-black text-white tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
                                         {balance.toLocaleString()}
                                     </span>
                                     <div className="flex flex-col">
@@ -140,18 +140,18 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                                 </div>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                 <button
                                     onClick={() => {
                                         document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                     }}
-                                    className="px-8 py-4 bg-primary text-slate-900 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.05] transition-all flex items-center justify-center gap-3 active:scale-95"
+                                    className="px-5 md:px-8 py-3 md:py-4 bg-primary text-slate-900 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.05] transition-all flex items-center justify-center gap-3 active:scale-95"
                                 >
-                                    <Plus size={20} strokeWidth={3} />
+                                    <Plus size={18} strokeWidth={3} />
                                     Adicionar Créditos
                                 </button>
-                                <button className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/5 transition-all flex items-center justify-center gap-3">
-                                    <Download size={16} /> Exportar Extrato
+                                <button className="px-5 md:px-8 py-3 md:py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/5 transition-all flex items-center justify-center gap-3">
+                                    <Download size={14} /> Exportar
                                 </button>
                             </div>
                         </div>
@@ -270,14 +270,14 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                    <table className="w-full text-left mobile-table-card">
                         <thead>
                             <tr className="border-b border-white/5 bg-white/[0.02]">
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono">Movimentação</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono">Serviço/Ação</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono">Data</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono">Unidades</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono">Status</th>
+                                <th className="px-4 md:px-8 py-4 md:py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono">Movimentação</th>
+                                <th className="px-4 md:px-8 py-4 md:py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono">Serviço/Ação</th>
+                                <th className="px-4 md:px-8 py-4 md:py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono">Data</th>
+                                <th className="px-4 md:px-8 py-4 md:py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono">Unidades</th>
+                                <th className="px-4 md:px-8 py-4 md:py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono">Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -293,7 +293,7 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                             ) : transactions.length > 0 ? (
                                 transactions.map((tx) => (
                                     <tr key={tx.id} className="hover:bg-white/[0.02] transition-colors group">
-                                        <td className="px-8 py-5">
+                                        <td className="px-4 md:px-8 py-4 md:py-5" data-label="Tipo">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${tx.amount > 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
                                                     {getTransactionIcon(tx.amount)}
@@ -301,19 +301,19 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                                                 <span className="text-xs font-bold text-white">{tx.amount > 0 ? 'Recarga' : 'Consumo'}</span>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-5">
+                                        <td className="px-4 md:px-8 py-4 md:py-5" data-label="Serviço">
                                             <p className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors uppercase tracking-tight">{tx.service_name || 'Geral'}</p>
-                                            <p className="text-[10px] text-slate-500 truncate max-w-xs">{tx.description}</p>
+                                            <p className="text-[10px] text-slate-500 truncate max-w-[160px] md:max-w-xs">{tx.description}</p>
                                         </td>
-                                        <td className="px-8 py-5">
+                                        <td className="px-4 md:px-8 py-4 md:py-5" data-label="Data">
                                             <span className="text-xs font-mono text-slate-500">{new Date(tx.created_at).toLocaleString('pt-BR')}</span>
                                         </td>
-                                        <td className="px-8 py-5">
+                                        <td className="px-4 md:px-8 py-4 md:py-5" data-label="Valor">
                                             <span className={`text-xs font-black ${tx.amount > 0 ? 'text-emerald-500' : 'text-slate-200'}`}>
                                                 {tx.amount > 0 ? '+' : ''}{tx.amount}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-5">
+                                        <td className="px-4 md:px-8 py-4 md:py-5" data-label="Status">
                                             <div className="flex items-center gap-2">
                                                 <CheckCircle2 size={12} className="text-emerald-500" />
                                                 <span className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter">Liquidado</span>

@@ -118,21 +118,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!userTenantId) return;
 
-    // INJEÇÃO TEMPORÁRIA DE CRÉDITOS NA INICIALIZAÇÃO VIA HACK DE SINAL
-    const injectCredits = async () => {
-      const { data } = await supabase.from('credit_transactions').select('id').eq('tenant_id', userTenantId).eq('description', '5k_bonus_injector_v1');
-      if (!data || data.length === 0) {
-        console.log("Injetando 5000 créditos...");
-        await supabase.rpc('deduct_tenant_credits', {
-          p_tenant_id: userTenantId,
-          p_amount: -5000,
-          p_service: 'recharge',
-          p_description: '5k_bonus_injector_v1'
-        });
-        window.location.reload();
-      }
-    };
-    injectCredits();
+
 
     if (!session?.user) return;
     const fetchUnread = async () => {
@@ -242,6 +228,14 @@ const App: React.FC = () => {
             if (profile.full_name) setUserName(profile.full_name);
             const tid = profile.tenant_id || '';
             setUserTenantId(tid);
+
+            // Verificação silenciosa de bônus inicial: só exibe mensagem em caso de sucesso
+            supabase.rpc('claim_initial_credits').then(({ data, error }) => {
+              if (data && (data as any).success) {
+                toast.success('🎉 Bônus Iniciais Recebidos!', 'Você ganhou 1000 créditos LeadPro para testar a extração Neural.');
+              }
+              if (error) console.log('[Neural Gateway] Bonus check:', error.message);
+            });
 
             if (profile.is_master_admin) {
               setIsMaster(true);
@@ -652,15 +646,14 @@ const App: React.FC = () => {
           <NavItem icon={<MoneyIcon size={20} />} label="Faturamento" active={activeTab === 'billing'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('billing'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
 
 
-          <div className="pt-8 pb-4">
-            {isSidebarOpen && <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Sistemas</p>}
-            <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mx-4 mb-4"></div>
-          </div>
-
-          <NavItem icon={<ShieldCheck size={20} />} label="Branding" active={activeTab === 'partner'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-
           {isMaster && (
             <>
+              <div className="pt-8 pb-4">
+                {isSidebarOpen && <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Sistemas</p>}
+                <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mx-4 mb-4"></div>
+              </div>
+
+              <NavItem icon={<ShieldCheck size={20} />} label="Branding" active={activeTab === 'partner'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
               <NavItem icon={<Activity size={20} />} label="Histórico" active={activeTab === 'history'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('history'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
               <NavItem icon={<ShieldCheck className="text-primary" size={20} />} label="Master" active={activeTab === 'master'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('master'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
             </>
@@ -670,11 +663,12 @@ const App: React.FC = () => {
         <div className="p-4 mt-auto">
           {showAccountCard && (
             <div
-              className={`fixed z-[100] animate-in fade-in slide-in-from-left-4 duration-300`}
+              className={`fixed z-[100] animate-in fade-in slide-in-from-bottom-4 md:slide-in-from-left-4 duration-300`}
               style={{
-                bottom: '80px',
-                left: isSidebarOpen ? '296px' : '88px',
-                width: '320px'
+                bottom: '88px',
+                left: window.innerWidth < 768 ? '8px' : (isSidebarOpen ? '296px' : '88px'),
+                right: window.innerWidth < 768 ? '8px' : 'auto',
+                width: window.innerWidth < 768 ? 'auto' : '320px'
               }}
             >
               <div className="glass-strong border border-white/10 rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden group backdrop-blur-3xl">
@@ -836,6 +830,15 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Compact wallet button for mobile */}
+            <button
+              onClick={() => setActiveTab('billing')}
+              className="flex md:hidden items-center gap-1.5 px-3 py-2 bg-primary/10 rounded-xl border border-primary/20 active:scale-95 transition-all"
+            >
+              <MoneyIcon size={14} className="text-primary" />
+              <span className="text-xs font-black text-white">{creditBalance.toLocaleString()}</span>
+            </button>
+
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               className={`relative group p-2.5 rounded-xl transition-all border ${showNotifications ? 'bg-primary/10 border-primary/30' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
@@ -849,22 +852,22 @@ const App: React.FC = () => {
         </header>
 
         {missingKeys && activeTab !== 'partner' && (
-          <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 md:px-10 py-3 flex items-center justify-between animate-fade-in-down shrink-0 relative overflow-hidden group">
+          <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 md:px-10 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in-down shrink-0 relative overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent pointer-events-none"></div>
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="p-2 bg-amber-500/20 rounded-lg animate-pulse">
-                <AlertTriangle className="text-amber-500 shrink-0" size={16} />
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="p-2 bg-amber-500/20 rounded-lg animate-pulse shrink-0">
+                <AlertTriangle className="text-amber-500" size={14} />
               </div>
               <div className="flex flex-col">
-                <p className="text-[11px] text-white font-black uppercase tracking-[0.2em] leading-none mb-1">Chaves de API pendentes</p>
-                <p className="text-[10px] text-amber-500/60 font-medium">Você precisa configurar suas chaves Serper/Gemini para realizar extrações neurais.</p>
+                <p className="text-[10px] text-white font-black uppercase tracking-[0.2em] leading-none mb-0.5">Chaves de API pendentes</p>
+                <p className="text-[9px] text-amber-500/60 font-medium hidden sm:block">Configure suas chaves Serper/Gemini para extrações neurais.</p>
               </div>
             </div>
             <button
               onClick={() => setActiveTab('partner')}
-              className="bg-amber-500 text-slate-900 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-amber-500/20 relative z-10 border border-amber-400/50 active-scale"
+              className="bg-amber-500 text-slate-900 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-amber-500/20 relative z-10 border border-amber-400/50 active:scale-95 shrink-0 w-full sm:w-auto"
             >
-              CONFIGURE SETUP
+              CONFIGURAR
             </button>
           </div>
         )}

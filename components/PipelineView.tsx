@@ -124,10 +124,10 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
     };
 
     return (
-        <div className="p-6 md:p-10 space-y-8 animate-fade-in overflow-x-auto custom-scrollbar h-full flex flex-col relative">
+        <div className="p-4 md:p-10 space-y-6 md:space-y-8 animate-fade-in h-full flex flex-col relative overflow-guard">
             {/* Header com Stats de Receita e Ações */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
+            <div className="flex flex-col gap-4 md:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 flex-1">
                     <div className="glass p-6 rounded-3xl border border-white/5 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                             <TrendingUp size={48} />
@@ -159,24 +159,24 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 self-end">
                     <button
                         onClick={loadData}
-                        className="p-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/5 transition-all group active:scale-95"
+                        className="p-3 md:p-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/5 transition-all group active:scale-95"
                         title="Atualizar Pipeline"
                     >
-                        <RefreshCw size={20} className={isLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'} />
+                        <RefreshCw size={18} className={isLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'} />
                     </button>
-                    <button className="flex items-center gap-2 px-6 py-4 bg-primary text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20">
-                        <Plus size={16} /> Novo Negócio
+                    <button className="flex items-center gap-2 px-4 md:px-6 py-3 md:py-4 bg-primary text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20">
+                        <Plus size={16} /> <span className="hidden sm:inline">Novo Negócio</span><span className="sm:hidden">Novo</span>
                     </button>
                 </div>
             </div>
 
             {/* Kanban Board */}
-            <div className="flex gap-6 flex-1 min-h-0 pb-4">
+            <div className="kanban-scroll flex gap-4 md:gap-6 flex-1 min-h-0 pb-4 overflow-x-auto">
                 {STAGES.map(stage => (
-                    <div key={stage.id} className="w-80 shrink-0 flex flex-col gap-4">
+                    <div key={stage.id} className="w-72 md:w-80 shrink-0 flex flex-col gap-4">
                         <div className="flex items-center justify-between px-2">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: stage.color }}></div>

@@ -68,7 +68,7 @@ export class ApiGatewayService {
     }
 
     private static async callSerperMaps(payload: any, apiKey: string) {
-        const key = apiKey?.trim();
+        const key = apiKey?.trim() || import.meta.env.VITE_SERPER_API_KEY?.trim();
         if (!key) throw new Error("SERPER_API_KEY_MISSING");
 
         const body = {
@@ -95,7 +95,7 @@ export class ApiGatewayService {
     }
 
     private static async callSerperSearch(payload: any, apiKey: string) {
-        const key = apiKey?.trim();
+        const key = apiKey?.trim() || import.meta.env.VITE_SERPER_API_KEY?.trim();
         if (!key) throw new Error("SERPER_API_KEY_MISSING");
 
         const body = {
@@ -125,10 +125,11 @@ export class ApiGatewayService {
     }
 
     private static async callGeminiReal(endpoint: string, payload: any, apiKey: string, model: string = 'gemini-1.5-flash') {
-        if (!apiKey) throw new Error("GEMINI_API_KEY_MISSING");
+        const key = apiKey?.trim() || import.meta.env.VITE_GEMINI_API_KEY?.trim();
+        if (!key) throw new Error("GEMINI_API_KEY_MISSING");
 
         const safeModel = model.toLowerCase();
-        const baseUrl = `https://generativelanguage.googleapis.com/v1/models/${safeModel}:generateContent?key=${apiKey}`;
+        const baseUrl = `https://generativelanguage.googleapis.com/v1/models/${safeModel}:generateContent?key=${key}`;
 
         const prompt = endpoint === 'analyze-website'
             ? `Analise a empresa ${payload.leadName} no nicho ${payload.industry}. Site: ${payload.website}. Gere 3 insights de vendas curtos e diretos em português.`
