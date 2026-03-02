@@ -77,7 +77,7 @@ export class EnrichmentService {
             ...socialData,
             ...diagnostic, // WhatsApp, Ads, Instagram status, maturidade, p2c_score, partners, employees_est
             ai_score: aiScore,
-            p2c_score: diagnostic.p2c_score || (aiScore / 100), // Fallback baseado no aiScore
+            p2c_score: diagnostic.p2c_score || (aiScore / 100),
             activity: officialData.activity || lead.industry,
             tradeName: officialData.tradeName || lead.name,
             foundedDate: officialData.foundedDate || 'Não identificado',
@@ -85,13 +85,22 @@ export class EnrichmentService {
             partners: diagnostic.partners || officialData.qsa || [],
             employee_count: diagnostic.employees_est || 'Sob consulta',
             real_email: socialData.realEmail,
-            placeImage: placeImage
+            placeImage: placeImage,
+            primaryPhone: socialData.primaryPhone || lead.phone
         };
+
+        // Atualizar link de WhatsApp se um novo telefone foi descoberto
+        const finalWhatsapp = socialData.primaryPhone
+            ? `https://wa.me/${socialData.primaryPhone.replace(/\D/g, '')}`
+            : lead.socialLinks?.whatsapp;
 
         return {
             insights,
             details: enrichedDetails,
-            socialData, // Exportar explicitamente para atualizar coluna social_links
+            socialData: {
+                ...socialData,
+                whatsapp: finalWhatsapp
+            },
             realEmail: socialData.realEmail
         };
     }
@@ -103,7 +112,7 @@ export class EnrichmentService {
 
             console.log(`[Neural Social Discovery] Deep search for: ${lead.name}`);
 
-            // 1. Encontrar Website primeiro (se não houver)
+            // 1. Website Discovery (Base para vinculação)
             let website = lead.website || '';
             if (!website) {
                 const webSearch: any = await ApiGatewayService.callApi(
@@ -118,34 +127,47 @@ export class EnrichmentService {
                 })?.link || '';
             }
 
-            // 2. BUSCA MULTI-DORK (Específica para Redes Sociais)
-            // Usamos o domínio do site (se existir) para vinculação forte
+            // 2. BUSCA MULTI-DORK (Específica para Redes Sociais e Link in Bio)
             const domain = website ? new URL(website.startsWith('http') ? website : `https://${website}`).hostname.replace('www.', '') : '';
 
             const queries = [
                 { type: 'instagram', q: domain ? `site:instagram.com "${domain}"` : `site:instagram.com "${lead.name}" "${lead.location}"` },
                 { type: 'facebook', q: domain ? `site:facebook.com "${domain}"` : `site:facebook.com "${lead.name}" "${lead.location}"` },
                 { type: 'linkedin', q: domain ? `site:linkedin.com/company "${domain}"` : `site:linkedin.com/company "${lead.name}" "${lead.location}"` },
-                { type: 'decisor', q: `"${lead.name}" ("proprietário" OR "dono" OR "diretor" OR "sócio") "celular" OR "whatsapp"` },
-                { type: 'email', q: `"${lead.name}" "${lead.location}" (email OR contato OR "@")` }
+                { type: 'linkinbio', q: `site:linktr.ee OR site:beacons.ai OR site:msha.ke OR site:taplink.at "${lead.name}"` },
+                { type: 'whatsapp_target', q: `"${lead.name}" "${lead.location}" "wa.me/" OR "api.whatsapp.com/send"` }
             ];
 
-            // Executar buscas em paralelo para performance
             const searchPromises = queries.map(query =>
                 ApiGatewayService.callApi('google-search', 'search', { q: query.q, num: 5 }, { apiKeys, ttl: 86400 * 7 })
             );
 
-            const [instaResults, fbResults, linkedinResults, emailResults]: any = await Promise.all(searchPromises);
+            const [instaResults, fbResults, linkedinResults, linktreeResults, whatsappResults]: any = await Promise.all(searchPromises);
 
-            // 3. VALIDAÇÃO NEURAL DOS LINKS (Evita falsos positivos como Sage Networks)
+            // 3. EXTRAÇÃO DE WHATSAPP DO LINKTREE (Deep Scraping de Meta-dados)
+            let bioLinkWhatsApp = '';
+            const allBioLinks = linktreeResults.organic || [];
+            if (allBioLinks.length > 0) {
+                console.log(`[Deep Bio] Potential Link-in-Bio found: ${allBioLinks[0].link}`);
+                // Tentamos encontrar o padrão wa.me diretamente no snippet do Linktree
+                const bioSnippet = allBioLinks.map((r: any) => r.snippet).join(' ');
+                const waMatch = bioSnippet.match(/wa\.me\/(\d+)/i) || bioSnippet.match(/send\?phone=(\d+)/i);
+                if (waMatch) {
+                    bioLinkWhatsApp = waMatch[1];
+                    console.log(`%c[Deep Bio] WhatsApp extracted from Linktree/Beacons: ${bioLinkWhatsApp}`, 'color: #f59e0b; font-weight: bold;');
+                }
+            }
+
+            // 4. COMBINAR SNIPPETS PARA VALIDAÇÃO NEURAL
             const allSnippets = [
                 ...(instaResults.organic || []),
                 ...(fbResults.organic || []),
                 ...(linkedinResults.organic || []),
-                ...(emailResults.organic || [])
+                ...(linktreeResults.organic || []),
+                ...(whatsappResults.organic || [])
             ].map(r => `Link: ${r.link} | Título: ${r.title} | Snippet: ${r.snippet}`).join('\n');
 
-            // 4. HUNTER.IO INTEGRATION (Email Hunting)
+            // 5. HUNTER.IO INTEGRATION
             let hunterEmails: string[] = [];
             if (domain && !['facebook.com', 'instagram.com', 'linkedin.com', 'youtube.com'].includes(domain)) {
                 try {
@@ -157,28 +179,30 @@ export class EnrichmentService {
                 }
             }
 
-            const validationPrompt = `Você é um detetive digital. Analise os resultados de busca e identifique as redes sociais REAIS da empresa abaixo:
-            EMPRESA ALVO: ${lead.name}
-            LOCALIZAÇÃO: ${lead.location}
-            SITE OFICIAL: ${website}
-            EMAILS NO DOMÍNIO (Hunter.io): ${hunterEmails.join(', ')}
+            const validationPrompt = `Você é um detetive digital especialista em OSINT. Analise os resultados de busca e identifique as informações reais da empresa:
+            EMPRESA: ${lead.name}
+            LOCAL: ${lead.location}
+            SITE: ${website}
+            WHATSAPP_DA_BIO: ${bioLinkWhatsApp || 'Não detectado diretamente'}
+            EMAILS_HUNTER: ${hunterEmails.join(', ')}
 
             RESULTADOS DE BUSCA:
             ${allSnippets}
 
-            REGRAS:
-            - Ignore resultados de empresas com nomes parecidos mas cidades diferentes.
-            - O Instagram deve refletir o negócio (ex: vila_mosquito). Ignore se for de um concorrente ou agência.
-            - O LinkedIn deve ser o perfil da empresa (company page).
-            - Extraia o e-mail se houver.
+            REGRAS DE OURO:
+            - Extraia o WHATSAPP se houver "wa.me/" ou "api.whatsapp.com".
+            - Linktrees e Beacons são fontes ALTAMENTE confiáveis de contato direto.
+            - O WhatsApp deve ter prioridade sobre o telefone fixo do Google Maps.
+            - Extraia o e-mail real de contato.
 
             RETORNE APENAS JSON:
             {
-              "instagram": "URL completa ou null",
-              "facebook": "URL completa ou null",
-              "linkedin": "URL completa ou null",
-              "realEmail": "email ou null",
-              "realPhones": [] // Lista de telefones adicionais detectados
+              "instagram": "URL",
+              "facebook": "URL",
+              "linkedin": "URL",
+              "realEmail": "email",
+              "realPhones": [], // Lista de todos os WhatsApps/Celulares encontrados (formato 55119...)
+              "primaryPhone": "O telefone mais provável de ser o WhatsApp do dono"
             }`;
 
             try {
@@ -189,7 +213,6 @@ export class EnrichmentService {
                     { apiKeys, ttl: 86400 }
                 );
 
-                // Se a IA retornar como string (acontece às vezes), tentamos parsear
                 const finalData = typeof validatedData === 'string'
                     ? JSON.parse(validatedData.replace(/```json|```/g, '').trim())
                     : validatedData;
@@ -201,21 +224,19 @@ export class EnrichmentService {
                     website: website,
                     realEmail: finalData.realEmail || '',
                     realPhones: finalData.realPhones || [],
+                    primaryPhone: finalData.primaryPhone || bioLinkWhatsApp || '',
                     hunterEmails: hunterEmails
                 };
 
             } catch (err) {
-                console.warn('[Social Validation] IA falhou na validação, usando extrator básico.', err);
-                const findInsta = instaResults.organic?.find((r: any) => r.link?.includes('instagram.com'))?.link;
-                const findFB = fbResults.organic?.find((r: any) => r.link?.includes('facebook.com'))?.link;
-                const findLinkedIn = linkedinResults.organic?.find((r: any) => r.link?.includes('linkedin.com/company'))?.link;
-
+                console.warn('[Social Validation] IA falhou, usando extrator básico.', err);
                 return {
-                    instagram: findInsta || '',
-                    facebook: findFB || '',
-                    linkedin: findLinkedIn || '',
+                    instagram: instaResults.organic?.[0]?.link || '',
+                    facebook: fbResults.organic?.[0]?.link || '',
+                    linkedin: linkedinResults.organic?.[0]?.link || '',
                     website: website,
                     realEmail: '',
+                    primaryPhone: bioLinkWhatsApp || '',
                     hunterEmails: hunterEmails
                 };
             }
