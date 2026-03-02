@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useBranding } from './BrandingProvider';
-import { Lock, Mail, ChevronRight, Loader2, AlertCircle, ShieldCheck, TrendingUp, ShieldAlert, ScrollText } from 'lucide-react';
+import { Lock, Mail, ChevronRight, Loader2, AlertCircle, ShieldCheck, TrendingUp, ShieldAlert, ScrollText, MessageCircle } from 'lucide-react';
 import TermsModal from './TermsModal';
 
 interface LoginPageProps {
@@ -372,10 +372,18 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, isRecoveringPassw
                             <ScrollText size={10} /> Compliance & Regulamentação
                         </button>
                         <a
+                            href="https://wa.me/5585988171944"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-[8px] font-black text-slate-700 hover:text-emerald-500 uppercase tracking-[0.2em] transition-colors"
+                        >
+                            <MessageCircle size={10} /> WhatsApp (Suporte)
+                        </a>
+                        <a
                             href="mailto:labwpplus@gmail.com"
                             className="flex items-center gap-2 text-[8px] font-black text-slate-700 hover:text-slate-400 uppercase tracking-[0.2em] transition-colors"
                         >
-                            <AlertCircle size={10} /> Suporte Técnico
+                            <AlertCircle size={10} /> Suporte (Email)
                         </a>
                     </div>
                     <p className="text-[10px] text-slate-700 font-mono italic">

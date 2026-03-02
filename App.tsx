@@ -3,7 +3,7 @@ import {
   Bell, LayoutDashboard, Search, Database, Rocket, TrendingUp,
   Megaphone, ShieldCheck, Menu, X, LogOut, BrainCircuit, Activity,
   HelpCircle, AlertTriangle, ScrollText, Cpu, ChevronRight, BarChart3,
-  Send as SendIcon, CheckCircle, Info, DollarSign as MoneyIcon, Archive, LifeBuoy
+  Send as SendIcon, CheckCircle, Info, DollarSign as MoneyIcon, Archive, LifeBuoy, MessageCircle
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import TermsModal from './components/TermsModal';
@@ -1005,6 +1005,21 @@ const App: React.FC = () => {
             </div>
 
             <div className="p-8 space-y-6">
+              <a
+                href="https://wa.me/5585988171944?text=Olá,%20gostaria%20de%20suporte"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-5 bg-emerald-500 text-slate-900 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group"
+              >
+                <MessageCircle size={20} className="group-hover:rotate-12 transition-transform" />
+                Falar com Paulo Fernando (WhatsApp)
+              </a>
+
+              <div className="relative flex items-center justify-center">
+                <span className="absolute bg-slate-900 px-4 text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] backdrop-blur-sm">Ou abra um chamado interno</span>
+                <div className="w-full h-[1px] bg-white/5"></div>
+              </div>
+
               <div className="space-y-3">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Assunto / Tópico</label>
                 <input
@@ -1056,6 +1071,20 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Floating WhatsApp Button */}
+      <a
+        href="https://wa.me/5585988171944?text=Olá,%20gostaria%20de%20suporte"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-24 md:bottom-10 right-6 z-[120] bg-emerald-500 text-slate-900 p-4 rounded-full shadow-2xl shadow-emerald-500/30 hover:scale-110 active:scale-95 transition-all group flex items-center justify-center"
+        title="Fale Conosco"
+      >
+        <MessageCircle size={24} />
+        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 whitespace-nowrap font-black uppercase tracking-widest text-[10px] ml-0 group-hover:ml-3">
+          Fale Conosco
+        </span>
+      </a>
     </div >
   );
 };
