@@ -430,6 +430,10 @@ const App: React.FC = () => {
           if (err.message === "ENRICHMENT_STOPPED_BY_USER") {
             break;
           }
+          if (err.message === "INSUFFICIENT_CREDITS") {
+            toast.error("Créditos Insuficientes", "Seu saldo é inferior a 10 créditos. Recarregue no Painel de Faturamento para continuar o enriquecimento.");
+            break;
+          }
           console.warn('[Enrichment] Erro no lead:', lead.id, err);
         }
       }
@@ -551,6 +555,8 @@ const App: React.FC = () => {
           onParkLead={handleParkLead}
           onDiscardLead={handleDiscardLead}
           userTenantId={userTenantId}
+          creditBalance={creditBalance}
+          onNavigate={setActiveTab}
           hasMoreLeads={hasMoreLeads}
           totalCount={leadsTotalCount}
           onLoadMore={handleLoadMoreLeads}

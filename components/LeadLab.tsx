@@ -29,7 +29,8 @@ interface LeadLabProps {
   onConvertToDeal?: (leadId: string) => void;
   onParkLead?: (leadId: string) => void;
   onDiscardLead?: (leadId: string) => void;
-  userTenantId?: string;
+  creditBalance: number;
+  onNavigate: (tab: any) => void;
   // Pagination
   hasMoreLeads?: boolean;
   totalCount?: number;
@@ -254,9 +255,10 @@ const MobileLeadCard = ({ lead, onEnrich, onDelete, onConvertToDeal, onPark, onD
 const LeadLab: React.FC<LeadLabProps> = ({
   leads, onEnrich, onBulkEnrich, isEnriching = false,
   onStopEnrichment, onDelete, onBulkDelete, onConvertToDeal,
-  onParkLead, onDiscardLead, userTenantId,
+  onParkLead, onDiscardLead, userTenantId, creditBalance, onNavigate,
   hasMoreLeads = false, totalCount = 0, onLoadMore
 }) => {
+  const [neuralError, setNeuralError] = useState<'CREDITS' | null>(null);
   // FIX #6: removido useBranding()
   const [selectedNiche, setSelectedNiche] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -303,6 +305,22 @@ const LeadLab: React.FC<LeadLabProps> = ({
     onDiscardLead?.(id);
     toast.info('Lead descartado', 'Visível em Adm. Leads > Descartados.');
   }, [onDiscardLead]);
+
+  const handleSafeEnrich = React.useCallback((lead: Lead) => {
+    if (creditBalance < 10) {
+      setNeuralError('CREDITS');
+      return;
+    }
+    onEnrich(lead);
+  }, [creditBalance, onEnrich]);
+
+  const handleSafeBulkEnrich = React.useCallback((targets: Lead[]) => {
+    if (creditBalance < 10) {
+      setNeuralError('CREDITS');
+      return;
+    }
+    onBulkEnrich(targets);
+  }, [creditBalance, onBulkEnrich]);
 
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -607,7 +625,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                   <button
                     onClick={() => {
                       const toEnrich = leads.filter(l => l.status === LeadStatus.NEW);
-                      onBulkEnrich(toEnrich);
+                      handleSafeBulkEnrich(toEnrich);
                       setIsEnrichMenuOpen(false);
                     }}
                     className="w-full text-left px-5 py-4 hover:bg-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-primary transition-all flex items-center gap-3"
@@ -617,7 +635,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                   <button
                     onClick={() => {
                       const toEnrich = leads.filter(l => l.status === LeadStatus.NEW && (selectedNiche ? l.industry === selectedNiche : true));
-                      onBulkEnrich(toEnrich);
+                      handleSafeBulkEnrich(toEnrich);
                       setIsEnrichMenuOpen(false);
                     }}
                     disabled={!selectedNiche}
@@ -661,7 +679,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                       key={lead.id}
                       lead={lead}
                       virtualRow={virtualRow}
-                      onEnrich={onEnrich}
+                      onEnrich={handleSafeEnrich}
                       onDelete={onDelete}
                       onConvertToDeal={onConvertToDeal}
                       onPark={handlePark}
@@ -678,7 +696,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                 <MobileLeadCard
                   key={lead.id}
                   lead={lead}
-                  onEnrich={onEnrich}
+                  onEnrich={handleSafeEnrich}
                   onDelete={onDelete}
                   onConvertToDeal={onConvertToDeal}
                   onPark={handlePark}
@@ -741,10 +759,54 @@ const LeadLab: React.FC<LeadLabProps> = ({
         isOpen={isPaletteOpen}
         onClose={() => setIsPaletteOpen(false)}
         tenantId={userTenantId ?? ''}
-        onEnrich={(lead) => { onEnrich(lead); }}
+        onEnrich={handleSafeEnrich}
         onPark={(id) => { onParkLead?.(id); toast.success('Movido para Administração', 'Acesse a aba Adm. Leads.'); }}
         onDiscard={(id) => { onDiscardLead?.(id); toast.info('Lead descartado', 'Visível em Adm. Leads.'); }}
       />
+
+      {/* NEURAL ERROR OVERLAY */}
+      {neuralError === 'CREDITS' && (
+        <div className="absolute inset-0 z-[100] bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-8 animate-in fade-in duration-500">
+          <div className="max-w-md w-full text-center space-y-8 animate-in zoom-in-95 duration-500 scale-100">
+            <div className="relative inline-block">
+              <div className="absolute inset-0 bg-red-500/20 blur-[60px] rounded-full"></div>
+              <div className="w-48 h-48 bg-white/5 rounded-full flex items-center justify-center mx-auto relative z-10 border border-white/10">
+                <Zap size={80} className="text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.5)]" />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-3xl font-black text-white tracking-tighter">Créditos Esgotados</h4>
+              <p className="text-slate-400 text-base leading-relaxed">
+                Você esgotou os créditos da sua assinatura para processamento neural.
+                Adquira mais no seu painel ou aguarde a renovação mensal para continuar utilizando o motor de enriquecimento.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <button
+                onClick={() => setNeuralError(null)}
+                className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white font-black uppercase tracking-widest transition-all"
+              >
+                VOLTAR AO LABORATÓRIO
+              </button>
+              <button
+                onClick={() => {
+                  setNeuralError(null);
+                  onNavigate('billing');
+                }}
+                className="w-full py-5 bg-primary text-slate-900 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all"
+              >
+                RECARREGAR CRÉDITOS
+              </button>
+            </div>
+
+            <p className="text-[10px] font-mono text-slate-600 uppercase tracking-widest">
+              Error_Code: 0xCREDITS_{Date.now().toString(16).toUpperCase()}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
