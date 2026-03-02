@@ -142,15 +142,17 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
             if (rpcError) {
                 console.error('[Master Console] Falha no RPC, usando fallback:', rpcError);
                 // Fallback manual (limitado a 1000 ou o que o Supabase permitir no select simples)
-                const [{ count: total }, { count: enriched }] = await Promise.all([
+                const [{ count: total }, { count: enriched }, { count: open }] = await Promise.all([
                     supabase.from('leads').select('*', { count: 'exact', head: true }),
-                    supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'ENRICHED')
+                    supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'ENRICHED'),
+                    supabase.from('support_tickets').select('*', { count: 'exact', head: true }).eq('status', 'open')
                 ]);
 
                 setStats(prev => ({
                     ...prev,
                     totalLeads: total || 0,
                     enrichedLeads: enriched || 0,
+                    openTickets: open || 0,
                     activeTenants: tenantsData?.filter(t => t.is_active).length || 0,
                     totalUsers: profilesData?.length || 0
                 }));
@@ -321,12 +323,20 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                 .from('support_tickets')
                 .update({
                     status: 'resolved',
-                    // Assuming there might be a 'solution' or 'admin_response' column, but for now we just notify.
-                    // If you have an 'admin_reaction' column, update it here.
+                    updated_at: new Date().toISOString()
                 })
                 .eq('id', respondingTicket.id);
 
             if (ticketError) throw ticketError;
+
+            // 3. Insert response into ticket_messages
+            const { data: userData } = await supabase.auth.getUser();
+            await supabase.from('ticket_messages').insert([{
+                ticket_id: respondingTicket.id,
+                user_id: userData.user?.id,
+                message: responseMessage,
+                is_admin_reply: true
+            }]);
 
             toast.success('Chamado resolvido!', 'Resposta enviada ao usuário com sucesso.');
             setRespondingTicket(null);

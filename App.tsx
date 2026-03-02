@@ -3,7 +3,7 @@ import {
   Bell, LayoutDashboard, Search, Database, Rocket, TrendingUp,
   Megaphone, ShieldCheck, Menu, X, LogOut, BrainCircuit, Activity,
   HelpCircle, AlertTriangle, ScrollText, Cpu, ChevronRight, BarChart3,
-  Send as SendIcon, CheckCircle, Info, DollarSign as MoneyIcon, Archive
+  Send as SendIcon, CheckCircle, Info, DollarSign as MoneyIcon, Archive, LifeBuoy
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import TermsModal from './components/TermsModal';
@@ -710,6 +710,10 @@ const App: React.FC = () => {
               <NavItem icon={<ShieldCheck className="text-primary" size={20} />} label="Master" active={activeTab === 'master'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('master'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
             </>
           )}
+
+          <div className="pt-2">
+            <NavItem icon={<LifeBuoy size={20} className="text-primary" />} label="Suporte" active={showSupport} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => setShowSupport(true)} />
+          </div>
         </nav>
 
         <div className="p-4 mt-auto">
@@ -980,6 +984,78 @@ const App: React.FC = () => {
       }
       <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* Modal de Suporte */}
+      {showSupport && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="glass w-full max-w-lg rounded-[2.5rem] border border-primary/20 overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 bg-primary/5 border-b border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary/10 rounded-2xl">
+                  <LifeBuoy className="text-primary" size={24} />
+                </div>
+                <div>
+                  <h3 className="text-white font-black text-xl uppercase italic">Central de Suporte</h3>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Fale diretamente com nossa equipe</p>
+                </div>
+              </div>
+              <button onClick={() => setShowSupport(false)} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+                <X size={20} className="text-slate-500" />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-6">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Assunto / Tópico</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Dúvida sobre extração, Erro no sistema..."
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white text-sm outline-none focus:border-primary/50 transition-all font-bold"
+                  value={supportForm.subject}
+                  onChange={(e) => setSupportForm({ ...supportForm, subject: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Categoria</label>
+                <div className="relative">
+                  <select
+                    className="w-full bg-slate-900 border border-white/10 rounded-2xl px-6 py-4 text-white text-sm outline-none focus:border-primary/50 transition-all font-bold appearance-none"
+                    value={supportForm.category}
+                    onChange={(e) => setSupportForm({ ...supportForm, category: e.target.value })}
+                  >
+                    <option value="technical">🔧 Suporte Técnico</option>
+                    <option value="billing">💰 Financeiro / Faturamento</option>
+                    <option value="feature">💡 Sugestão de Melhoria</option>
+                    <option value="other">❓ Outros Assuntos</option>
+                  </select>
+                  <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <ChevronRight size={16} className="text-slate-500 rotate-90" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Mensagem</label>
+                <textarea
+                  placeholder="Descreva seu problema ou dúvida em detalhes..."
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white text-sm outline-none focus:border-primary/50 transition-all min-h-[150px] resize-none"
+                  value={supportForm.message}
+                  onChange={(e) => setSupportForm({ ...supportForm, message: e.target.value })}
+                />
+              </div>
+
+              <button
+                onClick={handleSendTicket}
+                disabled={isSubmittingTicket || !supportForm.subject || !supportForm.message}
+                className="w-full py-5 bg-primary text-slate-900 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+              >
+                {isSubmittingTicket ? 'ENVIANDO RELATO...' : 'ENVIAR CHAMADO'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div >
   );
 };
