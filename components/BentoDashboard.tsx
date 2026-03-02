@@ -12,6 +12,7 @@ import {
 import { useBranding } from './BrandingProvider';
 import { Lead, LeadStatus } from '../types';
 import { supabase } from '../lib/supabase';
+import { RevenueService } from '../services/revenueService';
 
 interface BentoDashboardProps {
   leads: Lead[];
@@ -28,7 +29,8 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
     enriched: 0,
     newLeads: 0,
     enriching: 0,
-    scoreSum: 0
+    scoreSum: 0,
+    pipelineTotal: 0
   });
 
   React.useEffect(() => {
@@ -54,13 +56,17 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
           scoreSum = scoreData.reduce((acc, l) => acc + (l.p2c_score || 0), 0);
         }
 
+        // Fetch real pipeline data
+        const pipelineStats = await RevenueService.getPipelineValue(tenantId);
+
         if (isMounted) {
           setStats({
             total: totalRes.count || leads.length,
             enriched: enrichedRes.count || 0,
             newLeads: newRes.count || 0,
             enriching: enrichingRes.count || 0,
-            scoreSum: scoreSum
+            scoreSum: scoreSum,
+            pipelineTotal: pipelineStats.total
           });
         }
       } catch (e) {
@@ -93,15 +99,6 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
       if (dayData) dayData.leads += 1;
     });
 
-    // Se não houver dados reais suficientes para um gráfico bonito, adicionamos um "trend" simulado
-    // para não ficar uma linha reta no zero durante o início do uso
-    if (leads.length < 5) {
-      return last7Days.map((d, i) => ({
-        ...d,
-        leads: d.leads + [12, 18, 15, 25, 32, 28, 40][i] // Base mock + leads reais
-      }));
-    }
-
     return last7Days;
   }, [leads]);
 
@@ -111,8 +108,8 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
   const newLeadsCount = stats.newLeads;
   const enrichingCount = stats.enriching;
 
-  // Cálculos de Receita (Revenue OS) utilizando score real da base inteira
-  const pipelineValue = stats.scoreSum > 0 ? (stats.scoreSum * 1500) : (leads.reduce((acc, l) => acc + (l.p2c_score ? (l.p2c_score * 1500) : 0), 0));
+  // Cálculos de Receita (Revenue OS) utilizando dados REAIS do Pipeline
+  const pipelineValue = stats.pipelineTotal;
   const estimatedBalance = pipelineValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const qualityScore = totalLeads > 0
     ? ((stats.scoreSum || leads.reduce((acc, l) => acc + (l.p2c_score || 0), 0)) / totalLeads * 100).toFixed(1)
@@ -203,18 +200,6 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
           <StatBox label="Prontos p/ Fechamento" value={enrichedCount.toString()} color="emerald-400" icon={<CheckCircle size={18} md:size={20} />} />
           <StatBox label="P2C Médio (Score)" value={qualityScore + "%"} color="primary" icon={<Sparkles size={18} md:size={20} />} />
 
-          <div className="pt-4 border-t border-white/5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Consumo Gemini</span>
-              <span className="text-[10px] font-mono text-slate-300">R$ 0,12 / lead</span>
-            </div>
-            <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary transition-all duration-1000 rounded-full shadow-[0_0_8px_var(--color-primary)]"
-                style={{ width: `${consumptionPercent}%` }}
-              ></div>
-            </div>
-          </div>
         </div>
       </div>
 
