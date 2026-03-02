@@ -207,7 +207,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
       <div className="col-span-1 md:col-span-4 lg:col-span-4 glass rounded-[2rem] p-6 md:p-8 premium-card relative overflow-hidden flex flex-col">
         <div className="flex items-center justify-between mb-6 md:mb-8">
           <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
-            <Brain className="text-primary" size={20} /> Sinais Gemini
+            <Brain className="text-primary" size={20} /> Neural Signals
           </h3>
           <span className="text-[10px] bg-white/5 px-3 py-1.5 rounded-full text-slate-400 font-mono uppercase tracking-widest border border-white/5">
             Auto-Scan

@@ -19,7 +19,7 @@ export class DiscoveryService {
                 const hasCredits = await BillingService.useCredits(
                     tenantId,
                     5,
-                    'serper',
+                    'DISCOVERY_ENGINE',
                     `Neural Discovery: ${keyword} em ${location} (Pág: ${page})`
                 );
                 if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");
@@ -129,7 +129,7 @@ export class DiscoveryService {
                 const hasCredits = await BillingService.useCredits(
                     tenantId,
                     10,
-                    'serper',
+                    'DISCOVERY_ENGINE',
                     `CNPJ Mass Scan: ${keyword} em ${location} (Pág: ${page})`
                 );
                 if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");
@@ -348,7 +348,7 @@ export class DiscoveryService {
                 const hasCredits = await BillingService.useCredits(
                     tenantId,
                     15,
-                    'serper',
+                    'DISCOVERY_ENGINE',
                     `Sherlock Hunter: ${competitorInput} em ${location}`
                 );
                 if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");
@@ -459,7 +459,7 @@ export class DiscoveryService {
                 const hasCredits = await BillingService.useCredits(
                     tenantId,
                     15,
-                    'serper',
+                    'DISCOVERY_ENGINE',
                     `B2C Intent Hunter: ${keyword}`
                 );
                 if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");

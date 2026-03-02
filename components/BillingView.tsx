@@ -302,7 +302,16 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                                             </div>
                                         </td>
                                         <td className="px-4 md:px-8 py-4 md:py-5" data-label="Serviço">
-                                            <p className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors uppercase tracking-tight">{tx.service_name || 'Geral'}</p>
+                                            <p className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors uppercase tracking-tight">
+                                                {(() => {
+                                                    const name = tx.service_name?.toLowerCase() || 'geral';
+                                                    if (name.includes('gemini') || name === 'neural_ai') return 'Motor Neural I.A.';
+                                                    if (name.includes('serper') || name === 'discovery_engine') return 'Discovery Intelligence';
+                                                    if (name === 'maps') return 'Global Maps Eng.';
+                                                    if (name === 'google-search') return 'Web Indexer';
+                                                    return tx.service_name || 'Serviço Geral';
+                                                })()}
+                                            </p>
                                             <p className="text-[10px] text-slate-500 truncate max-w-[160px] md:max-w-xs">{tx.description}</p>
                                         </td>
                                         <td className="px-4 md:px-8 py-4 md:py-5" data-label="Data">

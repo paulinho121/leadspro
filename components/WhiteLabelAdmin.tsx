@@ -735,7 +735,7 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
 
                             <div className="grid grid-cols-1 gap-6">
                                 <ApiConfigItem
-                                    label="Serper.dev API (Search Engine)"
+                                    label="Mecanismo de Busca Global"
                                     placeholder="8c2a..."
                                     value={formData.apiKeys?.serper || ''}
                                     onChange={(val) => {
@@ -747,14 +747,14 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                                     loadingBalance={loadingBalance}
                                 />
                                 <ApiConfigItem
-                                    label="Google Gemini API"
+                                    label="Motor Neural (I.A. Principal)"
                                     placeholder="AIzaSy..."
                                     value={formData.apiKeys?.gemini || ''}
                                     onChange={(val) => setFormData({ ...formData, apiKeys: { ...formData.apiKeys, gemini: val } })}
                                     description="Usado para análise neural, score de leads e extração inteligente."
                                 />
                                 <ApiConfigItem
-                                    label="OpenAI API (GPT-4)"
+                                    label="Motor de Linguagem (Opcional)"
                                     placeholder="sk-..."
                                     value={formData.apiKeys?.openai || ''}
                                     onChange={(val) => setFormData({ ...formData, apiKeys: { ...formData.apiKeys, openai: val } })}

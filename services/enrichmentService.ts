@@ -17,7 +17,7 @@ export class EnrichmentService {
             const hasCredits = await BillingService.useCredits(
                 tenantId,
                 10,
-                'gemini',
+                'NEURAL_AI',
                 `Neural Enrichment: ${lead.name}`
             );
             if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");

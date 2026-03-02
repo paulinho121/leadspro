@@ -961,6 +961,14 @@ const App: React.FC = () => {
       </main>
 
       {/* Overlays */}
+      {showNotifications && (
+        <Suspense fallback={null}>
+          <NotificationsList
+            onClose={() => setShowNotifications(false)}
+            tenantId={userTenantId}
+          />
+        </Suspense>
+      )}
       {
         selectedLead && (
           <EnrichmentModal
