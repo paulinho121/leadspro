@@ -15,15 +15,35 @@ import EnrichmentModal from './components/EnrichmentModal';
 import LoginPage from './components/LoginPage';
 import SecurityGuard from './components/SecurityGuard';
 // Heavy components loaded lazily to avoid blocking first-paint
-const WhiteLabelAdmin = lazy(() => import('./components/WhiteLabelAdmin'));
-const MasterConsole = lazy(() => import('./components/MasterConsole'));
-const PipelineView = lazy(() => import('./components/PipelineView'));
-const AutomationView = lazy(() => import('./components/AutomationView'));
-const ActivityHistory = lazy(() => import('./components/ActivityHistory'));
-const NotificationsList = lazy(() => import('./components/NotificationsList'));
-const BillingView = lazy(() => import('./components/BillingView'));
-const AutomationHealthDashboard = lazy(() => import('./components/AutomationHealthDashboard'));
-const LeadAdminView = lazy(() => import('./components/LeadAdminView'));
+// Helper para carregamento resiliente de módulos (evita erro de cache em novas versões)
+const lazyWithRetry = (importFn: () => Promise<any>) =>
+  lazy(async () => {
+    const pageHasBeenForceRefreshed = JSON.parse(
+      window.localStorage.getItem('page-has-been-force-refreshed') || 'false'
+    );
+
+    try {
+      const component = await importFn();
+      window.localStorage.setItem('page-has-been-force-refreshed', 'false');
+      return component;
+    } catch (error) {
+      if (!pageHasBeenForceRefreshed) {
+        window.localStorage.setItem('page-has-been-force-refreshed', 'true');
+        return window.location.reload();
+      }
+      throw error;
+    }
+  });
+
+const WhiteLabelAdmin = lazyWithRetry(() => import('./components/WhiteLabelAdmin'));
+const MasterConsole = lazyWithRetry(() => import('./components/MasterConsole'));
+const PipelineView = lazyWithRetry(() => import('./components/PipelineView'));
+const AutomationView = lazyWithRetry(() => import('./components/AutomationView'));
+const ActivityHistory = lazyWithRetry(() => import('./components/ActivityHistory'));
+const NotificationsList = lazyWithRetry(() => import('./components/NotificationsList'));
+const BillingView = lazyWithRetry(() => import('./components/BillingView'));
+const AutomationHealthDashboard = lazyWithRetry(() => import('./components/AutomationHealthDashboard'));
+const LeadAdminView = lazyWithRetry(() => import('./components/LeadAdminView'));
 import { ToastContainer, registerToastFn, toast } from './components/Toast';
 import { DiscoveryService } from './services/discoveryService';
 import { CommunicationService } from './services/communicationService';
