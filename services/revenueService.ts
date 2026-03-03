@@ -2,11 +2,16 @@
 import { supabase } from '../lib/supabase';
 import { Campaign, Deal, DealStage } from '../types';
 
+// Guard: evita queries com tenant_id inválido ('default' não é UUID)
+const isValidTenantId = (id?: string | null): boolean =>
+    !!id && id !== 'default' && /^[0-9a-f-]{36}$/i.test(id);
+
 export class RevenueService {
     /**
      * Busca todas as campanhas do Tenant
      */
     static async getCampaigns(tenantId: string): Promise<Campaign[]> {
+        if (!isValidTenantId(tenantId)) return [];
         const { data, error } = await supabase
             .from('campaigns')
             .select('*')
@@ -21,6 +26,7 @@ export class RevenueService {
      * Busca todos os Deals do Tenant com dados dos Leads
      */
     static async getDeals(tenantId: string): Promise<Deal[]> {
+        if (!isValidTenantId(tenantId)) return [];
         const { data, error } = await supabase
             .from('deals')
             .select('*, lead:leads(*)')
@@ -107,6 +113,7 @@ export class RevenueService {
      * Calcula o valor total do pipeline (Soma ponderada pela probabilidade)
      */
     static async getPipelineValue(tenantId: string): Promise<{ total: number, weighted: number }> {
+        if (!isValidTenantId(tenantId)) return { total: 0, weighted: 0 };
         const { data, error } = await supabase
             .from('deals')
             .select('estimated_value, probability_to_close')

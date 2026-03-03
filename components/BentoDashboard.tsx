@@ -38,7 +38,8 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
     const loadStats = async () => {
       try {
         const tenantId = config?.tenantId;
-        if (!tenantId) return;
+        // Aguarda tenant real carregar — 'default' é placeholder e não é UUID válido
+        if (!tenantId || tenantId === 'default') return;
 
         // Fetch counts efficiently
         const [totalRes, enrichedRes, newRes, enrichingRes] = await Promise.all([
