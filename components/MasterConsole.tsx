@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from './Toast';
+import ActivityHistory from './ActivityHistory';
+
 
 interface Tenant {
     id: string;
@@ -102,6 +104,8 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
         type: 'add' as 'add' | 'remove'
     });
     const [isUpdatingCredits, setIsUpdatingCredits] = useState(false);
+    const [showSystemLogs, setShowSystemLogs] = useState(false);
+
 
     const handleUpdateCredits = async () => {
         if (!selectedTenantForCredits || creditAdjustment.amount <= 0) return;
@@ -381,6 +385,13 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
         t.slug.toLowerCase().includes(tenantSearchTerm.toLowerCase())
     );
 
+    const formattedTenants = React.useMemo(() => {
+        return filteredTenants.map(tenant => ({
+            ...tenant,
+            users: profiles.filter(p => p.tenant_id === tenant.id)
+        }));
+    }, [filteredTenants, profiles]);
+
 
     if (isPermitted === false) return (
         <div className="flex-1 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xl p-10 font-mono">
@@ -437,6 +448,7 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
                 {/* Tenants List */}
                 <div className="lg:col-span-2 space-y-6">
+
                     <div className="glass rounded-3xl border border-white/5 overflow-hidden transition-all duration-500">
                         <div
                             className="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors"
@@ -501,87 +513,88 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5">
-                                        {filteredTenants.length === 0 ? (
+                                        {formattedTenants.length === 0 ? (
                                             <tr>
-                                                <td colSpan={5} className="p-10 text-center text-slate-500 text-sm">
+                                                <td colSpan={7} className="p-10 text-center text-slate-500 text-sm">
                                                     Nenhuma empresa encontrada para "{tenantSearchTerm}".
                                                 </td>
                                             </tr>
                                         ) : (
-                                            filteredTenants.map(tenant => {
-                                                const tenantUsers = profiles.filter(p => p.tenant_id === tenant.id);
-                                                return (
-                                                    <tr key={tenant.id} className="hover:bg-white/5 transition-colors group">
-                                                        <td className="p-5">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-blue-500/20 flex items-center justify-center font-black text-primary border border-white/5">
-                                                                    {tenant.name[0]}
-                                                                </div>
-                                                                <div>
-                                                                    <p className="font-bold text-white text-sm">{tenant.name}</p>
-                                                                    <p className="text-[10px] text-slate-500 font-mono tracking-wider">{tenant.slug}</p>
-                                                                </div>
+                                            formattedTenants.map(tenant => (
+                                                <tr key={tenant.id} className="hover:bg-white/5 transition-colors group">
+                                                    <td className="p-5">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-blue-500/20 flex items-center justify-center font-black text-primary border border-white/5">
+                                                                {tenant.name[0]}
                                                             </div>
-                                                        </td>
-                                                        <td className="p-5 text-center">
-                                                            <div className="flex flex-col items-center">
-                                                                <span className="text-sm font-black text-white">{(tenant as any).leadsCount || 0}</span>
-                                                                <span className="text-[9px] text-primary font-bold uppercase">{(tenant as any).enrichedCount || 0} Enriq.</span>
+                                                            <div>
+                                                                <p className="font-bold text-white text-sm">{tenant.name}</p>
+                                                                <p className="text-[10px] text-slate-500 font-mono tracking-wider">{tenant.slug}</p>
                                                             </div>
-                                                        </td>
-                                                        <td className="p-5 text-center">
-                                                            <div className="flex flex-col items-center">
-                                                                <span className="text-sm font-black text-emerald-400">{tenant.creditBalance?.toLocaleString() || 0}</span>
-                                                                <span className="text-[8px] text-slate-500 font-bold uppercase">CRÉDITOS</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-5 text-center">
+                                                        <span className="text-[10px] font-black text-white bg-white/5 px-2 py-1 rounded-lg border border-white/5">BASIC</span>
+                                                    </td>
+                                                    <td className="p-5 text-center">
+                                                        <div className="flex flex-col items-center">
+                                                            <span className="text-sm font-black text-white">{tenant.leadsCount || 0}</span>
+                                                            <span className="text-[9px] text-primary font-bold uppercase">{tenant.enrichedCount || 0} Enriq.</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-5 text-center">
+                                                        <div className="flex flex-col items-center">
+                                                            <span className="text-sm font-black text-emerald-400">{tenant.creditBalance?.toLocaleString() || 0}</span>
+                                                            <span className="text-[8px] text-slate-500 font-bold uppercase">CRÉDITOS</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-5 text-center font-bold text-white text-sm">
+                                                        {tenant.users.length}
+                                                    </td>
+
+                                                    <td className="p-5">
+                                                        <div className="flex justify-center">
+                                                            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${tenant.is_active ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+                                                                <span className={`w-1.5 h-1.5 rounded-full ${tenant.is_active ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                                                                {tenant.is_active ? 'Ativo' : 'Suspenso'}
                                                             </div>
-                                                        </td>
-                                                        <td className="p-5 text-center font-bold text-white text-sm">
-                                                            {tenantUsers.length}
-                                                        </td>
-                                                        <td className="p-5">
-                                                            <div className="flex justify-center">
-                                                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${tenant.is_active ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
-                                                                    <span className={`w-1.5 h-1.5 rounded-full ${tenant.is_active ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
-                                                                    {tenant.is_active ? 'Ativo' : 'Suspenso'}
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="p-5 text-right">
-                                                            <div className="flex items-center justify-end gap-2">
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setSelectedTenantForCredits(tenant);
-                                                                    }}
-                                                                    className="p-2 rounded-xl text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all"
-                                                                    title="Gerenciar Créditos"
-                                                                >
-                                                                    <DollarSign size={18} />
-                                                                </button>
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setSelectedTenantForNote(tenant);
-                                                                    }}
-                                                                    className="p-2 rounded-xl text-slate-500 hover:text-primary hover:bg-primary/10 transition-all"
-                                                                    title="Enviar Notificação Direta"
-                                                                >
-                                                                    <Bell size={18} />
-                                                                </button>
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        toggleTenantStatus(tenant.id, tenant.is_active);
-                                                                    }}
-                                                                    className={`p-2 rounded-xl transition-all ${tenant.is_active ? 'hover:bg-red-500/20 text-slate-500 hover:text-red-400' : 'hover:bg-emerald-500/20 text-slate-500 hover:text-emerald-400'}`}
-                                                                >
-                                                                    {tenant.is_active ? <UserX size={18} /> : <UserCheck size={18} />}
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-5 text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedTenantForCredits(tenant);
+                                                                }}
+                                                                className="p-2 rounded-xl text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                                                                title="Gerenciar Créditos"
+                                                            >
+                                                                <DollarSign size={18} />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedTenantForNote(tenant);
+                                                                }}
+                                                                className="p-2 rounded-xl text-slate-500 hover:text-primary hover:bg-primary/10 transition-all"
+                                                                title="Enviar Notificação Direta"
+                                                            >
+                                                                <Bell size={18} />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    toggleTenantStatus(tenant.id, tenant.is_active);
+                                                                }}
+                                                                className={`p-2 rounded-xl transition-all ${tenant.is_active ? 'hover:bg-red-500/20 text-slate-500 hover:text-red-400' : 'hover:bg-emerald-500/20 text-slate-500 hover:text-emerald-400'}`}
+                                                            >
+                                                                {tenant.is_active ? <UserX size={18} /> : <UserCheck size={18} />}
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
                                         )}
                                     </tbody>
                                 </table>
@@ -837,7 +850,7 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                             </div>
 
                             <button
-                                onClick={() => toast.info('Em breve', 'Relatório completo de auditoria em desenvolvimento.')}
+                                onClick={() => setShowSystemLogs(true)}
                                 className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-white border border-white/5 transition-all flex items-center justify-center gap-2"
                             >
                                 <History size={14} /> Ver Logs do Sistema
@@ -846,6 +859,42 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Modal de Logs do Sistema */}
+            {showSystemLogs && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="glass w-full max-w-4xl max-h-[85vh] rounded-[2.5rem] border border-white/10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+                        <div className="p-8 border-b border-white/5 flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-primary/10 rounded-2xl">
+                                    <Terminal className="text-primary" size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-black text-xl uppercase italic">Auditoria Global</h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Logs de Ação e Eventos de Segurança</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowSystemLogs(false)} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+                                <X size={24} className="text-slate-500" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-black/20">
+                            <ActivityHistory isMaster={true} />
+                        </div>
+
+                        <div className="p-6 border-t border-white/5 bg-white/5 flex justify-end">
+                            <button
+                                onClick={() => setShowSystemLogs(false)}
+                                className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                            >
+                                Fechar Terminal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
             {/* Support Tickets Section */}
             <div className="space-y-6">
