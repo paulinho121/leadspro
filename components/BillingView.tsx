@@ -64,29 +64,25 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
 
 
     const handleTopUp = async (plan: any) => {
-        console.log('[Billing] Iniciando handleTopUp para plano:', plan.title, 'Stripe ID:', plan.stripeProductId);
+        console.log('[Billing] Iniciando handleTopUp para plano:', plan.title);
 
         if (!tenantId) {
-            console.warn('[Billing] Tenant ID ausente!');
             toast.error('Sessão expirada', 'Por favor, recarregue a página e faça login novamente.');
             return;
         }
 
         if (!plan.stripeProductId) {
-            console.log('[Billing] Plano sem Stripe ID, abrindo modal manual');
             setShowTopUpModal(true);
             return;
         }
 
         setProcessingPlanId(plan.id);
         try {
-            console.log('[Billing] Invocando StripeService para tenant:', tenantId);
             await StripeService.createCheckoutSession(plan.stripeProductId, tenantId);
         } catch (err: any) {
-            console.error('[Billing] Erro fatal no checkout:', err);
-            // Mostrar erro detalhado se disponível
-            const errorMsg = err.message || 'Erro desconhecido';
-            toast.error('Falha no checkout', errorMsg);
+            // Edge Function não deployada ainda — abrir modal de pagamento manual (Pix)
+            console.warn('[Billing] Stripe indisponível, abrindo modal alternativo.');
+            setShowTopUpModal(true);
         } finally {
             setProcessingPlanId(null);
         }

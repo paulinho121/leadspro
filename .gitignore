@@ -22,3 +22,19 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ─── SEGURANÇA: Credenciais Reais ──────────────────────────
+.env
+.env.local
+.env.production
+.env.*.local
+backups/
+
+# Scripts de migração e backup (contêm service keys)
+*.cjs
+reconstituicao_banco_novo.sql
+supabase/migrations/20260303_emergency_repair.sql
+push_error.txt
+
+# Honeypot: src/config/legacy/ é INTENCIONAL e pode ser commitado
+# Não adicionar src/config/legacy/ ao gitignore!

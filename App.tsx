@@ -331,16 +331,23 @@ const App: React.FC = () => {
     }
   }, [userTenantId]);
 
-  // Bootstrap
+  // Bootstrap (Melhorado para lidar com RLS)
   useEffect(() => {
     const bootstrap = async () => {
+      // Se já temos uma sessão, não precisamos fazer bootstrap de tenant demo
+      if (session?.user) return;
+
       try {
-        const { data: tenants } = await supabase.from('tenants').select('id').limit(1);
-        if (!tenants?.[0]?.id) {
-          const { data: nt } = await supabase.from('tenants')
-            .insert([{ name: 'Lead Demo', slug: 'demo-' + Math.random().toString(36).slice(2, 5) }])
+        // Usamos white_label_configs que tem permissão SELECT anon
+        const { data: configs } = await supabase.from('white_label_configs').select('tenant_id').limit(1);
+
+        if (!configs || configs.length === 0) {
+          console.log('[Bootstrap] Nenhuma configuração detectada. Inicializando ambiente...');
+          const { data: nt, error: tenantErr } = await supabase.from('tenants')
+            .insert([{ name: 'LeadPRO Enterprise', slug: 'admin-' + Math.random().toString(36).slice(2, 5) }])
             .select().single();
-          if (nt) {
+
+          if (nt && !tenantErr) {
             await supabase.from('white_label_configs').insert([{
               tenant_id: nt.id,
               platform_name: 'LeadFlow Neural'
@@ -348,10 +355,12 @@ const App: React.FC = () => {
             window.location.reload();
           }
         }
-      } catch (err) { }
+      } catch (err) {
+        console.warn('[Bootstrap] Erro na verificação silenciosa:', err);
+      }
     };
     bootstrap();
-  }, [config.tenantId]);
+  }, [config.tenantId, session]);
 
   // Message Queue Worker
   useEffect(() => {
@@ -391,7 +400,15 @@ const App: React.FC = () => {
     }));
 
     const { data, error } = await supabase.from('leads').insert(leadsToSave).select();
-    if (!error) {
+
+    if (error) {
+      console.error('[Database] Erro ao salvar leads:', error);
+      toast.error('Falha ao salvar leads', `Erro do banco: ${error.message}`);
+      return;
+    }
+
+    if (data) {
+      toast.success(`${uniqueNewLeads.length} leads capturados!`, 'Acesse o Laboratório para enriquecimento neural.');
       refetchLeads();
       setActiveTab('lab');
       return data;

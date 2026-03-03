@@ -143,10 +143,10 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ tenantId, isMaster })
                 </div>
                 <div className="p-5 glass rounded-2xl border border-white/5 text-center">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Status do Log</p>
-                    <p className="text-sm font-bold text-emerald-500 uppercase tracking-tighter flex items-center justify-center gap-2">
+                    <div className="text-sm font-bold text-emerald-500 uppercase tracking-tighter flex items-center justify-center gap-2">
                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
                         Encriptado
-                    </p>
+                    </div>
                 </div>
                 <div className="p-5 glass rounded-2xl border border-white/5 text-center">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Última Atualização</p>

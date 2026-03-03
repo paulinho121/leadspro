@@ -28,6 +28,9 @@ export function useLeads(tenantId: string, activeTab: string, limit = LEADS_PAGE
                 query = query.eq('status', 'ENRICHED');
             } else if (activeTab === 'lab') {
                 query = query.in('status', ['NEW', 'ENRICHING', 'ENRICHED', 'EXPORTED']);
+            } else if (activeTab === 'leadAdmin') {
+                // Administração de Leads: buscar apenas leads pausados e descartados
+                query = query.in('status', ['PARKED', 'DISCARDED']);
             }
 
             const { data, error, count } = await query;

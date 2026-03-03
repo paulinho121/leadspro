@@ -65,9 +65,13 @@ export class DiscoveryService {
                     };
                 });
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('[Neural Discovery] Erro durante deep scan:', error);
-            throw error; // Propagate error to trigger UI modal
+            if (error.message?.includes('SERPER_API_KEY_MISSING')) {
+                // Import dinâmico do toast se necessário ou uso do console
+                console.error('CRITICAL: SERPER_API_KEY is missing from environment or database.');
+            }
+            throw error;
         }
 
         return [];
