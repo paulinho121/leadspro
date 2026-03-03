@@ -50,6 +50,22 @@ export class CommunicationService {
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.api_key}` },
                     body: JSON.stringify({ to: payload.leadId, text: payload.content })
                 });
+            } else if (settings.provider_type === 'whatsapp_cloud_api') {
+                const version = settings.api_url || 'v17.0';
+                response = await fetch(`https://graph.facebook.com/${version}/${settings.instance_name}/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${settings.api_key}`
+                    },
+                    body: JSON.stringify({
+                        messaging_product: 'whatsapp',
+                        recipient_type: 'individual',
+                        to: payload.leadId,
+                        type: 'text',
+                        text: { body: payload.content }
+                    })
+                });
             }
 
             if (!response || !response.ok) {

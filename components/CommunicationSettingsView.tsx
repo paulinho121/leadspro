@@ -13,7 +13,7 @@ interface CommunicationSettingsViewProps {
     tenantId: string;
 }
 
-type WhatsAppProvider = 'whatsapp_evolution' | 'whatsapp_zapi' | 'whatsapp_duilio';
+type WhatsAppProvider = 'whatsapp_evolution' | 'whatsapp_zapi' | 'whatsapp_duilio' | 'whatsapp_cloud_api';
 
 const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ tenantId }) => {
     const [loading, setLoading] = useState(false);
@@ -141,6 +141,21 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                     setTestResultWa({ ok: true, msg: '✅ Evolution API acessível e autenticada!' });
                 } else {
                     setTestResultWa({ ok: false, msg: `Evolution API retornou HTTP ${res.status} — verifique o endpoint e a API key.` });
+                }
+            } else if (selectedWaProvider === 'whatsapp_cloud_api') {
+                if (!waSettings.instanceName || !waSettings.apiKey) {
+                    setTestResultWa({ ok: false, msg: 'Preencha o Phone Number ID e o Access Token.' });
+                    return;
+                }
+                const version = waSettings.apiUrl || 'v17.0';
+                const res = await fetch(`https://graph.facebook.com/${version}/${waSettings.instanceName}`, {
+                    headers: { 'Authorization': `Bearer ${waSettings.apiKey}` }
+                });
+                if (res.ok) {
+                    setTestResultWa({ ok: true, msg: '✅ WhatsApp Cloud API validada com sucesso!' });
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    setTestResultWa({ ok: false, msg: `Erro na Meta API: ${data.error?.message || res.statusText}` });
                 }
             } else {
                 // Duílio ou outro: tentativa genérica
@@ -285,6 +300,7 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                                     <option value="whatsapp_evolution">Evolution API</option>
                                     <option value="whatsapp_zapi">Z-API</option>
                                     <option value="whatsapp_duilio">Duílio</option>
+                                    <option value="whatsapp_cloud_api">WhatsApp Cloud API (Oficial)</option>
                                 </select>
                                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={12} />
                             </div>
@@ -300,11 +316,11 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                         <div className="space-y-3">
                             <label className="flex items-center gap-3 text-[9px] font-black text-slate-500 uppercase tracking-widest ml-4 italic">
                                 <Globe size={12} className="text-emerald-500/40" />
-                                {selectedWaProvider === 'whatsapp_zapi' ? 'Endpoint Opcional' : 'Endpoint da API'}
+                                {selectedWaProvider === 'whatsapp_zapi' ? 'Endpoint Opcional' : (selectedWaProvider === 'whatsapp_cloud_api' ? 'Versão da API (Ex: v17.0)' : 'Endpoint da API')}
                             </label>
                             <input
                                 className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-emerald-500/30 text-xs font-mono placeholder:text-slate-800 transition-all"
-                                placeholder={selectedWaProvider === 'whatsapp_zapi' ? 'https://api.z-api.io' : 'https://api.seuserver.com'}
+                                placeholder={selectedWaProvider === 'whatsapp_zapi' ? 'https://api.z-api.io' : (selectedWaProvider === 'whatsapp_cloud_api' ? 'v17.0' : 'https://api.seuserver.com')}
                                 value={waSettings.apiUrl}
                                 onChange={e => setWaSettings({ ...waSettings, apiUrl: e.target.value })}
                             />
@@ -313,7 +329,7 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                         <div className="space-y-3">
                             <label className="flex items-center gap-3 text-[9px] font-black text-slate-500 uppercase tracking-widest ml-4 italic">
                                 <Key size={12} className="text-emerald-500/40" />
-                                {selectedWaProvider === 'whatsapp_zapi' ? 'Token (Z-API)' : 'Chave de Acesso'}
+                                {selectedWaProvider === 'whatsapp_zapi' ? 'Token (Z-API)' : (selectedWaProvider === 'whatsapp_cloud_api' ? 'Access Token (System User)' : 'Chave de Acesso')}
                             </label>
                             <input
                                 type="password"
@@ -327,21 +343,21 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                         <div className="space-y-3">
                             <label className="flex items-center gap-3 text-[9px] font-black text-slate-500 uppercase tracking-widest ml-4 italic">
                                 <Terminal size={12} className="text-emerald-500/40" />
-                                {selectedWaProvider === 'whatsapp_zapi' ? 'Instância ID' : 'Nome da Instância'}
+                                {selectedWaProvider === 'whatsapp_zapi' ? 'Instância ID' : (selectedWaProvider === 'whatsapp_cloud_api' ? 'Phone Number ID' : 'Nome da Instância')}
                             </label>
                             <input
                                 className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-emerald-500/30 text-xs font-mono placeholder:text-slate-800 transition-all uppercase"
-                                placeholder={selectedWaProvider === 'whatsapp_zapi' ? '3B...D0' : 'EX: MATRIZ_SP'}
+                                placeholder={selectedWaProvider === 'whatsapp_zapi' ? '3B...D0' : (selectedWaProvider === 'whatsapp_cloud_api' ? 'Ex: 10650...' : 'EX: MATRIZ_SP')}
                                 value={waSettings.instanceName}
                                 onChange={e => setWaSettings({ ...waSettings, instanceName: e.target.value })}
                             />
                         </div>
 
-                        {selectedWaProvider === 'whatsapp_zapi' && (
+                        {(selectedWaProvider === 'whatsapp_zapi' || selectedWaProvider === 'whatsapp_cloud_api') && (
                             <div className="space-y-3">
                                 <label className="flex items-center gap-3 text-[9px] font-black text-slate-500 uppercase tracking-widest ml-4 italic">
                                     <Lock size={12} className="text-emerald-500/40" />
-                                    Client Token (Z-API)
+                                    {selectedWaProvider === 'whatsapp_cloud_api' ? 'WhatsApp Business Account ID' : 'Client Token (Z-API)'}
                                 </label>
                                 <input
                                     type="password"
@@ -370,8 +386,8 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                         </button>
                         {testResultWa && (
                             <div className={`mt-3 flex items-start gap-3 px-5 py-3.5 rounded-2xl border text-[10px] font-bold leading-relaxed ${testResultWa.ok
-                                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                                    : 'bg-red-500/10 border-red-500/20 text-red-400'
+                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                : 'bg-red-500/10 border-red-500/20 text-red-400'
                                 }`}>
                                 {testResultWa.ok ? <Wifi size={14} className="shrink-0 mt-0.5" /> : <WifiOff size={14} className="shrink-0 mt-0.5" />}
                                 <span>{testResultWa.msg}</span>
@@ -436,8 +452,8 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                         </button>
                         {testResultEmail && (
                             <div className={`mt-3 flex items-start gap-3 px-5 py-3.5 rounded-2xl border text-[10px] font-bold leading-relaxed ${testResultEmail.ok
-                                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                                    : 'bg-red-500/10 border-red-500/20 text-red-400'
+                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                : 'bg-red-500/10 border-red-500/20 text-red-400'
                                 }`}>
                                 {testResultEmail.ok ? <Wifi size={14} className="shrink-0 mt-0.5" /> : <WifiOff size={14} className="shrink-0 mt-0.5" />}
                                 <span>{testResultEmail.msg}</span>
