@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import {
   Bell, LayoutDashboard, Search, Database, Rocket, TrendingUp,
   Megaphone, ShieldCheck, Menu, X, LogOut, BrainCircuit, Activity,
@@ -233,6 +233,24 @@ const App: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, [session, userName, userTenantId]);
+
+  // Front-end Background Worker: Processamento da Fila de Mensagens
+  useEffect(() => {
+    if (!session?.user || !userTenantId) return;
+
+    console.log('[Worker] Simulador de Background ativado...');
+
+    // Processar imediatamente ao carregar
+    CommunicationService.processMessageQueue();
+
+    // Agendar processamento a cada 30 segundos enquanto o usuário estiver logado
+    const interval = setInterval(() => {
+      console.log('[Worker] Executando ciclo de processamento de fila...');
+      CommunicationService.processMessageQueue();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [session, userTenantId]);
 
   useEffect(() => {
     const handleAuthCheck = async (currSession: any) => {
