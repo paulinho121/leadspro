@@ -60,7 +60,32 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
         marketValue: 0,
         leadsLast30Days: 0
     });
+
     const [tickets, setTickets] = useState<SupportTicket[]>([]);
+    const [isPermitted, setIsPermitted] = useState<boolean | null>(null);
+
+    // Verificação de Segurança de Segundo Nível
+    useEffect(() => {
+        const checkPermission = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { setIsPermitted(false); return; }
+
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('is_master_admin')
+                .eq('id', session.user.id)
+                .single();
+
+            if (profile?.is_master_admin) {
+                setIsPermitted(true);
+            } else {
+                setIsPermitted(false);
+                toast.error('ACESSO NEGADO', 'Tentativa de extração de dados master bloqueada.');
+            }
+        };
+        checkPermission();
+    }, []);
+
 
     // Ferramentas de Gestão
     const [isSendingNotification, setIsSendingNotification] = useState(false);
@@ -356,8 +381,25 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
         t.slug.toLowerCase().includes(tenantSearchTerm.toLowerCase())
     );
 
+
+    if (isPermitted === false) return (
+        <div className="flex-1 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xl p-10 font-mono">
+            <ShieldAlert size={80} className="text-red-500 mb-6 animate-pulse" />
+            <h1 className="text-red-500 font-black text-2xl tracking-[0.5em] mb-4 uppercase">VIOLAÇÃO DE ACESSO</h1>
+            <p className="text-slate-500 text-sm max-w-md text-center">Tentativa de acesso não autorizado registrada na Auditoria Global (Activity Logs).</p>
+        </div>
+    );
+
+    if (isPermitted === null || isLoading) return (
+        <div className="flex-1 flex flex-col items-center justify-center py-32 bg-background">
+            <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-6"></div>
+            <p className="text-[10px] text-slate-500 font-black tracking-[0.3em] uppercase">Validando Credenciais Master...</p>
+        </div>
+    );
+
     return (
         <div className="flex-1 overflow-y-auto p-4 lg:p-10 space-y-6 lg:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 lg:pb-10">
+
             {/* Header & Stats */}
             <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
                 {/* ... (Header content remains unchanged) ... */}
