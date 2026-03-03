@@ -31,7 +31,11 @@ CREATE TRIGGER tr_check_banned_user
     FOR EACH ROW
     EXECUTE FUNCTION public.check_banned_user_on_profile();
 
--- 3. Limpar qualquer resquício de dados desse ID
+-- 3. Otimização de Performance: Criar índice antes de limpar
+-- Isso impede que o DELETE cause um scan completo no disco (Disk IO Exhaustion)
+CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON public.activity_logs(user_id);
+
+-- 4. Limpar qualquer resquício de dados desse ID
 DELETE FROM public.activity_logs WHERE user_id = '25b90f34-644b-4c1a-8148-dd88e647f441';
 DELETE FROM public.profiles WHERE id = '25b90f34-644b-4c1a-8148-dd88e647f441';
 DELETE FROM public.white_label_configs WHERE tenant_id = '25b90f34-644b-4c1a-8148-dd88e647f441';

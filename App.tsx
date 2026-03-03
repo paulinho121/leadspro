@@ -245,9 +245,9 @@ const App: React.FC = () => {
 
     // Agendar processamento a cada 30 segundos enquanto o usuário estiver logado
     const interval = setInterval(() => {
-      console.log('[Worker] Executando ciclo de processamento de fila...');
+      console.log('[Worker] Modo de Recuperação: Ciclo de processamento reduzido...');
       CommunicationService.processMessageQueue();
-    }, 30000);
+    }, 300000); // Aumentado para 5 minutos para aliviar o Disk IO
 
     return () => clearInterval(interval);
   }, [session, userTenantId]);
