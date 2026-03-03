@@ -750,6 +750,8 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-xs font-bold text-white truncate">{user.name || 'Usuário Anonimo'}</p>
+                                                    <p className="text-[9px] text-slate-500 font-mono truncate">{user.email}</p>
+                                                    <p className="text-[8px] text-slate-600 font-mono truncate">{user.id}</p>
                                                     <p className="text-[9px] text-primary font-black uppercase truncate">{tenant?.name || 'Sistema'}</p>
                                                 </div>
                                             </div>
