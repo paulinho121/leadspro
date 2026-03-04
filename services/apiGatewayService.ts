@@ -71,73 +71,34 @@ export class ApiGatewayService {
         const key = apiKey?.trim() || import.meta.env.VITE_SERPER_API_KEY?.trim();
         if (!key) throw new Error("SERPER_API_KEY_MISSING");
 
-        const body: any = {
-            q: payload.q,
-            gl: 'br',
-            hl: 'pt-br'
-        };
+        console.log(`[Neural Gateway] Payload SERPER MAPS -> Supabase Proxy`, JSON.stringify(payload));
 
-        // A API Maps da Serper requer location parameter "ll" se page > 1.
-        // Se a busca principal enviar page e nao tivermos gps, cravamos em page = 1.
-        // Mas se a busca tiver "ll" (coordenadas), permitimos a paginaçao.
-        if (payload.page > 1) {
-            if (payload.ll) {
-                body.page = payload.page;
-                body.ll = payload.ll;
-            } else {
-                // Trava na page 1 pra evitar retorno HTTP 400
-                body.page = 1;
-            }
-        } else if (payload.page) {
-            body.page = payload.page;
-        }
-
-        console.log(`[Neural Gateway] Payload SERPER MAPS:`, JSON.stringify(body));
-
-        const response = await fetch('https://google.serper.dev/maps', {
-            method: 'POST',
-            headers: {
-                'X-API-KEY': key,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)
+        const { data, error } = await supabase.functions.invoke('serper-search', {
+            body: { endpoint: 'maps', payload, apiKey: key }
         });
 
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`Serper Error: ${response.status} ${response.statusText} - ${errorBody}`);
+        if (error || data?.error) {
+            throw new Error(`Serper Proxy Error: ${error?.message || data?.error}`);
         }
-        return await response.json();
+
+        return data;
     }
 
     private static async callSerperSearch(payload: any, apiKey: string) {
         const key = apiKey?.trim() || import.meta.env.VITE_SERPER_API_KEY?.trim();
         if (!key) throw new Error("SERPER_API_KEY_MISSING");
 
-        const body = {
-            q: payload.q,
-            num: payload.num || 10,
-            page: payload.page || 1,
-            gl: 'br', // Forçar resultados do Brasil
-            hl: 'pt-br'
-        };
+        console.log(`[Neural Gateway] Payload SERPER SEARCH -> Supabase Proxy`, JSON.stringify(payload));
 
-        console.log(`[Neural Gateway] Payload SERPER SEARCH:`, JSON.stringify(body));
-
-        const response = await fetch('https://google.serper.dev/search', {
-            method: 'POST',
-            headers: {
-                'X-API-KEY': key,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)
+        const { data, error } = await supabase.functions.invoke('serper-search', {
+            body: { endpoint: 'search', payload, apiKey: key }
         });
 
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`Serper Search Error: ${response.status} ${response.statusText} - ${errorBody}`);
+        if (error || data?.error) {
+            throw new Error(`Serper Search Proxy Error: ${error?.message || data?.error}`);
         }
-        return await response.json();
+
+        return data;
     }
 
     static async fetchSerperCredits(apiKey: string) {
@@ -161,9 +122,6 @@ export class ApiGatewayService {
     private static async callGeminiReal(endpoint: string, payload: any, apiKey: string, model: string = 'gemini-1.5-flash') {
         const key = apiKey?.trim() || import.meta.env.VITE_GEMINI_API_KEY?.trim();
         if (!key) throw new Error("GEMINI_API_KEY_MISSING");
-
-        const safeModel = model.toLowerCase();
-        const baseUrl = `https://generativelanguage.googleapis.com/v1/models/${safeModel}:generateContent?key=${key}`;
 
         const prompt = endpoint === 'analyze-website'
             ? `Analise a empresa ${payload.leadName} no nicho ${payload.industry}. Site: ${payload.website}. Gere 3 insights de vendas curtos e diretos em português.`
@@ -211,25 +169,17 @@ export class ApiGatewayService {
                     ? payload.prompt
                     : `Dê uma nota de 1 a 100 para este lead baseado no potencial de vendas (B2B): ${JSON.stringify(payload.leadData)}. Retorne apenas o número puro.`;
 
-        const response = await fetch(baseUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
+        console.log(`[Neural Gateway] Payload GEMINI -> Supabase Proxy (${model})`);
+
+        const { data, error } = await supabase.functions.invoke('gemini-ai', {
+            body: { endpoint: endpoint === 'custom-prompt' || endpoint === 'analyze-website' || endpoint === 'analyze-commercial' ? 'generateContent' : endpoint, prompt, apiKey: key, model }
         });
 
-        if (!response.ok) {
-            // Fallback para v1beta se v1 falhar, ou tentativa com -latest
-            if (response.status === 404 && !model.includes('latest')) {
-                console.warn(`[Neural Gateway] Model ${model} not found in V1, trying -latest in v1beta...`);
-                return this.callGeminiReal(endpoint, payload, apiKey, `${model}-latest`);
-            }
-            const errorBody = await response.text();
-            throw new Error(`Gemini Error: ${response.statusText} (${response.status}) - ${errorBody}`);
+        if (error || data?.error) {
+            throw new Error(`Gemini Proxy Error: ${error?.message || data?.error}`);
         }
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
         // Limpar o texto caso a IA retorne markdown
         const cleanJson = text.replace(/```json|```/g, '').trim();
@@ -253,18 +203,17 @@ export class ApiGatewayService {
         const { domain } = payload;
         if (!domain) return { data: { emails: [] } };
 
-        const baseUrl = `https://api.hunter.io/v2/domain-search?domain=${domain}&api_key=${key}`;
+        console.log(`[Neural Gateway] Connecting to Hunter.io -> Supabase Proxy for domain: ${domain}`);
 
-        console.log(`[Neural Gateway] Connecting to Hunter.io for domain: ${domain}`);
+        const { data, error } = await supabase.functions.invoke('hunter-io', {
+            body: { domain, apiKey: key }
+        });
 
-        const response = await fetch(baseUrl);
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`Hunter Error: ${response.status} - ${errorBody}`);
+        if (error || data?.error) {
+            throw new Error(`Hunter Proxy Error: ${error?.message || data?.error}`);
         }
 
-        return await response.json();
+        return data;
     }
 
     private static async executeWithRetry<T>(fn: () => Promise<T>, maxRetries: number): Promise<T> {

@@ -1,6 +1,7 @@
 import { Lead } from '../types';
 import { SecretService } from './secretService';
 import { toast } from '../components/Toast';
+import { supabase } from '../lib/supabase';
 
 export class RDStationService {
     /**
@@ -23,67 +24,23 @@ export class RDStationService {
 
             toast.info('Sincronizando Leads...', `Enviando ${leads.length} lead(s) via RD Station CRM API.`);
 
-            let successCount = 0;
-            let errorCount = 0;
+            const { data, error } = await supabase.functions.invoke('crm-sync', {
+                body: { provider: 'rd_station', token, leads }
+            });
 
-            for (const lead of leads) {
-                const empresaName = lead.details?.tradeName || lead.name;
-
-                const payload = {
-                    token: token,
-                    deal: {
-                        name: `Venda - ${empresaName}`,
-                        rating: 1
-                    },
-                    organization: {
-                        organization: {
-                            name: empresaName
-                        }
-                    },
-                    contacts: [
-                        {
-                            name: lead.name || empresaName,
-                            emails: lead.email || lead.details?.email ? [{ email: lead.email || lead.details?.email }] : [],
-                            phones: lead.phone ? [{ phone: lead.phone }] : []
-                        }
-                    ],
-                    deal_custom_fields: [] as any[]
-                };
-
-                // Adicionar campos customizados nativos se fornecido
-                // if (lead.ai_insights) { payload.deal.deal_custom_fields.push(...) }
-
-                try {
-                    const response = await fetch(`https://crm.rdstation.com/api/v1/deals?token=${token}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.ok) {
-                        successCount++;
-                    } else {
-                        console.error('[RDStation] Erro em Payload:', await response.text());
-                        errorCount++;
-                    }
-                } catch (fetchErr) {
-                    console.error('[RDStation] Fetch Error:', fetchErr);
-                    errorCount++;
-                }
-            }
-
-            if (successCount > 0) {
-                toast.success('Sincronização Push API Base', `${successCount} leads criados no CRM com sucesso.`);
-                return true;
-            } else if (errorCount > 0) {
-                toast.error('Falha de Conversão API', `Não foi possível enviar ${errorCount} leads para o RD Station CRM.`);
+            if (error) {
+                console.error('[RDStation] Erro na Edge Function:', error.message);
+                toast.error('Sincronização Quebrada', 'Falha ao acionar módulo de integração do RD Station.');
                 return false;
             }
 
-            return false;
+            if (data?.ok) {
+                toast.success('Sincronização Push API Base', `${data.successCount} leads criados no CRM com sucesso.`);
+                return true;
+            } else {
+                toast.error('Falha de Conversão API', data?.msg || 'Erro na comunicação com o RD Station CRM.');
+                return false;
+            }
 
         } catch (err: any) {
             console.error('[RDStation] Erro fatal de integração:', err);

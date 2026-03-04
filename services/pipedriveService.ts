@@ -1,6 +1,7 @@
 import { Lead } from '../types';
 import { SecretService } from './secretService';
 import { toast } from '../components/Toast';
+import { supabase } from '../lib/supabase';
 
 export class PipedriveService {
     /**
@@ -23,47 +24,23 @@ export class PipedriveService {
 
             toast.info('Sincronizando Leads...', `Enviando ${leads.length} pessoa(s) para o Pipedrive CRM.`);
 
-            let successCount = 0;
-            let errorCount = 0;
+            const { data, error } = await supabase.functions.invoke('crm-sync', {
+                body: { provider: 'pipedrive', token, leads }
+            });
 
-            for (const lead of leads) {
-                const payload = {
-                    name: lead.name || lead.details?.tradeName || 'Lead Sem Nome',
-                    phone: lead.phone ? [{ value: lead.phone, primary: true }] : [],
-                    email: lead.email || lead.details?.email ? [{ value: lead.email || lead.details?.email, primary: true }] : []
-                };
-
-                try {
-                    const response = await fetch(`https://api.pipedrive.com/v1/persons?api_token=${token}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.ok) {
-                        successCount++;
-                    } else {
-                        console.error('[Pipedrive] Erro em Payload:', await response.text());
-                        errorCount++;
-                    }
-                } catch (fetchErr) {
-                    console.error('[Pipedrive] Fetch Error:', fetchErr);
-                    errorCount++;
-                }
-            }
-
-            if (successCount > 0) {
-                toast.success('Sincronização Push API Base', `${successCount} pessoas/leads criados no Pipedrive CRM.`);
-                return true;
-            } else if (errorCount > 0) {
-                toast.error('Falha de Conversão API', `Não foi possível enviar ${errorCount} leads para o Pipedrive.`);
+            if (error) {
+                console.error('[Pipedrive] Erro na Edge Function:', error.message);
+                toast.error('Sincronização Quebrada', 'Falha ao acionar módulo de integração do Pipedrive.');
                 return false;
             }
 
-            return false;
+            if (data?.ok) {
+                toast.success('Sincronização Push API Base', `${data.successCount} leads criados no Pipedrive CRM.`);
+                return true;
+            } else {
+                toast.error('Falha de Conversão API', data?.msg || 'Erro na comunicação com o Pipedrive.');
+                return false;
+            }
 
         } catch (err: any) {
             console.error('[Pipedrive] Erro fatal de integração:', err);

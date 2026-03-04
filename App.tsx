@@ -41,6 +41,7 @@ const lazyWithRetry = (importFn: () => Promise<any>) =>
 const WhiteLabelAdmin = lazyWithRetry(() => import('./components/WhiteLabelAdmin'));
 const MasterConsole = lazyWithRetry(() => import('./components/MasterConsole'));
 const PipelineView = lazyWithRetry(() => import('./components/PipelineView'));
+const OAuthOnboarding = lazyWithRetry(() => import('./components/OAuthOnboarding'));
 const AutomationView = lazyWithRetry(() => import('./components/AutomationView'));
 const ActivityHistory = lazyWithRetry(() => import('./components/ActivityHistory'));
 const NotificationsList = lazyWithRetry(() => import('./components/NotificationsList'));
@@ -691,6 +692,29 @@ const App: React.FC = () => {
 
   if (!session || isRecovering) {
     return <LoginPage onLoginSuccess={setSession} isRecoveringPassword={isRecovering} onPasswordReset={() => setIsRecovering(false)} />;
+  }
+
+  const needsOnboarding = session?.user && !session.user.user_metadata?.company_name;
+
+  if (needsOnboarding) {
+    return (
+      <Suspense fallback={
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+          <Cpu className="text-primary animate-spin mb-4" size={40} />
+          <p className="text-slate-400 uppercase tracking-widest text-xs font-bold">Iniciando protocolo de segurança...</p>
+        </div>
+      }>
+        <OAuthOnboarding
+          session={session}
+          tenantId={userTenantId}
+          onComplete={async () => {
+            const { data: { session: newSession } } = await supabase.auth.refreshSession();
+            setSession(newSession);
+            window.location.reload();
+          }}
+        />
+      </Suspense>
+    );
   }
 
   return (

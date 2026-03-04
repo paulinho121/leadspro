@@ -26,51 +26,27 @@ export class CommunicationService {
 
             if (!settings) throw new Error('Provedor de WhatsApp não configurado');
 
-            // 2. Disparo Real por Provedor
-            let response;
-            if (settings.provider_type === 'whatsapp_evolution') {
-                response = await fetch(`${settings.api_url}/message/sendText/${settings.instance_name}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'apikey': settings.api_key || '' },
-                    body: JSON.stringify({ number: payload.leadId, text: payload.content })
-                });
-            } else if (settings.provider_type === 'whatsapp_zapi') {
-                const headers: any = { 'Content-Type': 'application/json' };
-                if (settings.client_token) {
-                    headers['Client-Token'] = settings.client_token;
-                }
-                response = await fetch(`https://api.z-api.io/instances/${settings.instance_name}/token/${settings.api_key}/send-text`, {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify({ phone: payload.leadId, message: payload.content })
-                });
-            } else if (settings.provider_type === 'whatsapp_duilio') {
-                response = await fetch('https://api.duilio.com.br/v1/send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.api_key}` },
-                    body: JSON.stringify({ to: payload.leadId, text: payload.content })
-                });
-            } else if (settings.provider_type === 'whatsapp_cloud_api') {
-                const version = settings.api_url || 'v17.0';
-                response = await fetch(`https://graph.facebook.com/${version}/${settings.instance_name}/messages`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${settings.api_key}`
+            // 2. Disparo via Edge Function Proxy (Backend)
+            const { data, error } = await supabase.functions.invoke('send-communication', {
+                body: {
+                    channel: 'whatsapp',
+                    settings: {
+                        provider_type: settings.provider_type,
+                        api_url: settings.api_url,
+                        api_key: settings.api_key,
+                        instance_name: settings.instance_name,
+                        client_token: settings.client_token
                     },
-                    body: JSON.stringify({
-                        messaging_product: 'whatsapp',
-                        recipient_type: 'individual',
+                    payload: {
                         to: payload.leadId,
-                        type: 'text',
-                        text: { body: payload.content }
-                    })
-                });
-            }
+                        content: payload.content
+                    }
+                }
+            });
 
-            if (!response || !response.ok) {
-                const errorData = response ? await response.text() : 'Sem resposta do provedor';
-                throw new Error(`Erro no provedor (${settings.provider_type}): ${errorData}`);
+            if (error || data?.error) {
+                const errorData = error?.message || data?.error || 'Sem resposta do provedor proxy';
+                throw new Error(`Erro no provedor via Proxy (${settings.provider_type}): ${errorData}`);
             }
 
             // 3. Registrar Log de Interação
@@ -105,21 +81,22 @@ export class CommunicationService {
 
             if (!settings) throw new Error('Resend não configurado');
 
-            const response = await fetch('https://api.resend.com/emails', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${settings.api_key}`
-                },
-                body: JSON.stringify({
-                    from: 'LeadFlow <onboarding@resend.dev>',
-                    to: payload.leadId,
-                    subject: payload.subject || 'Oportunidade de Negócio',
-                    html: payload.content
-                })
+            const { data, error } = await supabase.functions.invoke('send-communication', {
+                body: {
+                    channel: 'email',
+                    settings: {
+                        provider_type: settings.provider_type,
+                        api_key: settings.api_key
+                    },
+                    payload: {
+                        to: payload.leadId,
+                        content: payload.content,
+                        subject: payload.subject
+                    }
+                }
             });
 
-            if (response.ok) {
+            if (data?.success) {
                 await supabase.from('ai_sdr_interactions').insert({
                     tenant_id: payload.tenantId,
                     lead_id: payload.leadId,
