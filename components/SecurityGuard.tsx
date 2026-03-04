@@ -13,6 +13,60 @@ const SecurityGuard: React.FC = () => {
     const lastLogTime = useRef<number>(0);
 
     useEffect(() => {
+        let isDevOrMaster = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+        const preventDevTools = (e: KeyboardEvent) => {
+            if (isDevOrMaster) return;
+
+            // Bloqueia F12
+            if (e.key === 'F12') {
+                e.preventDefault();
+                toast.error('Sistema Protegido', 'Navegação bloqueada pelo protocolo de segurança Neural e LGPD.');
+            }
+            // Bloqueia Ctrl+Shift+I / J / C (Painel de Console e Inspecionar)
+            if (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) {
+                e.preventDefault();
+                toast.error('Sistema Protegido', 'Ferramentas de desenvolvedor desativadas.');
+            }
+            // Bloqueia Ctrl+U (Ver código-fonte)
+            if (e.ctrlKey && (e.key === 'U' || e.key === 'u')) {
+                e.preventDefault();
+            }
+        };
+
+        const preventContextMenu = (e: MouseEvent) => {
+            if (isDevOrMaster) return;
+
+            // Permite clicar com botão direito apenas em inputs/textareas para opções de Copiar/Colar normais
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+                return;
+            }
+            e.preventDefault();
+        };
+
+        document.addEventListener('keydown', preventDevTools);
+        document.addEventListener('contextmenu', preventContextMenu);
+
+        // Libera secretamente o Inspecionar se no meio do uso detectarmos que a conta atual tem permissão Master
+        const checkMaster = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+                const { data: profile } = await supabase.from('profiles').select('is_master_admin').eq('id', session.user.id).maybeSingle();
+                if (profile?.is_master_admin) {
+                    isDevOrMaster = true;
+                }
+            }
+        };
+        checkMaster();
+
+        return () => {
+            document.removeEventListener('keydown', preventDevTools);
+            document.removeEventListener('contextmenu', preventContextMenu);
+        };
+    }, []);
+
+    useEffect(() => {
         const checkSecurity = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session?.user) return;

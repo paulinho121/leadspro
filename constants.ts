@@ -28,7 +28,7 @@ export const MOCK_LEADS: Lead[] = [
       size: 'Medium',
       address: 'Av. Brasil, 1000'
     },
-    aiInsights: 'Green Energy focuses on solar panel installation for industrial complexes. They recently expanded to wind farm maintenance.'
+    ai_insights: 'Green Energy focuses on solar panel installation for industrial complexes. They recently expanded to wind farm maintenance.'
   },
   {
     id: '3',

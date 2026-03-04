@@ -274,7 +274,7 @@ const App: React.FC = () => {
             // Verificação silenciosa de bônus inicial: só exibe mensagem em caso de sucesso
             supabase.rpc('claim_initial_credits').then(({ data, error }) => {
               if (data && (data as any).success) {
-                toast.success('🎉 Bônus Iniciais Recebidos!', 'Você ganhou 1000 créditos LeadPro para testar a extração Neural.');
+                toast.success('🎉 Bônus Iniciais Recebidos!', 'Você ganhou 500 créditos LeadPro para testar a extração Neural.');
               }
               if (error) console.log('[Neural Gateway] Bonus check:', error.message);
             });
