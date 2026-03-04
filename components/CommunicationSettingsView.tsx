@@ -108,75 +108,46 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
         setTestingWa(true);
         setTestResultWa(null);
         try {
-            if (selectedWaProvider === 'whatsapp_zapi') {
-                // Z-API: GET /instances/{instanceId}/status com Client-Token header
-                if (!waSettings.instanceName || !waSettings.apiKey) {
-                    setTestResultWa({ ok: false, msg: 'Preencha o Instance ID e o Token antes de testar.' });
-                    return;
-                }
-                const baseUrl = waSettings.apiUrl || 'https://api.z-api.io';
-                const url = `${baseUrl.replace(/\/$/, '')}/instances/${waSettings.instanceName}/token/${waSettings.apiKey}/status`;
-                const res = await fetch(url, {
-                    headers: waSettings.clientToken ? { 'Client-Token': waSettings.clientToken } : {}
-                });
-                if (res.ok) {
-                    const json = await res.json().catch(() => ({}));
-                    const connected = json?.connected ?? json?.status === 'CONNECTED';
-                    setTestResultWa({
-                        ok: true,
-                        msg: connected ? '✅ Z-API conectada e instância ativa!' : '⚠️ Z-API acessível, mas instância pode estar desconectada.'
-                    });
-                } else {
-                    setTestResultWa({ ok: false, msg: `Z-API retornou HTTP ${res.status} — verifique as credenciais.` });
-                }
-            } else if (selectedWaProvider === 'whatsapp_evolution') {
-                // Evolution API: GET /instance/fetchInstances
-                if (!waSettings.apiUrl || !waSettings.apiKey) {
-                    setTestResultWa({ ok: false, msg: 'Preencha o Endpoint e a Chave de Acesso antes de testar.' });
-                    return;
-                }
-                const url = `${waSettings.apiUrl.replace(/\/$/, '')}/instance/fetchInstances`;
-                const res = await fetch(url, { headers: { apikey: waSettings.apiKey } });
-                if (res.ok) {
-                    setTestResultWa({ ok: true, msg: '✅ Evolution API acessível e autenticada!' });
-                } else {
-                    setTestResultWa({ ok: false, msg: `Evolution API retornou HTTP ${res.status} — verifique o endpoint e a API key.` });
-                }
-            } else if (selectedWaProvider === 'whatsapp_cloud_api') {
-                if (!waSettings.instanceName || !waSettings.apiKey) {
-                    setTestResultWa({ ok: false, msg: 'Preencha o Phone Number ID e o Access Token.' });
-                    return;
-                }
-                const version = waSettings.apiUrl || 'v17.0';
-                const res = await fetch(`https://graph.facebook.com/${version}/${waSettings.instanceName}`, {
-                    headers: { 'Authorization': `Bearer ${waSettings.apiKey}` }
-                });
-                if (res.ok) {
-                    setTestResultWa({ ok: true, msg: '✅ WhatsApp Cloud API validada com sucesso!' });
-                } else {
-                    const data = await res.json().catch(() => ({}));
-                    setTestResultWa({ ok: false, msg: `Erro na Meta API: ${data.error?.message || res.statusText}` });
-                }
-            } else {
-                // Duílio ou outro: tentativa genérica
-                if (!waSettings.apiUrl) {
-                    setTestResultWa({ ok: false, msg: 'Preencha o Endpoint antes de testar.' });
-                    return;
-                }
+            // Validação local
+            if (selectedWaProvider === 'whatsapp_zapi' && (!waSettings.instanceName || !waSettings.apiKey)) {
+                setTestResultWa({ ok: false, msg: 'Preencha o Instance ID e o Token antes de testar.' }); return;
+            } else if (selectedWaProvider === 'whatsapp_evolution' && (!waSettings.apiUrl || !waSettings.apiKey)) {
+                setTestResultWa({ ok: false, msg: 'Preencha o Endpoint e a Chave de Acesso antes de testar.' }); return;
+            } else if (selectedWaProvider === 'whatsapp_cloud_api' && (!waSettings.instanceName || !waSettings.apiKey)) {
+                setTestResultWa({ ok: false, msg: 'Preencha o Phone Number ID e o Access Token.' }); return;
+            } else if (selectedWaProvider === 'whatsapp_duilio' && !waSettings.apiUrl) {
+                setTestResultWa({ ok: false, msg: 'Preencha o Endpoint antes de testar.' }); return;
+            }
+
+            // Exceção pro WhatsApp do Duílio pois ele não está no Proxy e é via ngrok ou api solta:
+            if (selectedWaProvider === 'whatsapp_duilio') {
                 const res = await fetch(waSettings.apiUrl, { method: 'GET' }).catch(() => null);
                 if (res && res.ok) {
                     setTestResultWa({ ok: true, msg: '✅ Endpoint acessível!' });
                 } else {
                     setTestResultWa({ ok: false, msg: 'Não foi possível alcançar o endpoint. Verifique a URL.' });
                 }
+                return;
             }
+
+            const { data, error } = await supabase.functions.invoke('test-integrations', {
+                body: {
+                    provider: selectedWaProvider,
+                    authKey: waSettings.apiKey,
+                    endpoint: waSettings.apiUrl,
+                    instanceId: waSettings.instanceName,
+                    clientToken: waSettings.clientToken
+                }
+            });
+
+            if (error) {
+                throw new Error(error.message || 'Falha ao acionar módulo de integração.');
+            }
+
+            setTestResultWa({ ok: data?.ok || false, msg: data?.msg || 'Nenhuma resposta inteligível retornada.' });
+
         } catch (err: any) {
-            // Erro de CORS ou rede — comum ao chamar APIs externas direto do browser
-            if (err?.name === 'TypeError' || String(err).includes('Failed to fetch') || String(err).includes('NetworkError')) {
-                setTestResultWa({ ok: false, msg: '⚠️ CORS ou rede bloqueou a requisição. Verifique se a URL está correta, ou teste pelo Postman/cURL.' });
-            } else {
-                setTestResultWa({ ok: false, msg: `Erro: ${err?.message || err}` });
-            }
+            setTestResultWa({ ok: false, msg: `Erro de rede ou proxy: ${err?.message || err}` });
         } finally {
             setTestingWa(false);
         }
@@ -191,18 +162,22 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                 setTestResultEmail({ ok: false, msg: 'Insira o token Resend antes de testar.' });
                 return;
             }
-            const res = await fetch('https://api.resend.com/domains', {
-                headers: { Authorization: `Bearer ${emailSettings.resendKey}` }
+
+            const { data, error } = await supabase.functions.invoke('test-integrations', {
+                body: { provider: 'email_resend', authKey: emailSettings.resendKey }
             });
-            if (res.ok) {
-                setTestResultEmail({ ok: true, msg: '✅ Token Resend válido e autenticado!' });
-            } else if (res.status === 401) {
-                setTestResultEmail({ ok: false, msg: '❌ Token inválido ou sem permissão.' });
-            } else {
-                setTestResultEmail({ ok: false, msg: `Resend retornou HTTP ${res.status}.` });
+
+            if (error) {
+                throw new Error(error.message || 'Erro ao chamar função de integração.');
             }
+
+            setTestResultEmail({
+                ok: data?.ok || false,
+                msg: data?.msg || 'Nenhuma resposta válida recebida.'
+            });
+
         } catch (err: any) {
-            setTestResultEmail({ ok: false, msg: `Erro de rede: ${err?.message || err}` });
+            setTestResultEmail({ ok: false, msg: `Erro arquitetural / rede: ${err?.message || err}` });
         } finally {
             setTestingEmail(false);
         }
