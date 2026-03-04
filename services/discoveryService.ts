@@ -25,10 +25,16 @@ export class DiscoveryService {
                 if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");
             }
 
+            const payload: any = { q: `${keyword} "${location}"` };
+            if (page > 1) {
+                // Ao embutir apenas ll pro apiGateway gerenciar ou omitir page pra n retornar erro 400
+                payload.page = 1; // Força page 1 até termoos GPS (ll) no search para evitar HTTP 400 no Serper Maps
+            }
+
             const response: any = await ApiGatewayService.callApi(
                 'maps',
                 'search',
-                { q: `${keyword} "${location}"`, page: page },
+                payload,
                 { ttl: 3600, tenantId, apiKeys }
             );
 

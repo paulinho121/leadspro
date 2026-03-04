@@ -1,0 +1,14 @@
+[
+  {
+    "id": "1458e644-ed4e-4341-9b84-a3759c8c6534",
+    "full_name": "Paulo Fernando",
+    "tenant_id": "fc422ec0-470c-4910-8146-132d8d6ba80a",
+    "is_master_admin": true
+  },
+  {
+    "id": "18091100-9d2d-484b-9a53-1689441146bb",
+    "full_name": "Fernando Lima",
+    "tenant_id": "fc422ec0-470c-4910-8146-132d8d6ba80a",
+    "is_master_admin": false
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "id": "1458e644-ed4e-4341-9b84-a3759c8c6534",
+    "tenant_id": "fc422ec0-470c-4910-8146-132d8d6ba80a",
+    "full_name": "Paulo Fernando",
+    "role": "admin",
+    "is_master_admin": true,
+    "created_at": "2026-03-03T19:32:49.851053+00:00"
+  }
+]

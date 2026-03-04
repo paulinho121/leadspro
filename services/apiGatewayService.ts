@@ -71,10 +71,26 @@ export class ApiGatewayService {
         const key = apiKey?.trim() || import.meta.env.VITE_SERPER_API_KEY?.trim();
         if (!key) throw new Error("SERPER_API_KEY_MISSING");
 
-        const body = {
+        const body: any = {
             q: payload.q,
-            page: payload.page || 1
+            gl: 'br',
+            hl: 'pt-br'
         };
+
+        // A API Maps da Serper requer location parameter "ll" se page > 1.
+        // Se a busca principal enviar page e nao tivermos gps, cravamos em page = 1.
+        // Mas se a busca tiver "ll" (coordenadas), permitimos a paginaçao.
+        if (payload.page > 1) {
+            if (payload.ll) {
+                body.page = payload.page;
+                body.ll = payload.ll;
+            } else {
+                // Trava na page 1 pra evitar retorno HTTP 400
+                body.page = 1;
+            }
+        } else if (payload.page) {
+            body.page = payload.page;
+        }
 
         console.log(`[Neural Gateway] Payload SERPER MAPS:`, JSON.stringify(body));
 
