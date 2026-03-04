@@ -380,17 +380,23 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
     const [isTenantsExpanded, setIsTenantsExpanded] = useState(false);
     const [tenantSearchTerm, setTenantSearchTerm] = useState('');
 
-    const filteredTenants = tenants.filter(t =>
-        t.name.toLowerCase().includes(tenantSearchTerm.toLowerCase()) ||
-        t.slug.toLowerCase().includes(tenantSearchTerm.toLowerCase())
-    );
-
     const formattedTenants = React.useMemo(() => {
-        return filteredTenants.map(tenant => ({
+        return tenants.filter(t => {
+            const matchesTenant = t.name.toLowerCase().includes(tenantSearchTerm.toLowerCase()) ||
+                t.slug.toLowerCase().includes(tenantSearchTerm.toLowerCase());
+
+            const tenantUsers = profiles.filter(p => p.tenant_id === t.id);
+            const matchesUser = tenantUsers.some(p =>
+                p.full_name?.toLowerCase().includes(tenantSearchTerm.toLowerCase()) ||
+                p.email?.toLowerCase().includes(tenantSearchTerm.toLowerCase())
+            );
+
+            return matchesTenant || matchesUser;
+        }).map(tenant => ({
             ...tenant,
             users: profiles.filter(p => p.tenant_id === tenant.id)
         }));
-    }, [filteredTenants, profiles]);
+    }, [tenants, profiles, tenantSearchTerm]);
 
 
     if (isPermitted === false) return (
