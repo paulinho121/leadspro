@@ -135,6 +135,34 @@ export class ExportService {
         document.body.removeChild(link);
     }
 
+    static exportTransactionsToCSV(transactions: any[]) {
+        if (transactions.length === 0) return;
+
+        const headers = ['Data', 'Tipo', 'Serviço', 'Descrição', 'Valor (Créditos)'];
+        const rows = transactions.map(tx => [
+            this.sanitize(new Date(tx.created_at).toLocaleString('pt-BR')),
+            this.sanitize(tx.amount > 0 ? 'Recarga' : 'Consumo'),
+            this.sanitize(tx.service_name || 'Geral'),
+            this.sanitize(tx.description || ''),
+            this.sanitize(tx.amount.toString())
+        ]);
+
+        const separator = ',';
+        const csvContent = [
+            headers.join(separator),
+            ...rows.map(r => r.join(separator))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `extrato_financeiro_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     private static sanitize(val: string): string {
         if (!val) return '""';
         return `"${val.toString().replace(/"/g, '""').replace(/\n/g, ' ')}"`;

@@ -14,6 +14,7 @@ import { useStore } from '../store/useStore';
 import { supabase } from '../lib/supabase';
 import { PRICING_PLANS } from '../constants/billing';
 import { StripeService } from '../services/stripeService';
+import { ExportService } from '../services/exportService';
 
 const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
     const [balance, setBalance] = useState<number>(0);
@@ -146,7 +147,17 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                                     <Plus size={18} strokeWidth={3} />
                                     Adicionar Créditos
                                 </button>
-                                <button className="px-5 md:px-8 py-3 md:py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/5 transition-all flex items-center justify-center gap-3">
+                                <button
+                                    onClick={() => {
+                                        if (transactions.length === 0) {
+                                            toast.error('Sem dados', 'Não há transações para exportar.');
+                                            return;
+                                        }
+                                        ExportService.exportTransactionsToCSV(transactions);
+                                        toast.success('Sucesso', 'Seu extrato está sendo baixado.');
+                                    }}
+                                    className="px-5 md:px-8 py-3 md:py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/5 transition-all flex items-center justify-center gap-3 active:scale-95"
+                                >
                                     <Download size={14} /> Exportar
                                 </button>
                             </div>
