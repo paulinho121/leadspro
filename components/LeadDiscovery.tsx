@@ -266,8 +266,6 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
                 setStopSignal(true);
               }
             }
-          } else if (searchMode === 'MAPS' && selectedCity !== 'TODO_ESTADO') {
-            break;
           }
 
           // Salto final para 100% ao concluir ciclo de página

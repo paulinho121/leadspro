@@ -27,8 +27,7 @@ export class DiscoveryService {
 
             const payload: any = { q: `${keyword} "${location}"` };
             if (page > 1) {
-                // Ao embutir apenas ll pro apiGateway gerenciar ou omitir page pra n retornar erro 400
-                payload.page = 1; // Força page 1 até termoos GPS (ll) no search para evitar HTTP 400 no Serper Maps
+                payload.page = page; 
             }
 
             const response: any = await ApiGatewayService.callApi(
@@ -130,7 +129,7 @@ export class DiscoveryService {
             let searchResponse: any = await ApiGatewayService.callApi(
                 'google-search',
                 'search',
-                { q: query, page: page, num: 20 },
+                { q: query, page: page, num: 50 },
                 { tenantId, apiKeys }
             );
 
@@ -152,7 +151,7 @@ export class DiscoveryService {
                 searchResponse = await ApiGatewayService.callApi(
                     'google-search',
                     'search',
-                    { q: fallbackQuery, page: page, num: 40 },
+                    { q: fallbackQuery, page: page, num: 50 },
                     { tenantId, apiKeys }
                 );
             }
@@ -186,7 +185,7 @@ export class DiscoveryService {
                     console.log(`%c[Neural Discovery] Encontrados ${foundCnpjs.size} CNPJs potenciais para processamento.`, 'color: #06b6d4; font-weight: bold;');
 
                     const leads: Lead[] = [];
-                    const cnpjList: string[] = Array.from(foundCnpjs).slice(0, 30);
+                    const cnpjList: string[] = Array.from(foundCnpjs).slice(0, 100);
 
                     for (const cnpj of cnpjList) {
                         // Respeito à cadência para não ser bloqueado nas APIs de consulta
@@ -349,7 +348,7 @@ export class DiscoveryService {
             const searchResponse: any = await ApiGatewayService.callApi(
                 'google-search',
                 'search',
-                { q: finalQuery, page: page, num: 15 },
+                { q: finalQuery, page: page, num: 40 },
                 { tenantId, apiKeys }
             );
 
@@ -460,7 +459,7 @@ export class DiscoveryService {
             const searchResponse: any = await ApiGatewayService.callApi(
                 'google-search',
                 'search',
-                { q: finalQuery, page: page, num: 15 },
+                { q: finalQuery, page: page, num: 40 },
                 { tenantId, apiKeys }
             );
 
