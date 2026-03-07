@@ -127,4 +127,19 @@ export class RevenueService {
 
         return { total, weighted };
     }
+
+    /**
+     * Atualiza dados de um Deal (valor, probabilidade, etc)
+     */
+    static async updateDeal(dealId: string, updates: Partial<Deal>): Promise<void> {
+        const { error } = await supabase
+            .from('deals')
+            .update({
+                ...updates,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', dealId);
+
+        if (error) throw error;
+    }
 }

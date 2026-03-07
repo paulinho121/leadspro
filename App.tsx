@@ -525,8 +525,17 @@ const App: React.FC = () => {
   const handleConvertToDeal = React.useCallback(async (leadId: string) => {
     if (!userTenantId) return;
     try {
-      await RevenueService.createDeal(userTenantId, leadId);
-      toast.success('Lead convertido!', 'Oportunidade adicionada ao Pipeline.');
+      const lead = leads.find(l => l.id === leadId);
+      let defaultValue = 5000; // Valor base
+
+      if (lead?.details?.size) {
+        const size = lead.details.size.toLowerCase();
+        if (size.includes('grande')) defaultValue = 50000;
+        else if (size.includes('médio') || size.includes('media')) defaultValue = 15000;
+      }
+
+      await RevenueService.createDeal(userTenantId, leadId, undefined, defaultValue);
+      toast.success('Lead convertido!', `Oportunidade de R$ ${defaultValue.toLocaleString()} adicionada.`);
       setActiveTab('pipeline');
     } catch (err: any) {
       console.error('[Revenue] Fail to convert:', err);
@@ -562,7 +571,8 @@ const App: React.FC = () => {
   const handleBulkConvertToDeal = React.useCallback(async (leadIds: string[]) => {
     if (!userTenantId || leadIds.length === 0) return;
     try {
-      await RevenueService.createBulkDeals(userTenantId, leadIds);
+      // Valor fixo de 2.000 para conversão em lote se não houver lógica melhor
+      await RevenueService.createBulkDeals(userTenantId, leadIds, undefined, 2000);
       toast.success(`${leadIds.length} leads convertidos!`, 'Oportunidades adicionadas ao Pipeline.');
       setActiveTab('pipeline');
     } catch (err: any) {

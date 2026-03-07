@@ -21,9 +21,10 @@ interface DealCardProps {
     onAiClick: () => void;
     isGenerating: boolean;
     onDragStart: (e: React.DragEvent) => void;
+    onUpdateValue: (dealId: string, newValue: number) => void;
 }
 
-const DealCard = ({ deal, color, onAiClick, isGenerating, onDragStart }: DealCardProps) => {
+const DealCard = ({ deal, color, onAiClick, isGenerating, onDragStart, onUpdateValue }: DealCardProps) => {
     const p2c = deal.lead?.p2c_score ? Number(deal.lead.p2c_score) : (deal.probability_to_close || 0);
     const isHot = p2c > 0.7;
 
@@ -64,9 +65,17 @@ const DealCard = ({ deal, color, onAiClick, isGenerating, onDragStart }: DealCar
             <div className="flex items-center justify-between mt-4 relative z-10">
                 <div className="flex flex-col">
                     <span className="text-[9px] text-slate-500 uppercase tracking-widest mb-1">Valor</span>
-                    <span className="text-xs font-black text-white">
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const val = prompt('Novo Valor Estimado (R$):', deal.estimated_value?.toString());
+                            if (val !== null) onUpdateValue(deal.id, parseFloat(val) || 0);
+                        }}
+                        className="text-xs font-black text-white hover:text-primary transition-colors flex items-center gap-1 group/edit"
+                    >
                         {(deal.estimated_value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </span>
+                        <MoreVertical size={10} className="opacity-0 group-hover/edit:opacity-50" />
+                    </button>
                 </div>
 
                 <div className="flex flex-col items-end">
@@ -190,6 +199,17 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
         e.dataTransfer.dropEffect = 'move';
     };
 
+    const handleUpdateValue = async (dealId: string, newValue: number) => {
+        try {
+            await RevenueService.updateDeal(dealId, { estimated_value: newValue });
+            toast.success('Valor atualizado!');
+            loadData();
+        } catch (err) {
+            console.error('Erro ao atualizar valor:', err);
+            toast.error('Erro ao salvar novo valor.');
+        }
+    };
+
     const handleDrop = async (e: React.DragEvent, newStage: DealStage) => {
         e.preventDefault();
         const dealId = draggingDealId || e.dataTransfer.getData('dealId');
@@ -289,6 +309,7 @@ const PipelineView: React.FC<PipelineViewProps> = ({ tenantId, userId, apiKeys }
                                     onAiClick={() => handleGenerateAiMessage(deal)}
                                     isGenerating={isGenerating}
                                     onDragStart={(e) => handleDragStart(e, deal.id)}
+                                    onUpdateValue={handleUpdateValue}
                                 />
                             ))}
                         </div>
