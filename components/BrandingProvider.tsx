@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { BrandingConfig, DEFAULT_BRANDING } from '../types/branding';
 import { BrandingService } from '../services/brandingService';
+import { I18nService } from '../services/i18nService';
 
 interface BrandingContextType {
     config: BrandingConfig;
@@ -32,6 +33,9 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         try {
             const branding = await BrandingService.getBrandingForCurrentHost();
+            if (branding.language) {
+                I18nService.setLanguage(branding.language as any);
+            }
             setConfig(branding);
             BrandingService.applyBranding(branding);
         } catch (error) {

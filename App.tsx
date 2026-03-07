@@ -58,6 +58,7 @@ import { IntegrationService } from './services/IntegrationService';
 import { RevenueService } from './services/revenueService';
 import { BillingService } from './services/billingService';
 import { QueueService } from './services/queueService';
+import { I18nService } from './services/i18nService';
 import { Lead, LeadStatus } from './types';
 import { useStore } from './store/useStore';
 import { useLeads, LEADS_PAGE_SIZE } from './hooks/useLeads';
@@ -755,15 +756,15 @@ const App: React.FC = () => {
         </div>
 
         <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto custom-scrollbar">
-          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('dashboard'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<Search size={20} />} label="Extração" active={activeTab === 'discovery'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('discovery'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<Database size={20} />} label="Laboratório" active={activeTab === 'lab'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('lab'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<Archive size={20} />} label="Adm. Leads" active={activeTab === 'leadAdmin'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('leadAdmin'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<Rocket size={20} />} label="Enriquecidos" active={activeTab === 'enriched'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<TrendingUp size={20} />} label="Pipeline" active={activeTab === 'pipeline'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('pipeline'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<Megaphone size={20} />} label="Automação" active={activeTab === 'automation'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('automation'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<BarChart3 size={20} />} label="Monitor" active={activeTab === 'monitor'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('monitor'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<MoneyIcon size={20} />} label="Faturamento" active={activeTab === 'billing'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('billing'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<LayoutDashboard size={20} />} label={I18nService.t('Dashboard')} active={activeTab === 'dashboard'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('dashboard'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<Search size={20} />} label={I18nService.t('Extração')} active={activeTab === 'discovery'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('discovery'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<Database size={20} />} label={I18nService.t('Laboratório')} active={activeTab === 'lab'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('lab'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<Archive size={20} />} label={I18nService.t('Adm. Leads')} active={activeTab === 'leadAdmin'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('leadAdmin'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<Rocket size={20} />} label={I18nService.t('Enriquecidos')} active={activeTab === 'enriched'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<TrendingUp size={20} />} label={I18nService.t('Pipeline')} active={activeTab === 'pipeline'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('pipeline'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<Megaphone size={20} />} label={I18nService.t('Automação')} active={activeTab === 'automation'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('automation'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<BarChart3 size={20} />} label={I18nService.t('Monitor')} active={activeTab === 'monitor'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('monitor'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<MoneyIcon size={20} />} label={I18nService.t('Faturamento')} active={activeTab === 'billing'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('billing'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
 
 
           <div className="pt-8 pb-4">
@@ -771,7 +772,7 @@ const App: React.FC = () => {
             <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mx-4 mb-4"></div>
           </div>
 
-          <NavItem icon={<ShieldCheck size={20} />} label="Branding" active={activeTab === 'partner'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          <NavItem icon={<ShieldCheck size={20} />} label={I18nService.t('Branding')} active={activeTab === 'partner'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
 
           {isMaster && (
             <>
@@ -918,14 +919,14 @@ const App: React.FC = () => {
               <Menu size={20} />
             </button>
             <h2 className="text-base md:text-xl font-bold text-white tracking-tight flex items-center gap-3">
-              {activeTab === 'dashboard' && 'Dashboard'}
-              {activeTab === 'discovery' && 'Extração'}
-              {activeTab === 'lab' && 'Laboratório'}
-              {activeTab === 'enriched' && 'Comercial'}
-              {activeTab === 'leadAdmin' && 'Adm. Leads'}
-              {activeTab === 'partner' && 'Branding'}
-              {activeTab === 'master' && 'Master'}
-              {activeTab === 'history' && 'Logs'}
+              {activeTab === 'dashboard' && I18nService.t('Dashboard')}
+              {activeTab === 'discovery' && I18nService.t('Extração')}
+              {activeTab === 'lab' && I18nService.t('Laboratório')}
+              {activeTab === 'enriched' && I18nService.t('Enriquecidos')}
+              {activeTab === 'leadAdmin' && I18nService.t('Adm. Leads')}
+              {activeTab === 'partner' && I18nService.t('Branding')}
+              {activeTab === 'master' && I18nService.t('Master')}
+              {activeTab === 'history' && I18nService.t('Histórico')}
             </h2>
           </div>
 

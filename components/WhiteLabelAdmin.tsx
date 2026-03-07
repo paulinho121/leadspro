@@ -7,6 +7,7 @@ import { SecretService } from '../services/secretService';
 import { toast } from './Toast';
 import { ApiGatewayService } from '../services/apiGatewayService';
 import { Wallet } from 'lucide-react';
+import { I18nService } from '../services/i18nService';
 
 const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' | 'api', isMaster?: boolean }> = ({ initialTab = 'branding', isMaster = false }) => {
     const { config, refreshBranding } = useBranding();
@@ -22,6 +23,7 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
         sidebarColor: '',
         customDomain: '',
         subdomain: '',
+        language: 'pt',
         apiKeys: { gemini: '', openai: '', serper: '', rdStation: '', hubspot: '', pipedrive: '', salesforce: '' }
     });
     const [saving, setSaving] = useState(false);
@@ -249,6 +251,7 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                     sidebarColor: config.colors?.sidebar || 'rgba(30, 41, 59, 0.7)',
                     customDomain: config.domain || '',
                     subdomain: config.subdomain || '',
+                    language: config.language || 'pt',
                     apiKeys: { gemini: '', openai: '', serper: '', rdStation: '', hubspot: '', pipedrive: '', salesforce: '' }
                 };
 
@@ -378,6 +381,7 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                     sidebar_color: formData.sidebarColor,
                     custom_domain: formData.customDomain || null,
                     subdomain: formData.subdomain || null,
+                    language: formData.language || 'pt',
                     api_keys: {
                         gemini: null, openai: null, deepseek: null, // As chaves core ficam no tenant_api_keys
                         rd_station_token: formData.apiKeys?.rdStation?.trim() || null,
@@ -467,7 +471,7 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                             className="bg-primary hover:opacity-90 text-slate-900 px-4 md:px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all disabled:opacity-50 text-xs md:text-base active-scale"
                         >
                             {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
-                            <span className="hidden md:inline">Salvar Alterações</span>
+                            <span className="hidden md:inline">{I18nService.t('Salvar Alterações')}</span>
                             <span className="md:hidden">Salvar</span>
                         </button>
                     </div>
@@ -479,7 +483,7 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-slate-400">Nome da Plataforma</label>
+                                        <label className="text-sm font-semibold text-slate-400">{I18nService.t('Nome da Plataforma')}</label>
                                         <input
                                             type="text"
                                             value={formData.platformName}
@@ -497,6 +501,18 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                                             placeholder="https://sua-url.com/logo.png"
                                             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary outline-none transition-all"
                                         />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-slate-400">{I18nService.t('Idioma')}</label>
+                                        <select
+                                            value={formData.language}
+                                            onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary outline-none transition-all appearance-none cursor-pointer"
+                                        >
+                                            <option value="pt" className="bg-slate-900">Português (Brasil)</option>
+                                            <option value="en" className="bg-slate-900">English (Global)</option>
+                                            <option value="es" className="bg-slate-900">Español (Latam)</option>
+                                        </select>
                                     </div>
                                 </div>
                             </section>

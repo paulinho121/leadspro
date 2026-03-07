@@ -15,6 +15,7 @@ export interface BrandingConfig {
     domain?: string;
     subdomain?: string;
     customScripts?: string;
+    language?: 'pt' | 'en' | 'es';
 }
 
 export const DEFAULT_BRANDING: BrandingConfig = {
@@ -22,6 +23,7 @@ export const DEFAULT_BRANDING: BrandingConfig = {
     tenantId: 'default',
     platformName: 'LeadMatrix',
     logoUrl: '',
+    language: 'pt',
     colors: {
         primary: '#f97316', // Laranja do "Pro" e do ícone de pulso
         secondary: '#0f172a', // Navy profundo do "Lead"
