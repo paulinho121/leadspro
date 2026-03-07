@@ -368,31 +368,48 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
             console.log('[WhiteLabelAdmin] Executando UPSERT para:', activeTenantId);
 
             // 4. Salvar Branding (Público)
+            const brandingPayload: any = {
+                tenant_id: activeTenantId,
+                platform_name: formData.platformName,
+                logo_url: formData.logoUrl,
+                favicon_url: formData.faviconUrl,
+                primary_color: formData.primaryColor,
+                secondary_color: formData.secondaryColor,
+                background_color: formData.backgroundColor,
+                sidebar_color: formData.sidebarColor,
+                custom_domain: formData.customDomain || null,
+                subdomain: formData.subdomain || null,
+                language: formData.language || 'pt',
+                api_keys: {
+                    gemini: null, openai: null, deepseek: null, // As chaves core ficam no tenant_api_keys
+                    rd_station_token: formData.apiKeys?.rdStation?.trim() || null,
+                    hubspot_token: formData.apiKeys?.hubspot?.trim() || null,
+                    pipedrive_token: formData.apiKeys?.pipedrive?.trim() || null,
+                    salesforce_token: formData.apiKeys?.salesforce?.trim() || null
+                },
+                updated_at: new Date().toISOString()
+            };
+
             const { error: brandingError } = await supabase
                 .from('white_label_configs')
-                .upsert({
-                    tenant_id: activeTenantId,
-                    platform_name: formData.platformName,
-                    logo_url: formData.logoUrl,
-                    favicon_url: formData.faviconUrl,
-                    primary_color: formData.primaryColor,
-                    secondary_color: formData.secondaryColor,
-                    background_color: formData.backgroundColor,
-                    sidebar_color: formData.sidebarColor,
-                    custom_domain: formData.customDomain || null,
-                    subdomain: formData.subdomain || null,
-                    language: formData.language || 'pt',
-                    api_keys: {
-                        gemini: null, openai: null, deepseek: null, // As chaves core ficam no tenant_api_keys
-                        rd_station_token: formData.apiKeys?.rdStation?.trim() || null,
-                        hubspot_token: formData.apiKeys?.hubspot?.trim() || null,
-                        pipedrive_token: formData.apiKeys?.pipedrive?.trim() || null,
-                        salesforce_token: formData.apiKeys?.salesforce?.trim() || null
-                    },
-                    updated_at: new Date().toISOString()
-                }, { onConflict: 'tenant_id' });
+                .upsert(brandingPayload, { onConflict: 'tenant_id' });
 
-            if (brandingError) throw brandingError;
+            if (brandingError) {
+                // Enterprise Resilience: Se o cache do Supabase estiver desatualizado (erro de coluna não encontrada), 
+                // tentamos salvar sem a coluna e avisamos o usuário.
+                if (brandingError.message.includes('language') || brandingError.code === '42703') {
+                    console.warn('[WhiteLabelAdmin] Schema cache issue detected. Retrying without language column...');
+                    delete brandingPayload.language;
+                    const { error: retryError } = await supabase
+                        .from('white_label_configs')
+                        .upsert(brandingPayload, { onConflict: 'tenant_id' });
+                    
+                    if (retryError) throw retryError;
+                    toast.warning('Configurações Parciais', 'As cores foram salvas, mas o idioma levará alguns minutos para ser reconhecido pelo servidor.');
+                } else {
+                    throw brandingError;
+                }
+            }
 
             // 5. Salvar Segredos (Privado - Tabela Isolada)
             const { error: keysError } = await supabase
