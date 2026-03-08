@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useBranding } from './BrandingProvider';
+import { ThemeToggle } from './ThemeToggle';
 import { Lock, Mail, ChevronRight, Loader2, AlertCircle, ShieldCheck, TrendingUp, ShieldAlert, ScrollText, MessageCircle } from 'lucide-react';
 import TermsModal from './TermsModal';
 
@@ -160,6 +161,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, isRecoveringPassw
             <div className={`fixed top-0 left-0 w-full h-full opacity-20 bg-[radial-gradient(circle_at_50%_0%,var(--color-primary)_0%,transparent_70%)] animate-pulse-slow pointer-events-none`}></div>
 
             {/* Card */}
+            <div className="fixed top-6 right-6 z-50">
+                <ThemeToggle expanded={false} />
+            </div>
+
             <div className="w-full max-w-md p-8 rounded-[2.5rem] glass border border-white/10 relative z-10 shadow-2xl backdrop-blur-xl animate-fade-in-up mb-10">
                 <div className="text-center mb-12 flex flex-col items-center justify-center w-full">
                     {/* Container de animação base suave (flutuação) */}
@@ -187,7 +192,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, isRecoveringPassw
                                                 type="text"
                                                 value={fullName}
                                                 onChange={(e) => setFullName(e.target.value)}
-                                                className="w-full bg-black/20 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-slate-600 text-sm autofill:bg-black/20"
+                                                className="w-full bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 text-sm"
                                                 placeholder="Seu nome completo"
                                                 required={isRegistering}
                                             />
@@ -203,7 +208,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, isRecoveringPassw
                                                 type="text"
                                                 value={companyName}
                                                 onChange={(e) => setCompanyName(e.target.value)}
-                                                className="w-full bg-black/20 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-slate-600 text-sm autofill:bg-black/20"
+                                                className="w-full bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 text-sm"
                                                 placeholder="Nome da sua organização"
                                                 required={isRegistering}
                                             />
@@ -220,7 +225,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, isRecoveringPassw
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-slate-600 text-sm autofill:bg-black/20"
+                                        className="w-full bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 text-sm"
                                         placeholder="master@neural.com"
                                         required
                                     />
@@ -251,7 +256,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, isRecoveringPassw
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-black/20 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-slate-600 text-sm"
+                                    className="w-full bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 text-sm"
                                     placeholder="••••••••"
                                     required={!isResetting}
                                 />

@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 
 import { BrandingProvider } from './components/BrandingProvider';
+import { ThemeProvider } from './components/ThemeProvider';
 import { Analytics } from "@vercel/analytics/react";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -25,10 +26,12 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrandingProvider>
-        <App />
-        <Analytics />
-      </BrandingProvider>
+      <ThemeProvider>
+        <BrandingProvider>
+          <App />
+          <Analytics />
+        </BrandingProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>
 );

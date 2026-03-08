@@ -23,7 +23,7 @@ interface EnrichedLeadsViewProps {
 const CRMMenuItem = ({ label, icon, onClick, color }: { label: string, icon: React.ReactNode, onClick: () => void, color: string }) => (
     <button
         onClick={onClick}
-        className="w-full flex items-center justify-between px-5 py-4 rounded-2xl hover:bg-white/5 text-slate-300 hover:text-white transition-all group border border-transparent hover:border-white/5"
+        className="w-full flex items-center justify-between px-5 py-4 rounded-2xl hover:bg-slate-900/5 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white transition-all group border border-transparent hover:border-slate-900/5 dark:hover:border-white/5"
     >
         <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center text-white shadow-lg`}>
@@ -55,7 +55,7 @@ const LeadCard = React.memo(({ lead, idx, openWhatsApp, onConvertToDeal, imgErro
 
     return (
         <div style={style} className="py-3">
-            <div className="group p-8 rounded-[2.5rem] bg-white/[0.03] border border-white/5 hover:border-primary/20 hover:bg-white/[0.05] transition-all duration-500 relative overflow-hidden shadow-xl h-full">
+            <div className="group p-8 rounded-[2.5rem] bg-slate-100/50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 hover:border-primary/20 hover:bg-white/[0.05] transition-all duration-500 relative overflow-hidden shadow-xl h-full">
 
                 {/* Background Glow */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[100px] -mr-32 -mt-32 pointer-events-none transition-all group-hover:bg-primary/10"></div>
@@ -81,7 +81,7 @@ const LeadCard = React.memo(({ lead, idx, openWhatsApp, onConvertToDeal, imgErro
 
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-3 mb-2">
-                                <h3 className="text-xl lg:text-2xl font-black text-white group-hover:text-primary transition-colors truncate">
+                                <h3 className="text-xl lg:text-2xl font-black text-slate-900 dark:text-white group-hover:text-primary transition-colors truncate">
                                     {lead.name}
                                 </h3>
                                 <span className="hidden lg:flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-400 uppercase tracking-widest">
@@ -94,7 +94,7 @@ const LeadCard = React.memo(({ lead, idx, openWhatsApp, onConvertToDeal, imgErro
                                     <div className="w-2 h-2 rounded-full bg-primary/40"></div>
                                     {lead.industry || 'Indústria Local'}
                                 </div>
-                                <div className="flex items-center gap-2 text-slate-300 font-medium">
+                                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
                                     <MapPin size={14} className="text-primary/70" />
                                     {lead.location}
                                 </div>
@@ -116,10 +116,10 @@ const LeadCard = React.memo(({ lead, idx, openWhatsApp, onConvertToDeal, imgErro
                         <div className="text-right">
                             <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-1">Qualificação SDR</p>
                             <div className="flex items-center gap-2">
-                                <div className="h-1.5 w-16 lg:w-24 bg-white/5 rounded-full overflow-hidden">
+                                <div className="h-1.5 w-16 lg:w-24 bg-slate-900/10 dark:bg-white/5 rounded-full overflow-hidden">
                                     <div className="h-full bg-primary shadow-[0_0_10px_var(--color-primary)]" style={{ width: `${score}%` }}></div>
                                 </div>
-                                <span className="text-lg font-black text-white font-mono">{score}%</span>
+                                <span className="text-lg font-black text-slate-900 dark:text-white font-mono">{score}%</span>
                             </div>
                         </div>
 
@@ -145,13 +145,13 @@ const LeadCard = React.memo(({ lead, idx, openWhatsApp, onConvertToDeal, imgErro
 
                 {/* Deep Intelligence Grid */}
                 <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="p-4 rounded-3xl bg-white/[0.02] border border-white/5">
+                    <div className="p-4 rounded-3xl bg-slate-900/5 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5">
                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Porte / Tamanho</p>
-                        <p className="text-xs font-bold text-white uppercase">{lead.details?.size || 'Não identificado'}</p>
+                        <p className="text-xs font-bold text-slate-900 dark:text-white uppercase">{lead.details?.size || 'Não identificado'}</p>
                     </div>
-                    <div className="p-4 rounded-3xl bg-white/[0.02] border border-white/5">
+                    <div className="p-4 rounded-3xl bg-slate-900/5 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5">
                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Funcionários</p>
-                        <p className="text-xs font-bold text-white">{lead.details?.employee_count || 'Sob consulta'}</p>
+                        <p className="text-xs font-bold text-slate-900 dark:text-white">{lead.details?.employee_count || 'Sob consulta'}</p>
                     </div>
                     <div className="p-4 rounded-3xl bg-white/[0.02] border border-white/5 sm:col-span-2">
                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Principais Sócios / Decisores</p>
@@ -349,7 +349,7 @@ export const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onC
                             <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/20 shadow-xl shadow-emerald-900/10 shrink-0">
                                 <Rocket size={24} />
                             </div>
-                            <h2 className="text-3xl lg:text-4xl font-black text-white tracking-tighter italic uppercase">
+                            <h2 className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tighter italic uppercase">
                                 Gerenciamento Comercial
                             </h2>
                         </div>

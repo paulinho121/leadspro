@@ -130,7 +130,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
 
         <div className="flex items-center justify-between mb-6 md:mb-8 relative z-10">
           <div>
-            <h3 className="text-xl md:text-2xl font-bold text-white mb-1 tracking-tight">Revenue Pulse</h3>
+            <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-1 tracking-tight">Revenue Pulse</h3>
             <p className="text-[9px] md:text-xs font-mono tracking-widest uppercase" style={{ color: `${primaryColor}99` }}>Pipeline_Realtime_Engine</p>
           </div>
           <div className="flex items-center gap-3">
@@ -187,7 +187,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
         <div className="absolute bottom-0 right-0 w-64 h-64 bg-slate-500/5 blur-[100px] -mr-32 -mb-32 group-hover/rev:bg-primary/5 transition-all"></div>
 
         <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
-          <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
+          <h3 className="text-base md:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Activity className="text-slate-400" size={18} /> Revenue Intelligence
           </h3>
           <div className="flex flex-col items-end shrink-0">
@@ -207,10 +207,10 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
       {/* 3. AI Insights Feed */}
       <div className="col-span-1 md:col-span-4 lg:col-span-4 glass rounded-[2rem] p-6 md:p-8 premium-card relative overflow-hidden flex flex-col">
         <div className="flex items-center justify-between mb-6 md:mb-8">
-          <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
+          <h3 className="text-base md:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Brain className="text-primary" size={20} /> Neural Signals
           </h3>
-          <span className="text-[10px] bg-white/5 px-3 py-1.5 rounded-full text-slate-400 font-mono uppercase tracking-widest border border-white/5">
+          <span className="text-[10px] bg-slate-900/5 dark:bg-white/5 px-3 py-1.5 rounded-full text-slate-500 dark:text-slate-400 font-mono uppercase tracking-widest border border-slate-900/5 dark:border-white/5">
             Auto-Scan
           </span>
         </div>
@@ -254,8 +254,8 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
               <MapIcon size={20} />
             </div>
             <div className="mt-auto text-center">
-              <h4 className="text-white text-xs md:text-sm font-bold mb-1">Mapa</h4>
-              <p className="hidden md:block text-slate-400 text-[10px] leading-tight mx-auto max-w-[120px]">Concentração em SP e Curitiba.</p>
+              <h4 className="text-slate-900 dark:text-white text-xs md:text-sm font-bold mb-1">Mapa</h4>
+              <p className="hidden md:block text-slate-500 dark:text-slate-400 text-[10px] leading-tight mx-auto max-w-[120px]">Concentração em SP e Curitiba.</p>
             </div>
           </div>
 
@@ -284,7 +284,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
 const StatBox = ({ label, value, color, icon }: { label: string, value: string, color: string, icon: React.ReactNode }) => (
   <div className="flex items-center gap-5 group/stat">
     <div
-      className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-white/5 flex items-center justify-center transition-all group-hover/stat:bg-white/10 group-hover/stat:scale-105 shrink-0`}
+      className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-slate-900/5 dark:bg-white/5 flex items-center justify-center transition-all group-hover/stat:bg-slate-900/10 dark:group-hover/stat:bg-white/10 group-hover/stat:scale-105 shrink-0`}
       style={{ color: color === 'primary' ? 'var(--color-primary)' : color }}
     >
       {icon}
@@ -300,7 +300,7 @@ const StatBox = ({ label, value, color, icon }: { label: string, value: string, 
 );
 
 const InsightLog = ({ status, msg, time, type = 'normal', color = 'primary' }: { status: string, msg: string, time: string, type?: 'normal' | 'alert', color?: string }) => (
-  <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center gap-4 hover:bg-white/[0.06] transition-all group cursor-default">
+  <div className="p-4 rounded-2xl bg-slate-900/[0.03] dark:bg-white/[0.03] border border-slate-900/5 dark:border-white/5 flex items-center gap-4 hover:bg-slate-900/[0.06] dark:hover:bg-white/[0.06] transition-all group cursor-default">
     <div
       className={`w-2 h-2 rounded-full ${type === 'alert' ? 'bg-red-500 animate-pulse ring-4 ring-red-500/20' : ''} `}
       style={{ backgroundColor: (type !== 'alert') ? (color === 'primary' ? 'var(--color-primary)' : color) : undefined }}
@@ -311,9 +311,9 @@ const InsightLog = ({ status, msg, time, type = 'normal', color = 'primary' }: {
           className={`text-[10px] font-black uppercase tracking-widest`}
           style={{ color: type === 'alert' ? '#ef4444' : (color === 'primary' ? 'var(--color-primary)' : 'rgba(148, 163, 184, 0.7)') }}
         >{status}</span>
-        <span className="text-[9px] text-slate-600 font-mono">{time}</span>
+        <span className="text-[9px] text-slate-400 dark:text-slate-600 font-mono">{time}</span>
       </div>
-      <p className="text-slate-300 text-sm leading-snug group-hover:text-white transition-colors">{msg}</p>
+      <p className="text-slate-600 dark:text-slate-300 text-sm leading-snug group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{msg}</p>
     </div>
   </div>
 );

@@ -50,7 +50,7 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
 
   return (
     <tr
-      className="group hover:bg-white/[0.015] transition-all absolute top-0 left-0 w-full border-b border-white/[0.03] hidden lg:flex items-center"
+      className="group hover:bg-slate-900/[0.015] dark:hover:bg-white/[0.015] transition-all absolute top-0 left-0 w-full border-b border-slate-200 dark:border-white/[0.03] hidden lg:flex items-center"
       style={{
         height: `${virtualRow.size}px`,
         transform: `translateY(${virtualRow.start}px)`,
@@ -62,7 +62,7 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
         <div className="flex items-center gap-4 w-full overflow-hidden">
           <div className="relative shrink-0">
             {lead.details?.placeImage && !imgError ? (
-              <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/[0.05] shadow-[0_3px_10px_rgba(0,0,0,0.5)] relative group-hover:border-primary/20 transition-colors">
+              <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-200 dark:border-white/[0.05] shadow-[0_3px_10px_rgba(0,0,0,0.1)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.5)] relative group-hover:border-primary/20 transition-colors">
                 <img
                   src={lead.details.placeImage}
                   alt="Fachada"
@@ -81,7 +81,7 @@ const LeadRow = React.memo(({ lead, virtualRow, onEnrich, onDelete, onConvertToD
             )}
           </div>
           <div className="min-w-0 flex-1 flex flex-col justify-center overflow-hidden">
-            <div className="font-bold text-white text-[14px] group-hover:text-primary transition-all duration-300 leading-tight mb-0.5 truncate block w-full drop-shadow-md">
+            <div className="font-bold text-slate-900 dark:text-white text-[14px] group-hover:text-primary transition-all duration-300 leading-tight mb-0.5 truncate block w-full drop-shadow-md">
               {lead.details?.tradeName || lead.name}
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -220,7 +220,7 @@ const MobileLeadCard = ({ lead, onEnrich, onDelete, onConvertToDeal, onPark, onD
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-bold text-white truncate">{lead.details?.tradeName || lead.name}</h4>
+          <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{lead.details?.tradeName || lead.name}</h4>
           <div className="flex items-center gap-1.5 mt-0.5">
             <MapPin size={9} className="text-primary/60 shrink-0" />
             <span className="text-[10px] text-slate-400 truncate">{lead.location}</span>
@@ -367,8 +367,8 @@ const LeadLab: React.FC<LeadLabProps> = ({
         lg:translate-x-0 fixed lg:relative z-40 lg:z-auto
         w-[300px] h-full transition-transform duration-500
       `}>
-        <div className="h-full glass-strong border border-white/[0.03] rounded-[2.5rem] p-8 flex flex-col gap-10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-slate-900/40 relative overflow-hidden">
-          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none"></div>
+        <div className="h-full glass-strong border border-slate-200 dark:border-white/[0.03] rounded-[2.5rem] p-8 flex flex-col gap-10 shadow-[0_20px_50px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-slate-50/50 dark:bg-slate-900/40 relative overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-slate-200/20 dark:from-white/[0.02] to-transparent pointer-events-none"></div>
 
           <div className="relative z-10 w-full">
             <div className="flex items-center gap-4 mb-10 px-1 hover:scale-[1.02] transition-transform origin-left cursor-default">
@@ -376,7 +376,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                 <Database size={20} />
               </div>
               <div className="flex flex-col">
-                <h3 className="text-[14px] font-black text-white uppercase tracking-[0.2em] leading-tight mb-1">Gaveta Core</h3>
+                <h3 className="text-[14px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] leading-tight mb-1">Gaveta Core</h3>
                 <span className="text-[9px] text-slate-500 font-black uppercase tracking-[0.25em]">Filtros & Rotas</span>
               </div>
             </div>
@@ -428,8 +428,8 @@ const LeadLab: React.FC<LeadLabProps> = ({
                       title={niche}
                       className={`flex items-center justify-between py-2 px-3 rounded-lg transition-all text-[12px] group w-full text-left
                         ${selectedNiche === niche
-                          ? 'bg-white/[0.04] text-white font-bold'
-                          : 'text-slate-400 font-medium hover:text-slate-200 hover:bg-white/[0.02]'}`}
+                          ? 'bg-primary/10 text-primary font-bold'
+                          : 'text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/[0.02]'}`}
                     >
                       <div className="flex items-center gap-2 overflow-hidden flex-1">
                         {selectedNiche === niche && <div className="w-1 h-1 rounded-full bg-primary shrink-0"></div>}
@@ -613,14 +613,14 @@ const LeadLab: React.FC<LeadLabProps> = ({
               Filtros
             </button>
             <div>
-              <h2 className="text-xl md:text-3xl lg:text-4xl font-black text-white tracking-tighter flex flex-wrap items-center gap-2 md:gap-4">
+              <h2 className="text-xl md:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tighter flex flex-wrap items-center gap-2 md:gap-4">
                 Laboratório
                 <span className="text-[10px] font-mono text-primary bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 uppercase tracking-[0.2em] shadow-inner">
                   {filteredLeads.length}/{labLeads.length}
                   {totalCount > labLeads.length && <span className="text-slate-500 ml-1">({totalCount})</span>}
                 </span>
               </h2>
-              <p className="hidden md:block text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2">Ambiente Científico de Extração e Refinamento Neural</p>
+              <p className="hidden md:block text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.2em] mt-2">Ambiente Científico de Extração e Refinamento Neural</p>
             </div>
           </div>
 

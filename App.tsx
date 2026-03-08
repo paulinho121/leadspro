@@ -50,6 +50,7 @@ const AutomationHealthDashboard = lazyWithRetry(() => import('./components/Autom
 const LeadAdminView = lazyWithRetry(() => import('./components/LeadAdminView'));
 import { ToastContainer, registerToastFn, toast } from './components/Toast';
 import { DiscoveryService } from './services/discoveryService';
+import { ThemeToggle } from './components/ThemeToggle';
 import { CommunicationService } from './services/communicationService';
 import { EnrichmentService } from './services/enrichmentService';
 import { SecretService, TenantSecrets } from './services/secretService';
@@ -729,7 +730,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-background text-slate-200 flex font-sans selection:bg-primary/30 selection:text-primary overflow-hidden relative">
+    <div className="h-screen bg-background text-slate-900 dark:text-slate-200 flex font-sans selection:bg-primary/30 selection:text-primary overflow-hidden relative">
       <SecurityGuard />
       {/* Sidebar Mobile Overlay - Only show when sidebar IS open on mobile */}
       {isSidebarOpen && (
@@ -740,7 +741,7 @@ const App: React.FC = () => {
       )}
 
       {/* Sidebar */}
-      <aside className={`glass border-r border-white/5 transition-all duration-500 ease-in-out z-[100] flex flex-col 
+      <aside className={`glass border-r border-slate-200 dark:border-white/5 transition-all duration-500 ease-in-out z-[100] flex flex-col 
         fixed md:relative inset-y-0 left-0 
         ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0 w-72 md:w-20'}`}>
 
@@ -749,7 +750,7 @@ const App: React.FC = () => {
             <BrainCircuit className="text-primary" size={30} />
           </div>
           <div className={`transition-all duration-300 ${isSidebarOpen ? 'opacity-100 flex-1' : 'opacity-0 md:hidden invisible w-0'}`}>
-            <h1 className="text-[22px] font-black tracking-wider leading-none uppercase italic text-white drop-shadow-lg">
+            <h1 className="text-[22px] font-black tracking-wider leading-none uppercase italic text-slate-900 dark:text-white drop-shadow-lg">
               LeadMatrix
             </h1>
           </div>
@@ -769,7 +770,7 @@ const App: React.FC = () => {
 
           <div className="pt-8 pb-4">
             {isSidebarOpen && <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Sistemas</p>}
-            <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mx-4 mb-4"></div>
+            <div className="h-px bg-slate-200 dark:bg-white/5 mx-4 mb-4"></div>
           </div>
 
           <NavItem icon={<ShieldCheck size={20} />} label={I18nService.t('Branding')} active={activeTab === 'partner'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
@@ -782,6 +783,7 @@ const App: React.FC = () => {
           )}
 
           <div className="pt-2">
+            <ThemeToggle expanded={isSidebarOpen} />
             <NavItem icon={<LifeBuoy size={20} className="text-primary" />} label="Suporte" active={showSupport} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => setShowSupport(true)} />
           </div>
         </nav>
@@ -816,7 +818,7 @@ const App: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-0.5">Identidade</p>
-                      <p className="text-base font-bold text-white tracking-tight">{userName}</p>
+                      <p className="text-base font-bold text-slate-900 dark:text-white tracking-tight">{userName}</p>
                     </div>
                   </div>
 
@@ -861,7 +863,7 @@ const App: React.FC = () => {
                   className="w-10 h-10 rounded-2xl bg-primary p-[2px]"
                   style={{ boxShadow: `0 0 15px ${config.colors.primary}4d` }}
                 >
-                  <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center font-bold text-xs text-white uppercase tracking-tighter">
+                  <div className="w-full h-full rounded-[14px] bg-slate-100 dark:bg-slate-900 flex items-center justify-center font-bold text-xs text-slate-900 dark:text-white uppercase tracking-tighter transition-colors">
                     {userName.slice(0, 2)}
                   </div>
                 </div>
@@ -872,8 +874,8 @@ const App: React.FC = () => {
 
               {isSidebarOpen && (
                 <div className="flex-1 overflow-hidden animate-in fade-in duration-300">
-                  <p className="text-sm font-black text-white truncate">{userName.split(' ')[0]}</p>
-                  <p className="text-[10px] text-slate-400 truncate font-mono">Sessão Ativa</p>
+                  <p className="text-sm font-black text-slate-900 dark:text-white truncate">{userName.split(' ')[0]}</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate font-mono">Sessão Ativa</p>
                 </div>
               )}
 
@@ -904,13 +906,13 @@ const App: React.FC = () => {
       </nav>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 relative overflow-hidden bg-slate-950">
+      <main className="flex-1 flex flex-col min-w-0 relative overflow-hidden bg-background">
         {/* Subtle Ambient Glow */}
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] opacity-[0.07] pointer-events-none blur-[120px] rounded-full"
           style={{ background: `radial-gradient(circle, var(--color-primary) 0%, transparent 70%)` }}
         ></div>
-        <header className="h-16 md:h-24 border-b border-white/5 flex items-center justify-between px-4 md:px-10 relative z-40 backdrop-blur-xl shrink-0">
+        <header className="h-16 md:h-24 border-b border-slate-200 dark:border-white/5 flex items-center justify-between px-4 md:px-10 relative z-40 backdrop-blur-xl shrink-0 bg-background/50">
           <div className="flex items-center gap-4 md:gap-6">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -918,7 +920,7 @@ const App: React.FC = () => {
             >
               <Menu size={20} />
             </button>
-            <h2 className="text-base md:text-xl font-bold text-white tracking-tight flex items-center gap-3">
+            <h2 className="text-base md:text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
               {activeTab === 'dashboard' && I18nService.t('Dashboard')}
               {activeTab === 'discovery' && I18nService.t('Extração')}
               {activeTab === 'lab' && I18nService.t('Laboratório')}
@@ -940,9 +942,9 @@ const App: React.FC = () => {
                 <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em] leading-none mb-1">Matrix Balance</span>
                 <span className="text-[7px] text-primary/60 font-bold uppercase tracking-widest leading-none">Créditos Ativos</span>
               </div>
-              <div className="flex items-center gap-2 bg-slate-900/50 px-3 py-1.5 rounded-xl border border-white/5">
+              <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900/50 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/5 transition-colors">
                 <MoneyIcon size={14} className="text-primary animate-pulse" />
-                <span className="text-sm font-black text-white">$ {creditBalance.toLocaleString()}</span>
+                <span className="text-sm font-black text-slate-900 dark:text-white transition-colors">$ {creditBalance.toLocaleString()}</span>
               </div>
             </div>
 
@@ -1174,7 +1176,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active, expanded, primar
     title={!expanded ? label : undefined}
     className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-500 relative group ${active
       ? 'bg-primary/10 text-primary'
-      : 'text-slate-500 hover:text-white hover:bg-white/5'
+      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/5 dark:hover:bg-white/5'
       }`}
   >
     <div
@@ -1190,7 +1192,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active, expanded, primar
       )}
     </div>
     {expanded && (
-      <span className={`text-sm font-bold tracking-tight transition-all duration-500 ${active ? 'text-white' : ''}`}>
+      <span className={`text-sm font-bold tracking-tight transition-all duration-500 ${active ? 'text-slate-900 dark:text-white' : ''}`}>
         {label}
       </span>
     )}
@@ -1207,7 +1209,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active, expanded, primar
 const MobileNavItem: React.FC<{ icon: React.ReactNode; label: string; active: boolean; onClick: () => void }> = ({ icon, label, active, onClick }) => (
   <button
     onClick={onClick}
-    className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active-scale ${active ? 'text-primary' : 'text-slate-500'}`}
+    className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active-scale ${active ? 'text-primary' : 'text-slate-500 dark:text-slate-400'}`}
   >
     <div className={`transition-all duration-300 ${active ? 'scale-110' : ''}`}>
       {icon}
