@@ -118,6 +118,10 @@ const VisualWorkflowBuilder = ({ tenantId }: { tenantId: string }) => {
                     { id: '2', type: 'brainNode', position: { x: 450, y: 100 }, data: { label: 'Classificador de Intenção' } },
                     { id: '3', type: 'actionNode', position: { x: 800, y: 100 }, data: { label: 'Responder WhatsApp' } },
                 ]);
+                setEdges([
+                    { id: 'e1-2', source: '1', target: '2', animated: true, style: { stroke: 'var(--color-primary)', strokeWidth: 2 } },
+                    { id: 'e2-3', source: '2', target: '3', animated: true, style: { stroke: 'var(--color-primary)', strokeWidth: 2 } },
+                ]);
             }
         };
         if (tenantId) loadWorkflow();
@@ -132,14 +136,67 @@ const VisualWorkflowBuilder = ({ tenantId }: { tenantId: string }) => {
     };
 
     const addNode = (type: 'triggerNode' | 'brainNode' | 'actionNode') => {
-        const id = `${nodes.length + 1}`;
+        const id = `node_${nodes.length + 1}_${Math.random().toString(36).substr(2, 4)}`;
         const newNode: Node = {
             id,
             type,
-            position: { x: Math.random() * 400, y: Math.random() * 400 },
+            position: { x: 300, y: 300 },
             data: { label: type === 'triggerNode' ? 'Novo Gatilho' : type === 'brainNode' ? 'Análise Neural' : 'Nova Ação' },
         };
         setNodes((nds) => nds.concat(newNode));
+    };
+
+    const loadTemplate = (templateKey: 'sdr_basic' | 'revenue_machine' | 'cold_outreach') => {
+        const templates = {
+            sdr_basic: {
+                name: 'SDR Neural Reativo (Alta Conversão)',
+                nodes: [
+                    { id: 't1', type: 'triggerNode', position: { x: 100, y: 150 }, data: { label: 'Webhook: Novo Lead (Captura)' } },
+                    { id: 'b1', type: 'brainNode', position: { x: 450, y: 150 }, data: { label: 'Classificador de Intenção & Score' } },
+                    { id: 'a1', type: 'actionNode', position: { x: 800, y: 150 }, data: { label: 'Abordagem Instantânea WhatsApp' } },
+                ],
+                edges: [
+                    { id: 'e1-2', source: 't1', target: 'b1', animated: true, style: { stroke: 'var(--color-primary)', strokeWidth: 2 } },
+                    { id: 'e2-3', source: 'b1', target: 'a1', animated: true, style: { stroke: 'var(--color-primary)', strokeWidth: 2 } },
+                ]
+            },
+            revenue_machine: {
+                name: 'Máquina de Receita SaaS 2.0',
+                nodes: [
+                    { id: 't1', type: 'triggerNode', position: { x: 50, y: 100 }, data: { label: 'Injeção de Leads (API/CRM)' } },
+                    { id: 'b1', type: 'brainNode', position: { x: 350, y: 100 }, data: { label: 'Filtro de ICP & Qualificação' } },
+                    { id: 'b2', type: 'brainNode', position: { x: 650, y: 100 }, data: { label: 'Ajuste Neural de Pitch' } },
+                    { id: 'a1', type: 'actionNode', position: { x: 950, y: 100 }, data: { label: 'Notificar Closer (High Intent)' } },
+                    { id: 'a2', type: 'actionNode', position: { x: 950, y: 300 }, data: { label: 'Cadência Educativa (Nurturing)' } },
+                ],
+                edges: [
+                    { id: 'e1', source: 't1', target: 'b1', animated: true },
+                    { id: 'e2', source: 'b1', target: 'b2', animated: true },
+                    { id: 'e3', source: 'b2', target: 'a1', animated: true },
+                    { id: 'e4', source: 'b1', target: 'a2', animated: true },
+                ]
+            },
+            cold_outreach: {
+                name: 'Fluxo Outbound Prospecção Fria',
+                nodes: [
+                    { id: 't1', type: 'triggerNode', position: { x: 100, y: 100 }, data: { label: 'Disparo em Lote (Campanha)' } },
+                    { id: 'b1', type: 'brainNode', position: { x: 450, y: 100 }, data: { label: 'Análise de Resposta IA' } },
+                    { id: 'a1', type: 'actionNode', position: { x: 800, y: 100 }, data: { label: 'Encaminhar p/ Agendamento' } },
+                ],
+                edges: [
+                    { id: 'e1', source: 't1', target: 'b1', animated: true },
+                    { id: 'e2', source: 'b1', target: 'a1', animated: true },
+                ]
+            }
+        };
+
+        const t = templates[templateKey];
+        if (t) {
+            setWorkflowName(t.name);
+            setNodes(t.nodes as Node[]);
+            setEdges(t.edges as Edge[]);
+            toast.success('Template carregado!', `Iniciando com ${t.name}`);
+        }
     };
 
     const deleteSelected = () => {
@@ -260,6 +317,43 @@ const VisualWorkflowBuilder = ({ tenantId }: { tenantId: string }) => {
                             >
                                 <Save size={16} /> {isSaving ? 'Gravando...' : 'Implantar Fluxo'}
                             </button>
+                            
+                            {/* Template Selector Dropdown */}
+                            <div className="relative group/templates">
+                                <button
+                                    title="Carregar Templates de Alta Conversão"
+                                    className="p-4 bg-white/5 hover:bg-white/10 border border-white/5 text-primary rounded-2xl transition-all shadow-xl"
+                                >
+                                    <Sparkles size={20} className="group-hover/templates:rotate-12 transition-transform" />
+                                </button>
+                                <div className="absolute top-full left-0 mt-3 w-64 bg-slate-900/95 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-4 shadow-2xl opacity-0 invisible group-hover/templates:opacity-100 group-hover/templates:visible transition-all duration-300 z-50">
+                                    <div className="flex flex-col gap-2">
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest p-4 pb-2 border-b border-white/5 mb-2">Templates de Sucesso</p>
+                                        <button 
+                                            onClick={() => loadTemplate('sdr_basic')}
+                                            className="w-full text-left p-4 hover:bg-primary/10 rounded-xl transition-all group/item"
+                                        >
+                                            <span className="block text-[10px] font-black text-white uppercase group-hover/item:text-primary italic">SDR Reativo Neural</span>
+                                            <span className="block text-[8px] text-slate-600 mt-1 uppercase tracking-tighter">Alta Conversão • Resposta Instantânea</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => loadTemplate('revenue_machine')}
+                                            className="w-full text-left p-4 hover:bg-primary/10 rounded-xl transition-all group/item"
+                                        >
+                                            <span className="block text-[10px] font-black text-white uppercase group-hover/item:text-primary italic">Revenue Machine 2.0</span>
+                                            <span className="block text-[8px] text-slate-600 mt-1 uppercase tracking-tighter">Foco em Deals • Qualificação Profunda</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => loadTemplate('cold_outreach')}
+                                            className="w-full text-left p-4 hover:bg-primary/10 rounded-xl transition-all group/item"
+                                        >
+                                            <span className="block text-[10px] font-black text-white uppercase group-hover/item:text-primary italic">Outbound Matrix Pro</span>
+                                            <span className="block text-[8px] text-slate-600 mt-1 uppercase tracking-tighter">Escala Massiva • Prospecção Fria</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
                             <button className="p-4 bg-white/5 hover:bg-white/10 border border-white/5 text-slate-400 rounded-2xl transition-all shadow-xl">
                                 <Play size={20} className="fill-current" />
                             </button>
