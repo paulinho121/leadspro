@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Tema - LeadPro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#f97316',
+                        secondary: '#0f172a',
+                        accent: '#fb923c',
+                        background: '#f8fafc',
+                        surface: '#ffffff',
+                        sidebar: '#ffffff',
+                        text: '#0f172a',
+                        'text-muted': '#64748b',
+                        border: 'rgba(0, 0, 0, 0.05)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --color-primary: #f97316;
+            --color-secondary: #0f172a;
+            --color-accent: #fb923c;
+            --color-background: #f8fafc;
+            --color-surface: #ffffff;
+            --color-sidebar: #ffffff;
+            --color-text: #0f172a;
+            --color-text-muted: #64748b;
+            --color-border: rgba(0, 0, 0, 0.05);
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        .dark {
+            --color-primary: #f97316;
+            --color-secondary: #0f172a;
+            --color-accent: #fb923c;
+            --color-background: #020617;
+            --color-surface: #0f172a;
+            --color-sidebar: #0f172a;
+            --color-text: #f1f5f9;
+            --color-text-muted: #94a3b8;
+            --color-border: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(15, 23, 42, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: var(--color-background);
+            color: var(--color-text);
+            transition: all 0.3s ease;
+        }
+
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .dark .glass {
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        .bg-surface {
+            background-color: var(--color-surface);
+        }
+
+        .text-primary {
+            color: var(--color-primary);
+        }
+
+        .bg-primary {
+            background-color: var(--color-primary);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-8">
+    <div class="max-w-4xl mx-auto space-y-8">
+        <div class="flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-primary">Teste de Tema LeadPro</h1>
+            <button onclick="toggleTheme()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+                Alternar Tema
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="glass p-6 rounded-2xl">
+                <h2 class="text-xl font-semibold mb-4">Card Glass Effect</h2>
+                <p class="text-muted">Este card usa o efeito glass com backdrop blur.</p>
+                <div class="mt-4 space-y-2">
+                    <div class="h-2 bg-primary rounded"></div>
+                    <div class="h-2 bg-secondary rounded"></div>
+                    <div class="h-2 bg-accent rounded"></div>
+                </div>
+            </div>
+
+            <div class="bg-surface border border-border p-6 rounded-2xl">
+                <h2 class="text-xl font-semibold mb-4">Card Surface</h2>
+                <p class="text-muted">Este card usa a cor de surface padrão.</p>
+                <button class="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/80">
+                    Botão Primário
+                </button>
+            </div>
+        </div>
+
+        <div class="glass p-6 rounded-2xl">
+            <h2 class="text-2xl font-bold mb-4">Cores do Sistema</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <div class="w-full h-20 bg-primary rounded mb-2"></div>
+                    <p class="text-sm font-mono">Primary</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-full h-20 bg-secondary rounded mb-2"></div>
+                    <p class="text-sm font-mono">Secondary</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-full h-20 bg-accent rounded mb-2"></div>
+                    <p class="text-sm font-mono">Accent</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-full h-20 bg-surface border border-border rounded mb-2"></div>
+                    <p class="text-sm font-mono">Surface</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center text-muted">
+            <p>Tema atual: <span id="theme-status" class="font-bold">Claro</span></p>
+        </div>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeStatus = document.getElementById('theme-status');
+            
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                themeStatus.textContent = 'Claro';
+            } else {
+                html.classList.add('dark');
+                themeStatus.textContent = 'Escuro';
+            }
+        }
+
+        // Detectar preferência do sistema
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+            document.getElementById('theme-status').textContent = 'Escuro';
+        }
+    </script>
+</body>
+</html>

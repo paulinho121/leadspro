@@ -2,6 +2,8 @@
 import { ApiGatewayService } from './apiGatewayService';
 import { Lead, LeadStatus } from '../types';
 import { BillingService } from './billingService';
+import { DataValidationService } from './dataValidationService';
+import { IntelligentCacheService } from './intelligentCacheService';
 
 export class DiscoveryService {
     private static businessAdjectives = ['Inovação', 'Premium', 'Soluções', 'Group', 'Matrix', 'Advanced', 'Global', 'Digital', 'Elite', 'Prime', 'Smart', 'Nexus'];
@@ -25,6 +27,14 @@ export class DiscoveryService {
                 if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");
             }
 
+            // Verificar cache primeiro
+            const cacheKey = `maps:${keyword}:${location}:${page}`;
+            const cached = await IntelligentCacheService.get<Lead[]>(cacheKey);
+            if (cached) {
+                console.log(`[Neural Discovery] Cache HIT para ${cacheKey}`);
+                return cached;
+            }
+
             const payload: any = { q: `${keyword} "${location}"` };
             if (page > 1) {
                 payload.page = page; 
@@ -38,7 +48,7 @@ export class DiscoveryService {
             );
 
             if (response && response.places) {
-                return response.places.map((place: any): Lead => {
+                const leads = await Promise.all(response.places.map(async (place: any): Promise<Lead> => {
                     const phoneSuffix = Math.floor(10000000 + Math.random() * 90000000);
                     let cleanPhone = (place.phoneNumber || '').replace(/\D/g, '');
                     // Se o número começar com 55 e tiver mais de 10 dígitos, assume que o DDI já está lá
@@ -46,7 +56,7 @@ export class DiscoveryService {
                         ? `https://wa.me/${cleanPhone.startsWith('55') ? cleanPhone : '55' + cleanPhone}`
                         : null;
 
-                    return {
+                    const lead: Lead = {
                         id: place.cid || Math.random().toString(36).substr(2, 9),
                         name: place.title,
                         website: place.website || '',
@@ -68,7 +78,21 @@ export class DiscoveryService {
                             whatsapp: whatsappLink
                         }
                     };
-                });
+
+                    // Validar telefone
+                    if (lead.phone) {
+                        const phoneValidation = await DataValidationService.validatePhone(lead.phone, lead.name, lead.location);
+                        if (phoneValidation.enrichedData) {
+                            lead.details = { ...lead.details, ...phoneValidation.enrichedData };
+                        }
+                    }
+
+                    return lead;
+                }));
+
+                // Armazenar no cache
+                await IntelligentCacheService.set(cacheKey, leads, 'serper', 0.7);
+                return leads;
             }
         } catch (error: any) {
             console.error('[Neural Discovery] Erro durante deep scan:', error);
@@ -91,8 +115,16 @@ export class DiscoveryService {
         // 1. Detectar se o keyword é um CNPJ individual (para o modo ENRICH)
         const cleanCnpjInput = keyword.replace(/\D/g, '');
         if (cleanCnpjInput.length === 14) {
-            console.log(`[CNPJ] Detetado CNPJ individual: ${cleanCnpjInput}. Buscando dados reais...`);
-            const realData = await this.fetchRealCNPJData(cleanCnpjInput);
+            console.log(`[CNPJ] Detetado CNPJ individual: ${cleanCnpjInput}. Validando dados reais...`);
+            
+            // Validar CNPJ antes de buscar
+            const validation = await DataValidationService.validateCNPJ(cleanCnpjInput);
+            if (!validation.isValid) {
+                console.warn(`[CNPJ] CNPJ inválido: ${validation.issues.join(', ')}`);
+                return [];
+            }
+            
+            const realData = validation.enrichedData || await this.fetchRealCNPJData(cleanCnpjInput);
             if (realData && realData.nome) {
                 return [{
                     id: `cnpj-${cleanCnpjInput}`,
@@ -110,7 +142,8 @@ export class DiscoveryService {
                         foundedDate: realData.abertura,
                         size: realData.porte,
                         address: `${realData.logradouro}, ${realData.numero} - ${realData.bairro}, ${realData.municipio} - ${realData.uf}`,
-                        cnpj: cleanCnpjInput
+                        cnpj: cleanCnpjInput,
+                        validation_confidence: validation.confidence
                     },
                     socialLinks: {
                         cnpj: cleanCnpjInput,
@@ -238,6 +271,14 @@ export class DiscoveryService {
     static async fetchRealCNPJData(cnpj: string): Promise<any> {
         const cleanCnpj = cnpj.replace(/\D/g, '');
 
+        // Verificar cache primeiro
+        const cacheKey = `cnpj:${cleanCnpj}`;
+        const cached = await IntelligentCacheService.get(cacheKey);
+        if (cached) {
+            console.log(`[CNPJ] Cache HIT para ${cleanCnpj}`);
+            return cached;
+        }
+
         // APIs Públicas sugeridas (Ordem de prioridade pelo tempo de resposta/estabilidade)
         const endpoints = [
             `https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`,
@@ -255,7 +296,7 @@ export class DiscoveryService {
                     const data = await response.json();
 
                     // Normalização Universal dos dados retornados
-                    return {
+                    const normalizedData = {
                         nome: data.nome || data.razao_social || data.name || '',
                         fantasia: data.fantasia || data.nome_fantasia || data.alias || data.razao_social || '',
                         telefone: data.telefone || data.ddd_telefone_1 || (data.phone ? `${data.phone.area}-${data.phone.number}` : ''),
@@ -276,6 +317,10 @@ export class DiscoveryService {
                             cargo: s.qual || s.qualificacao_socio || s.role || 'Sócio'
                         }))
                     };
+
+                    // Armazenar no cache com alta confiança (dados governamentais)
+                    await IntelligentCacheService.set(cacheKey, normalizedData, 'brasilapi', 0.95);
+                    return normalizedData;
                 }
             } catch (err) {
                 console.warn(`[CNPJ API] Falha na rota ${url}:`, err);

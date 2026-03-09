@@ -1,0 +1,373 @@
+/* ========================================
+   VIRTUALIZATION FIX - LeadPro
+   Correções para sobreposição em lista virtualizada
+   ======================================== */
+
+/* Container principal da virtualização */
+.virtualization-container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+/* Container do scroll */
+.virtualization-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Container do conteúdo virtualizado */
+.virtualization-content {
+  position: relative;
+  width: 100%;
+}
+
+/* Linha virtualizada individual */
+.virtualization-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 140px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+/* Garantir que cada linha tenha espaço adequado */
+.virtualization-row-inner {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 1rem 2rem;
+  box-sizing: border-box;
+}
+
+/* Evitar sobreposição de conteúdo */
+.virtualization-row-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Fix para elementos absolutos dentro de linhas */
+.virtualization-row * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Container principal da tabela */
+.lead-table-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 400px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.5rem;
+  overflow: hidden;
+}
+
+/* Header da tabela */
+.lead-table-header {
+  flex-shrink: 0;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.8);
+}
+
+/* Body da tabela */
+.lead-table-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Linha do lead */
+.lead-row {
+  width: 100%;
+  height: 140px;
+  min-height: 140px;
+  max-height: 140px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  background: transparent;
+  transition: background-color 0.3s ease;
+}
+
+.lead-row:hover {
+  background: rgba(30, 41, 59, 0.4);
+}
+
+/* Grid dentro da linha */
+.lead-row-grid {
+  display: grid;
+  grid-template-columns: 4fr 3fr 2fr 2fr 1fr;
+  gap: 1.5rem;
+  align-items: center;
+  height: 100%;
+  padding: 1rem 2rem;
+  box-sizing: border-box;
+}
+
+/* Seções da linha */
+.lead-row-section {
+  overflow: hidden;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lead-row-section.company {
+  grid-column: 1;
+}
+
+.lead-row-section.location {
+  grid-column: 2;
+}
+
+.lead-row-section.contact {
+  grid-column: 3;
+}
+
+.lead-row-section.status {
+  grid-column: 4;
+  justify-content: center;
+}
+
+.lead-row-section.actions {
+  grid-column: 5;
+  justify-content: flex-end;
+}
+
+/* Conteúdo textual */
+.lead-row-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.lead-row-text-multiline {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+/* Avatar/imagem */
+.lead-row-avatar {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lead-row-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Status indicator */
+.lead-row-status-indicator {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid rgba(15, 23, 42, 0.8);
+}
+
+/* Badges */
+.lead-row-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Ações */
+.lead-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.lead-row-action-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 2.5rem;
+  min-width: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .lead-row-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .lead-row-section {
+    grid-column: 1 !important;
+    justify-content: flex-start;
+  }
+  
+  .lead-row {
+    height: auto;
+    min-height: auto;
+    max-height: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .lead-row-grid {
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+  
+  .lead-row-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  .lead-row-action-btn {
+    padding: 0.75rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Scrollbar styling */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* Z-index management */
+.lead-table-container {
+  z-index: 1;
+}
+
+.lead-table-body {
+  z-index: 2;
+}
+
+.lead-row {
+  z-index: 3;
+}
+
+.lead-row:hover {
+  z-index: 4;
+}
+
+/* Performance optimizations */
+.lead-row {
+  will-change: background-color;
+  contain: layout style paint;
+}
+
+.lead-row-text {
+  contain: layout style paint;
+}
+
+/* Debug visualization (remover em produção) */
+.debug-virtualization .virtualization-row {
+  border: 2px solid red;
+  background: rgba(255, 0, 0, 0.1);
+}
+
+.debug-virtualization .lead-row {
+  border: 2px solid blue;
+  background: rgba(0, 0, 255, 0.1);
+}
+
+/* Fix para Firefox */
+@-moz-document url-prefix() {
+  .lead-row {
+    height: 140px;
+    min-height: 140px;
+    max-height: 140px;
+  }
+}
+
+/* Fix para Safari */
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    .lead-row {
+      height: 140px;
+      min-height: 140px;
+      max-height: 140px;
+    }
+  }
+}
+
+/* Fix para Edge */
+@supports (-ms-ime-align: auto) {
+  .lead-row {
+    height: 140px;
+    min-height: 140px;
+    max-height: 140px;
+  }
+}
+
+/* Container overflow fix */
+.overflow-fix {
+  overflow: hidden;
+  position: relative;
+}
+
+.overflow-fix * {
+  overflow: hidden;
+}
+
+/* Final safety net */
+.final-safety-net {
+  position: relative;
+  z-index: 999;
+  overflow: hidden;
+}
+
+.final-safety-net .lead-row {
+  position: relative !important;
+  height: 140px !important;
+  min-height: 140px !important;
+  max-height: 140px !important;
+  overflow: hidden !important;
+}

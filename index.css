@@ -4,9 +4,25 @@
 
 :root {
   --color-primary: #f97316;
-  --color-secondary: #f8fafc;
+  --color-secondary: #0f172a;
   --color-accent: #fb923c;
-  --color-background: #f1f5f9;
+  --color-background: #020617;
+  --color-surface: #0f172a;
+  --color-sidebar: #0f172a;
+  --color-text: #f1f5f9;
+  --color-text-muted: #94a3b8;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(15, 23, 42, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Mantido para compatibilidade futura */
+.light {
+  --color-primary: #f97316;
+  --color-secondary: #0f172a;
+  --color-accent: #fb923c;
+  --color-background: #f8fafc;
   --color-surface: #ffffff;
   --color-sidebar: #ffffff;
   --color-text: #0f172a;
@@ -14,19 +30,20 @@
   --color-border: rgba(0, 0, 0, 0.05);
   --glass-bg: rgba(255, 255, 255, 0.8);
   --glass-border: rgba(255, 255, 255, 0.2);
-  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .dark {
+  --color-primary: #f97316;
   --color-secondary: #0f172a;
+  --color-accent: #fb923c;
   --color-background: #020617;
   --color-surface: #0f172a;
-  --color-sidebar: #020617;
+  --color-sidebar: #0f172a;
   --color-text: #f1f5f9;
   --color-text-muted: #94a3b8;
-  --color-border: rgba(255, 255, 255, 0.05);
-  --glass-bg: rgba(15, 23, 42, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --color-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(15, 23, 42, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
 }
 
 * {

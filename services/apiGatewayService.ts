@@ -1,5 +1,6 @@
 import { BrandingConfig } from '../types/branding';
 import { supabase } from '../lib/supabase';
+import { IntelligentCacheService } from './intelligentCacheService';
 
 interface RequestOptions {
     useCache?: boolean;
@@ -9,7 +10,8 @@ interface RequestOptions {
 }
 
 export class ApiGatewayService {
-    private static cache = new Map<string, { data: any, expiry: number }>();
+    // Mantido para compatibilidade, mas o cache inteligente será usado prioritariamente
+    private static legacyCache = new Map<string, { data: any, expiry: number }>();
     private static requestQueue: Array<() => Promise<any>> = [];
     private static isProcessingQueue = false;
 
@@ -25,10 +27,19 @@ export class ApiGatewayService {
         const { useCache = true, ttl = 3600, retries = 3, tenantId, apiKeys } = options;
         const cacheKey = `${apiName}:${endpoint}:${JSON.stringify(payload)}`;
 
+        // Usar cache inteligente prioritariamente
         if (useCache) {
-            const cached = this.cache.get(cacheKey);
-            if (cached && cached.expiry > Date.now()) {
-                return cached.data;
+            const cached = await IntelligentCacheService.get<T>(cacheKey);
+            if (cached) {
+                console.log(`[API Gateway] Cache inteligente HIT para ${cacheKey}`);
+                return cached;
+            }
+
+            // Fallback para cache legado
+            const legacyCached = this.legacyCache.get(cacheKey);
+            if (legacyCached && legacyCached.expiry > Date.now()) {
+                console.log(`[API Gateway] Cache legado HIT para ${cacheKey}`);
+                return legacyCached.data;
             }
         }
 
@@ -57,7 +68,12 @@ export class ApiGatewayService {
         }, retries);
 
         if (useCache) {
-            this.cache.set(cacheKey, {
+            // Armazenar no cache inteligente
+            const sourceConfidence = this.getSourceConfidence(apiName);
+            await IntelligentCacheService.set(cacheKey, result, apiName, sourceConfidence);
+            
+            // Manter cache legado para compatibilidade
+            this.legacyCache.set(cacheKey, {
                 data: result,
                 expiry: Date.now() + (ttl * 1000)
             });
@@ -268,5 +284,23 @@ export class ApiGatewayService {
         } catch (err) {
             // Silenciar erros de log para não poluir o console principal
         }
+    }
+
+    /**
+     * Obtém confiança da fonte para o cache inteligente
+     */
+    private static getSourceConfidence(apiName: string): number {
+        const confidences = {
+            'maps': 0.8,
+            'google-search': 0.7,
+            'gemini': 0.6,
+            'gemini-1.5-flash': 0.6,
+            'hunter': 0.85,
+            'brasilapi': 0.95,
+            'receitaws': 0.9,
+            'cnpja': 0.88
+        };
+
+        return confidences[apiName] || 0.5;
     }
 }

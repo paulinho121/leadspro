@@ -4,12 +4,16 @@ import { ApiGatewayService } from './apiGatewayService';
 import { DiscoveryService } from './discoveryService';
 import { Lead } from '../types';
 import { BillingService } from './billingService';
+import { DataValidationService } from './dataValidationService';
+import { AdvancedEnrichmentService } from './advancedEnrichmentService';
+import { EnhancedDataService } from './enhancedDataService';
+import { DuplicateDetectionService } from './duplicateDetectionService';
 
 export class EnrichmentService {
     /**
-     * Enriquece um lead individualmente buscando dados em múltiplas fontes
+     * Enriquece um lead individualmente buscando dados em múltiplas fontes (Versão Avançada)
      */
-    static async enrichLead(lead: Lead, apiKeys?: any, tenantId?: string): Promise<{ insights: string, details: any, socialData: any, realEmail?: string }> {
+    static async enrichLead(lead: Lead, apiKeys?: any, tenantId?: string): Promise<{ insights: string, details: any, socialData: any, realEmail?: string, qualityScore?: number, duplicates?: any }> {
         console.log(`[Neural Enrichment] Processing: ${lead.name}`);
 
         // Enterprise Scaling: Validação de Créditos
@@ -23,86 +27,144 @@ export class EnrichmentService {
             if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");
         }
 
-        // 1. Dados Governamentais (Se houver CNPJ)
-        let officialData: any = {};
-        if (lead.socialLinks?.cnpj && lead.socialLinks.cnpj !== 'VERIFICAR') {
-            officialData = await DiscoveryService.fetchRealCNPJData(lead.socialLinks.cnpj) || {};
-        }
-
-        // 2. Presença Digital (Busca Real Google)
-        const socialData = await this.discoverSocialPresence(lead, apiKeys);
-
-        // 2.1. Foto do Local (Fachada)
-        let placeImage = lead.details?.placeImage;
-        if (!placeImage) {
-            placeImage = await this.discoverPlaceImage(lead, apiKeys);
-        }
-
-        // 3. Análise Neural via Gemini (Análise Comercial Completa)
-        let insights = '';
-        let aiScore = 50;
-        let diagnostic: any = {};
-
         try {
-            // Chamada Real para Análise Comercial Consolidada
-            diagnostic = await ApiGatewayService.callApi<any>(
-                'gemini-1.5-flash',
-                'analyze-commercial',
-                {
-                    leadName: lead.name,
-                    industry: lead.industry,
-                    location: lead.location,
-                    website: lead.website || socialData.website,
-                    instagram: socialData.instagram,
-                    facebook: socialData.facebook,
-                    phone: lead.phone,
-                    mapSnippet: lead.socialLinks?.map_link || '',
-                    partnersFromQsa: officialData.qsa || [] // INJEÇÃO CRÍTICA: IA agora sabe quem procurar
-                },
-                { apiKeys, ttl: 86400 }
-            );
+            // 1. Enriquecimento Avançado com Machine Learning
+            const advancedResult = await AdvancedEnrichmentService.advancedEnrichLead(lead, apiKeys, tenantId);
+            
+            // 2. Enriquecimento Complementar com Novas Fontes
+            const enhancedData = await EnhancedDataService.comprehensiveEnrichment(lead, apiKeys);
+            
+            // 3. Detecção de Duplicatas
+            const duplicates = tenantId ? 
+                await DuplicateDetectionService.detectDuplicatesForNewLead(lead, tenantId) : 
+                [];
 
-            insights = diagnostic.strategic_insight || '';
-            aiScore = (diagnostic.commercial_score || 5) * 10; // Normalizar para escala 1-100
+            // 4. Dados Governamentais (Se houver CNPJ)
+            let officialData: any = {};
+            if (lead.socialLinks?.cnpj && lead.socialLinks.cnpj !== 'VERIFICAR') {
+                officialData = await DiscoveryService.fetchRealCNPJData(lead.socialLinks.cnpj) || {};
+            }
+
+            // 5. Presença Digital (Busca Real Google)
+            const socialData = await this.discoverSocialPresence(lead, apiKeys);
+
+            // 5.1. Foto do Local (Fachada)
+            let placeImage = lead.details?.placeImage;
+            if (!placeImage) {
+                placeImage = await this.discoverPlaceImage(lead, apiKeys);
+            }
+
+            // 6. Análise Neural via Gemini (Análise Comercial Completa)
+            let insights = '';
+            let aiScore = 50;
+            let diagnostic: any = {};
+
+            try {
+                // Chamada Real para Análise Comercial Consolidada
+                diagnostic = await ApiGatewayService.callApi<any>(
+                    'gemini-1.5-flash',
+                    'analyze-commercial',
+                    {
+                        leadName: lead.name,
+                        industry: lead.industry,
+                        location: lead.location,
+                        website: lead.website || socialData.website,
+                        instagram: socialData.instagram,
+                        facebook: socialData.facebook,
+                        phone: lead.phone,
+                        mapSnippet: lead.socialLinks?.map_link || '',
+                        partnersFromQsa: officialData.qsa || [], // INJEÇÃO CRÍTICA: IA agora sabe quem procurar
+                        enhancedData: enhancedData // Dados avançados para a IA
+                    },
+                    { apiKeys, ttl: 86400 }
+                );
+
+                insights = diagnostic.strategic_insight || '';
+                aiScore = (diagnostic.commercial_score || 5) * 10; // Normalizar para escala 1-100
+
+            } catch (error) {
+                console.warn('[Enrichment] IA indisponível, usando fallback local.', error);
+                insights = `A empresa ${lead.name} aparenta ter presença ativa em ${lead.location}. Recomendamos abordagem direta.`;
+                aiScore = 75;
+            }
+
+            // 7. Merge de todos os dados enriquecidos
+            const enrichedDetails = {
+                ...lead.details,
+                ...officialData,
+                ...socialData,
+                ...diagnostic, // WhatsApp, Ads, Instagram status, maturidade, p2c_score, partners, employees_est
+                ...enhancedData, // Dados financeiros, tecnológicos, de mercado
+                ...advancedResult.lead.details, // Dados do enriquecimento avançado
+                ai_score: aiScore,
+                p2c_score: diagnostic.p2c_score || (aiScore / 100),
+                activity: officialData.activity || lead.industry,
+                tradeName: officialData.tradeName || lead.name,
+                foundedDate: officialData.foundedDate || 'Não identificado',
+                size: officialData.size || officialData.porte || 'Pequeno Porte',
+                partners: diagnostic.partners || officialData.qsa || [],
+                employee_count: diagnostic.employees_est || 'Sob consulta',
+                real_email: socialData.realEmail,
+                placeImage: placeImage,
+                primaryPhone: socialData.primaryPhone || lead.phone,
+                quality_score: advancedResult.qualityScore,
+                duplicate_risk: advancedResult.duplicateRisk,
+                enrichment_version: '2.0',
+                enrichment_timestamp: new Date().toISOString()
+            };
+
+            // Atualizar link de WhatsApp se um novo telefone foi descoberto
+            const finalWhatsapp = socialData.primaryPhone
+                ? `https://wa.me/${socialData.primaryPhone.replace(/\D/g, '')}`
+                : lead.socialLinks?.whatsapp;
+
+            return {
+                insights,
+                details: enrichedDetails,
+                socialData: {
+                    ...socialData,
+                    whatsapp: finalWhatsapp
+                },
+                realEmail: socialData.realEmail,
+                qualityScore: advancedResult.qualityScore,
+                duplicates: duplicates.length > 0 ? duplicates : undefined
+            };
 
         } catch (error) {
-            console.warn('[Enrichment] IA indisponível, usando fallback local.', error);
-            insights = `A empresa ${lead.name} aparenta ter presença ativa em ${lead.location}. Recomendamos abordagem direta.`;
-            aiScore = 75;
+            console.error('[Enrichment] Erro no enriquecimento avançado:', error);
+            throw error;
         }
+    }
 
-        const enrichedDetails = {
-            ...lead.details,
-            ...officialData,
-            ...socialData,
-            ...diagnostic, // WhatsApp, Ads, Instagram status, maturidade, p2c_score, partners, employees_est
-            ai_score: aiScore,
-            p2c_score: diagnostic.p2c_score || (aiScore / 100),
-            activity: officialData.activity || lead.industry,
-            tradeName: officialData.tradeName || lead.name,
-            foundedDate: officialData.foundedDate || 'Não identificado',
-            size: officialData.size || officialData.porte || 'Pequeno Porte',
-            partners: diagnostic.partners || officialData.qsa || [],
-            employee_count: diagnostic.employees_est || 'Sob consulta',
-            real_email: socialData.realEmail,
-            placeImage: placeImage,
-            primaryPhone: socialData.primaryPhone || lead.phone
-        };
+    /**
+     * Enriquecimento em lote com otimização (Versão Avançada)
+     */
+    static async batchEnrichLeads(leads: Lead[], apiKeys?: any, tenantId?: string): Promise<any[]> {
+        console.log(`[Neural Enrichment] Batch processing ${leads.length} leads`);
 
-        // Atualizar link de WhatsApp se um novo telefone foi descoberto
-        const finalWhatsapp = socialData.primaryPhone
-            ? `https://wa.me/${socialData.primaryPhone.replace(/\D/g, '')}`
-            : lead.socialLinks?.whatsapp;
+        try {
+            // Usar o serviço avançado de batch
+            const advancedResults = await AdvancedEnrichmentService.batchEnrichLeads(leads, apiKeys, tenantId);
+            
+            // Enriquecer cada resultado com dados complementares
+            const enrichedResults = await Promise.all(
+                advancedResults.map(async (result) => {
+                    const enhancedData = await EnhancedDataService.comprehensiveEnrichment(result.lead, apiKeys);
+                    
+                    return {
+                        ...result,
+                        enhancedData,
+                        enrichment_version: '2.0'
+                    };
+                })
+            );
 
-        return {
-            insights,
-            details: enrichedDetails,
-            socialData: {
-                ...socialData,
-                whatsapp: finalWhatsapp
-            },
-            realEmail: socialData.realEmail
-        };
+            return enrichedResults;
+
+        } catch (error) {
+            console.error('[Nerichment] Erro no batch enrichment:', error);
+            throw error;
+        }
     }
 
     private static async discoverSocialPresence(lead: Lead, apiKeys?: any) {

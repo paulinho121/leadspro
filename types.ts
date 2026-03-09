@@ -35,6 +35,20 @@ export interface CompanyDetails {
   partners?: string[];
   partners_contacts?: string[];
   realPhones?: string[];
+  validation_confidence?: number;
+  is_whatsapp?: boolean;
+  has_mx_record?: boolean;
+  is_professional?: boolean;
+  hunter_verified?: boolean;
+  ml_insights?: any[];
+  enrichment_timestamp?: string;
+  phone_confidence?: number;
+  email_confidence?: number;
+  alternative_phones?: string[];
+  alternative_emails?: string[];
+  website_quality?: number;
+  social_media_count?: number;
+  digital_maturity?: string;
 }
 
 export interface Lead {

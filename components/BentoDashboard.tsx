@@ -210,7 +210,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
           <h3 className="text-base md:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Brain className="text-primary" size={20} /> Neural Signals
           </h3>
-          <span className="text-[10px] bg-slate-900/5 dark:bg-white/5 px-3 py-1.5 rounded-full text-slate-500 dark:text-slate-400 font-mono uppercase tracking-widest border border-slate-900/5 dark:border-white/5">
+          <span className="text-[10px] bg-surface/50 dark:bg-surface/50 px-3 py-1.5 rounded-full text-slate-500 dark:text-slate-400 font-mono uppercase tracking-widest border border-slate-200 dark:border-white/10">
             Auto-Scan
           </span>
         </div>
@@ -284,7 +284,7 @@ const BentoDashboard: React.FC<BentoDashboardProps> = ({ leads, onEnrich, onNavi
 const StatBox = ({ label, value, color, icon }: { label: string, value: string, color: string, icon: React.ReactNode }) => (
   <div className="flex items-center gap-5 group/stat">
     <div
-      className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-slate-900/5 dark:bg-white/5 flex items-center justify-center transition-all group-hover/stat:bg-slate-900/10 dark:group-hover/stat:bg-white/10 group-hover/stat:scale-105 shrink-0`}
+      className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-surface/50 dark:bg-surface/50 flex items-center justify-center transition-all group-hover/stat:bg-surface/70 dark:group-hover/stat:bg-surface/70 group-hover/stat:scale-105 shrink-0`}
       style={{ color: color === 'primary' ? 'var(--color-primary)' : color }}
     >
       {icon}
@@ -300,7 +300,7 @@ const StatBox = ({ label, value, color, icon }: { label: string, value: string, 
 );
 
 const InsightLog = ({ status, msg, time, type = 'normal', color = 'primary' }: { status: string, msg: string, time: string, type?: 'normal' | 'alert', color?: string }) => (
-  <div className="p-4 rounded-2xl bg-slate-900/[0.03] dark:bg-white/[0.03] border border-slate-900/5 dark:border-white/5 flex items-center gap-4 hover:bg-slate-900/[0.06] dark:hover:bg-white/[0.06] transition-all group cursor-default">
+  <div className="p-4 rounded-2xl bg-surface/50 dark:bg-surface/50 border border-slate-200 dark:border-white/10 flex items-center gap-4 hover:bg-surface/70 dark:hover:bg-surface/70 transition-all group cursor-default">
     <div
       className={`w-2 h-2 rounded-full ${type === 'alert' ? 'bg-red-500 animate-pulse ring-4 ring-red-500/20' : ''} `}
       style={{ backgroundColor: (type !== 'alert') ? (color === 'primary' ? 'var(--color-primary)' : color) : undefined }}

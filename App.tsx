@@ -9,7 +9,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import TermsModal from './components/TermsModal';
 import LeadDiscovery from './components/LeadDiscovery';
 import BentoDashboard from './components/BentoDashboard';
-import LeadLab from './components/LeadLab';
+import { OptimizedLeadLab } from './components/OptimizedLeadLab';
 import EnrichedLeadsView from './components/EnrichedLeadsView';
 import EnrichmentModal from './components/EnrichmentModal';
 import LoginPage from './components/LoginPage';
@@ -51,6 +51,7 @@ const LeadAdminView = lazyWithRetry(() => import('./components/LeadAdminView'));
 import { ToastContainer, registerToastFn, toast } from './components/Toast';
 import { DiscoveryService } from './services/discoveryService';
 import { ThemeToggle } from './components/ThemeToggle';
+import { useTheme } from './components/ThemeProvider';
 import { CommunicationService } from './services/communicationService';
 import { EnrichmentService } from './services/enrichmentService';
 import { SecretService, TenantSecrets } from './services/secretService';
@@ -66,9 +67,11 @@ import { useLeads, LEADS_PAGE_SIZE } from './hooks/useLeads';
 import { useWallet } from './hooks/useWallet';
 import { useBranding } from './components/BrandingProvider';
 import { supabase } from './lib/supabase';
+import './components/optimized-lab.css';
 
 const App: React.FC = () => {
   const { config, isLoading: brandingLoading } = useBranding();
+  const { theme } = useTheme();
 
   // Zustand Store
   const {
@@ -628,7 +631,7 @@ const App: React.FC = () => {
           userTenantId={userTenantId}
         />;
       case 'lab':
-        return <LeadLab
+        return <OptimizedLeadLab
           leads={filteredLeads}
           onEnrich={(lead) => handleBulkEnrich([lead])}
           onBulkEnrich={handleBulkEnrich}
@@ -730,7 +733,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-background text-slate-900 dark:text-slate-200 flex font-sans selection:bg-primary/30 selection:text-primary overflow-hidden relative">
+    <div className={`h-screen bg-background text-slate-900 dark:text-slate-200 flex font-sans selection:bg-primary/30 selection:text-primary overflow-hidden relative ${theme}`}>
       <SecurityGuard />
       {/* Sidebar Mobile Overlay - Only show when sidebar IS open on mobile */}
       {isSidebarOpen && (
@@ -741,7 +744,7 @@ const App: React.FC = () => {
       )}
 
       {/* Sidebar */}
-      <aside className={`glass border-r border-slate-200 dark:border-white/5 transition-all duration-500 ease-in-out z-[100] flex flex-col 
+      <aside className={`glass border-r border-slate-200 dark:border-white/10 transition-all duration-500 ease-in-out z-[100] flex flex-col 
         fixed md:relative inset-y-0 left-0 
         ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0 w-72 md:w-20'}`}>
 
@@ -769,8 +772,8 @@ const App: React.FC = () => {
 
 
           <div className="pt-8 pb-4">
-            {isSidebarOpen && <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Sistemas</p>}
-            <div className="h-px bg-slate-200 dark:bg-white/5 mx-4 mb-4"></div>
+            {isSidebarOpen && <p className="px-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-4">Sistemas</p>}
+            <div className="h-px bg-slate-200 dark:bg-white/10 mx-4 mb-4"></div>
           </div>
 
           <NavItem icon={<ShieldCheck size={20} />} label={I18nService.t('Branding')} active={activeTab === 'partner'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
@@ -897,7 +900,7 @@ const App: React.FC = () => {
       </aside>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-slate-900/90 backdrop-blur-2xl border-t border-white/5 flex items-center justify-around z-50 md:hidden pb-safe px-4">
+      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-surface/90 backdrop-blur-2xl border-t border-white/10 flex items-center justify-around z-50 md:hidden pb-safe px-4">
         <MobileNavItem icon={<LayoutDashboard size={22} />} label="Home" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setSidebarOpen(false); }} />
         <MobileNavItem icon={<Search size={22} />} label="Busca" active={activeTab === 'discovery'} onClick={() => { setActiveTab('discovery'); setSidebarOpen(false); }} />
         <MobileNavItem icon={<Database size={22} />} label="Lab" active={activeTab === 'lab'} onClick={() => { setActiveTab('lab'); setSidebarOpen(false); }} />
@@ -912,11 +915,11 @@ const App: React.FC = () => {
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] opacity-[0.07] pointer-events-none blur-[120px] rounded-full"
           style={{ background: `radial-gradient(circle, var(--color-primary) 0%, transparent 70%)` }}
         ></div>
-        <header className="h-16 md:h-24 border-b border-slate-200 dark:border-white/5 flex items-center justify-between px-4 md:px-10 relative z-40 backdrop-blur-xl shrink-0 bg-background/50">
+        <header className="h-16 md:h-24 border-b border-slate-200 dark:border-white/10 flex items-center justify-between px-4 md:px-10 relative z-40 backdrop-blur-xl shrink-0 bg-background/50">
           <div className="flex items-center gap-4 md:gap-6">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-3 bg-white/5 rounded-2xl md:hidden text-slate-300 active:scale-95 transition-all"
+              className="p-3 bg-surface/50 rounded-2xl md:hidden text-slate-600 dark:text-slate-300 active:scale-95 transition-all"
             >
               <Menu size={20} />
             </button>
@@ -989,7 +992,7 @@ const App: React.FC = () => {
               className={`flex-1 ${activeTab === 'lab' ? 'animate-page-enter' : 'hidden'}`}
               aria-hidden={activeTab !== 'lab'}
             >
-              <LeadLab
+              <OptimizedLeadLab
                 leads={filteredLeads}
                 onEnrich={setSelectedLead}
                 onBulkEnrich={handleBulkEnrich}
@@ -1176,7 +1179,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active, expanded, primar
     title={!expanded ? label : undefined}
     className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-500 relative group ${active
       ? 'bg-primary/10 text-primary'
-      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/5 dark:hover:bg-white/5'
+      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/5 dark:hover:bg-white/5'
       }`}
   >
     <div
