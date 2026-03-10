@@ -5,9 +5,11 @@ import {
     Shield, CheckCircle2, AlertCircle,
     Terminal, Globe, Key, Zap,
     Activity, Lock, Cpu, Server,
-    ChevronDown, Wifi, WifiOff, Loader2
+    ChevronDown, Wifi, WifiOff, Loader2, QrCode,
+    Smartphone as PhoneIcon, RefreshCw, ExternalLink
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { toast } from './Toast';
 
 interface CommunicationSettingsViewProps {
     tenantId: string;
@@ -28,6 +30,11 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
 
     const [selectedWaProvider, setSelectedWaProvider] = useState<WhatsAppProvider>('whatsapp_evolution');
 
+    // --- Estados para QR Code (Evolution API) ---
+    const [qrCode, setQrCode] = useState<string | null>(null);
+    const [waStatus, setWaStatus] = useState<'disconnected' | 'qr' | 'connecting' | 'connected'>('disconnected');
+    const [showQrModal, setShowQrModal] = useState(false);
+
     const [waSettings, setWaSettings] = useState({
         apiUrl: '',
         apiKey: '',
@@ -38,6 +45,15 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
     const [emailSettings, setEmailSettings] = useState({
         resendKey: '',
     });
+
+    const pollingRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    // Limpar polling ao desmontar
+    useEffect(() => {
+        return () => {
+            if (pollingRef.current) clearInterval(pollingRef.current);
+        };
+    }, []);
 
     useEffect(() => {
         const loadSettings = async () => {
@@ -180,6 +196,68 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
             setTestResultEmail({ ok: false, msg: `Erro arquitetural / rede: ${err?.message || err}` });
         } finally {
             setTestingEmail(false);
+        }
+    };
+
+    // --- Fluxo de QR Code REAL (Evolution API) ---
+    const handleGenerateQr = async () => {
+        if (!waSettings.apiUrl || !waSettings.apiKey || !waSettings.instanceName) {
+            setError('Preencha Endpoint, Chave e Instância para gerar o QR Code.');
+            return;
+        }
+
+        // Limpar polling anterior se existir
+        if (pollingRef.current) clearInterval(pollingRef.current);
+
+        setShowQrModal(true);
+        setWaStatus('connecting');
+        setQrCode(null);
+
+        try {
+            const baseUrl = waSettings.apiUrl.replace(/\/$/, '');
+            
+            // 1. Solicitar QR Code
+            const response = await fetch(`${baseUrl}/instance/connect/${waSettings.instanceName}`, {
+                method: 'GET',
+                headers: {
+                    'apikey': waSettings.apiKey,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.base64) {
+                setQrCode(data.base64); // Evolution retorna o base64 completo
+                setWaStatus('qr');
+                
+                // 2. Iniciar Polling para verificar conexão
+                pollingRef.current = setInterval(async () => {
+                    try {
+                        const statusRes = await fetch(`${baseUrl}/instance/connectionState/${waSettings.instanceName}`, {
+                            method: 'GET',
+                            headers: { 'apikey': waSettings.apiKey }
+                        });
+                        const statusData = await statusRes.json();
+                        
+                        // Evolution status: "open", "connecting", "close"
+                        if (statusData.instance?.state === 'open') {
+                            setWaStatus('connected');
+                            if (pollingRef.current) clearInterval(pollingRef.current);
+                            toast.success('WhatsApp Conectado!', 'Seu dispositivo foi pareado com sucesso.');
+                        }
+                    } catch (e) {
+                        console.error('Erro no polling de conexão:', e);
+                    }
+                }, 3000);
+            } else {
+                throw new Error(data.message || 'Não foi possível gerar o código. Verifique se a instância existe.');
+            }
+
+        } catch (err: any) {
+            setWaStatus('disconnected');
+            setShowQrModal(false);
+            setError(`Erro Real: ${err.message || 'Verifique se o seu servidor Evolution permite CORS ou se a instância está criada.'}`);
         }
     };
 
@@ -346,7 +424,16 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                     </div>
 
                     {/* Botão Testar Conexão WhatsApp */}
-                    <div className="mt-8 pt-6 border-t border-white/5">
+                    <div className="mt-8 pt-6 border-t border-white/5 space-y-3">
+                        {selectedWaProvider === 'whatsapp_evolution' && (
+                            <button
+                                onClick={handleGenerateQr}
+                                className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all bg-primary text-slate-900 shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 italic"
+                            >
+                                <QrCode size={16} /> Conectar via QR Code
+                            </button>
+                        )}
+
                         <button
                             id="btn-test-wa-connection"
                             onClick={handleTestWaConnection}
@@ -356,9 +443,10 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                             {testingWa ? (
                                 <><Loader2 size={14} className="animate-spin" /> Testando conexão...</>
                             ) : (
-                                <><Wifi size={14} /> Testar Conexão da API</>
+                                <><Wifi size={14} /> Testar Saúde da API</>
                             )}
                         </button>
+
                         {testResultWa && (
                             <div className={`mt-3 flex items-start gap-3 px-5 py-3.5 rounded-2xl border text-[10px] font-bold leading-relaxed ${testResultWa.ok
                                 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
@@ -473,6 +561,64 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                     </div>
                 )}
             </div>
+            {/* QR Code Modal Integration */}
+            {showQrModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
+                    <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setShowQrModal(false)}></div>
+                    <div className="glass-strong border border-white/10 rounded-[3rem] p-10 max-w-md w-full relative z-[210] shadow-[0_30px_100px_rgba(0,0,0,0.8)] overflow-hidden">
+                        
+                        <div className="absolute top-0 left-0 w-full h-1.5 bg-primary animate-pulse"></div>
+
+                        <div className="flex flex-col items-center text-center space-y-8">
+                            <div className="flex flex-col items-center">
+                                <div className="w-16 h-16 bg-primary/10 rounded-[1.5rem] flex items-center justify-center border border-primary/20 mb-4 shadow-xl">
+                                    <QrCode className="text-primary" size={32} />
+                                </div>
+                                <h4 className="text-2xl font-black text-white tracking-tighter uppercase italic">Pareamento de Host</h4>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Escaneie para autorizar a centrifugação</p>
+                            </div>
+
+                            <div className="relative group">
+                                <div className={`p-4 bg-white rounded-[2rem] transition-all duration-700 ${waStatus === 'connected' ? 'blur-md opacity-20' : ''}`}>
+                                    {qrCode ? (
+                                        <img src={qrCode} alt="WhatsApp QR Code" className="w-56 h-56 rounded-xl" />
+                                    ) : (
+                                        <div className="w-56 h-56 flex flex-col items-center justify-center bg-slate-100 rounded-xl">
+                                            <Loader2 size={40} className="text-primary animate-spin mb-4" />
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-8 text-center leading-relaxed">Gerando Token de Acesso Seguro...</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {waStatus === 'connected' && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center animate-in zoom-in-50 duration-500">
+                                        <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center shadow-2xl shadow-emerald-500/50">
+                                            <CheckCircle2 className="text-slate-900" size={40} strokeWidth={3} />
+                                        </div>
+                                        <p className="mt-6 text-emerald-400 font-black text-sm uppercase tracking-[0.2em] italic">Dispositivo Conectado</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="w-full space-y-4 pt-4">
+                                <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <div className={`w-3 h-3 rounded-full ${waStatus === 'connected' ? 'bg-emerald-500' : 'bg-primary animate-pulse'}`}></div>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                        Status: {waStatus === 'connected' ? 'Sincronizado' : (waStatus === 'qr' ? 'Aguardando Leitura...' : 'Iniciando Handshake...')}
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={() => setShowQrModal(false)}
+                                    className="w-full py-5 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] border border-white/5 transition-all active:scale-95 italic"
+                                >
+                                    {waStatus === 'connected' ? 'Fechar e Continuar' : 'Cancelar Pareamento'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

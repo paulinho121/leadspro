@@ -288,25 +288,35 @@ export const OptimizedLeadLab: React.FC<OptimizedLeadLabProps> = ({
             totalCount={leads.length}
           />
 
-          {/* Quick Filters */}
-          <QuickFilters
-            filters={[
-              ...filterOptions.niches,
-              ...filterOptions.locations
-            ]}
-            onToggle={(key) => {
-              // Toggle logic for quick filters
-              const niche = filterOptions.niches.find(n => n.key === key);
-              if (niche) {
-                setSelectedNiche(selectedNiche === key ? null : key);
-              } else {
-                const location = filterOptions.locations.find(l => l.key === key);
-                if (location) {
-                  setSelectedLocation(selectedLocation === key ? null : key);
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+            {/* Result Count (Professional View) */}
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary/5 border border-primary/10 shrink-0">
+              <span className="text-[10px] font-black text-primary uppercase tracking-widest">{filteredLeads.length}</span>
+              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">de</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{leads.length}</span>
+              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest ml-1">leads</span>
+            </div>
+
+            {/* Quick Filters */}
+            <QuickFilters
+              filters={[
+                ...filterOptions.niches,
+                ...filterOptions.locations
+              ]}
+              onToggle={(key) => {
+                // Toggle logic for quick filters
+                const niche = filterOptions.niches.find(n => n.key === key);
+                if (niche) {
+                  setSelectedNiche(selectedNiche === key ? null : key);
+                } else {
+                  const location = filterOptions.locations.find(l => l.key === key);
+                  if (location) {
+                    setSelectedLocation(selectedLocation === key ? null : key);
+                  }
                 }
-              }
-            }}
-          />
+              }}
+            />
+          </div>
         </div>
 
         {/* Quick Filter Bar (Desktop) */}
@@ -372,14 +382,6 @@ export const OptimizedLeadLab: React.FC<OptimizedLeadLabProps> = ({
             >
               Limpar Filtros
             </button>
-          </div>
-
-          {/* Results Summary */}
-          <div className="text-sm text-slate-400">
-            <span className="text-primary font-mono font-bold">{filteredLeads.length}</span>
-            <span className="mx-1">de</span>
-            <span className="font-mono">{leads.length}</span>
-            <span className="ml-1">leads</span>
           </div>
         </div>
 

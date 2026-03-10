@@ -1,5 +1,12 @@
 
 import { supabase } from '../lib/supabase';
+import { BillingService } from './billingService';
+
+const COSTS = {
+    WHATSAPP: 2,
+    EMAIL: 1,
+    AI_PREMIUM: 10
+};
 
 
 export class CampaignService {
@@ -46,6 +53,27 @@ export class CampaignService {
             if (!leads || leads.length === 0) {
                 await supabase.from('outreach_campaigns').update({ status: 'completed' }).eq('id', campaignId);
                 return { success: true, count: 0 };
+            }
+
+            // 3.1 MONETIZAÇÃO - Calcular Custo e Deduzir Saldo
+            const baseCost = campaign.channel === 'whatsapp' ? COSTS.WHATSAPP : COSTS.EMAIL;
+            const useAI = options?.useAI ?? campaign.use_ai_personalization ?? false;
+            const aiCost = useAI ? COSTS.AI_PREMIUM : 0;
+            const totalCost = leads.length * (baseCost + aiCost);
+
+            console.log(`[CampaignService] Custo total estimado: ${totalCost} créditos (${leads.length} leads)`);
+
+            const hasBalance = await BillingService.useCredits(
+                tenantId,
+                totalCost,
+                'outreach_campaign',
+                `Campanha "${campaign.name}" - ${leads.length} leads (${campaign.channel}${useAI ? ' + IA' : ''})`
+            );
+
+            if (!hasBalance) {
+                // Reverter status para draft se saldo falhou
+                await supabase.from('outreach_campaigns').update({ status: 'draft' }).eq('id', campaignId);
+                throw new Error(`Saldo insuficiente para iniciar campanha. Necessário: ${totalCost} créditos.`);
             }
 
             const queueItems: any[] = [];

@@ -115,19 +115,19 @@ export const OptimizedSearchBar: React.FC<OptimizedSearchBarProps> = ({
 
       {/* Barra de Resultados */}
       {(resultCount !== undefined || totalCount !== undefined) && (
-        <div className="absolute -bottom-6 left-0 right-0 flex items-center justify-between">
-          <div className="text-xs text-slate-500 font-medium">
+        <div className="absolute -bottom-7 left-1 right-0 flex items-center justify-between pointer-events-none">
+          <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.15em]">
             {resultCount !== undefined && totalCount !== undefined ? (
               <>
-                <span className="text-primary font-mono">{resultCount}</span>
-                <span className="mx-1">de</span>
-                <span className="text-slate-400 font-mono">{totalCount}</span>
-                <span className="ml-1">resultados</span>
+                <span className="text-primary">{resultCount}</span>
+                <span className="text-slate-600">de</span>
+                <span className="text-slate-400">{totalCount}</span>
+                <span className="text-slate-600 ml-0.5">resultados</span>
               </>
             ) : resultCount !== undefined ? (
               <>
-                <span className="text-primary font-mono">{resultCount}</span>
-                <span className="ml-1">resultados</span>
+                <span className="text-primary">{resultCount}</span>
+                <span className="text-slate-600 ml-0.5">resultados</span>
               </>
             ) : null}
           </div>
@@ -136,8 +136,8 @@ export const OptimizedSearchBar: React.FC<OptimizedSearchBarProps> = ({
 
       {/* Indicador de Foco */}
       {isFocused && (
-        <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-primary/20 to-orange-400/20 
-                        opacity-50 blur-sm pointer-events-none animate-pulse" />
+        <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-primary/20 via-orange-500/10 to-transparent 
+                        opacity-40 blur-md pointer-events-none animate-pulse" />
       )}
     </div>
   );
@@ -156,28 +156,35 @@ interface QuickFiltersProps {
 }
 
 export const QuickFilters: React.FC<QuickFiltersProps> = ({ filters, onToggle }) => {
+  // Helper to format labels
+  const formatLabel = (label: string) => {
+    if (!label) return '';
+    return label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
+  };
+
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+    <div className="flex items-center gap-2.5 overflow-x-auto pb-4 pt-1 scrollbar-hide no-scrollbar -mx-2 px-2 mask-fade-right">
       {filters.map((filter) => (
         <button
           key={filter.key}
           onClick={() => onToggle(filter.key)}
           className={`
-            flex items-center gap-2 px-3 py-1.5 rounded-lg border
-            transition-all duration-200 text-xs font-medium
-            whitespace-nowrap active:scale-95
+            group flex items-center gap-3 px-4 py-2 rounded-2xl border
+            transition-all duration-300 text-xs font-bold
+            whitespace-nowrap active:scale-95 shadow-sm
             ${filter.active
-              ? `bg-primary/20 text-primary border-primary/30 ${filter.color || ''}`
-              : 'bg-slate-700/30 text-slate-400 border-slate-600/30 hover:bg-slate-700/50 hover:text-slate-300'
+              ? `bg-primary/10 text-primary border-primary/30 shadow-primary/5`
+              : 'bg-white/[0.03] text-slate-400 border-white/5 hover:bg-white/[0.07] hover:text-slate-200 hover:border-white/10'
             }
           `}
         >
-          <span>{filter.label}</span>
+          <span className="tracking-tight">{formatLabel(filter.label)}</span>
           <span className={`
-            px-1.5 py-0.5 rounded text-xs font-mono
+            flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-lg text-[9px] font-black font-mono
+            transition-all duration-300
             ${filter.active 
-              ? 'bg-primary/30 text-primary' 
-              : 'bg-slate-600/30 text-slate-500'
+              ? 'bg-primary text-slate-900 shadow-[0_0_10px_rgba(249,115,22,0.4)]' 
+              : 'bg-white/10 text-slate-500 group-hover:bg-white/20 group-hover:text-slate-400'
             }
           `}>
             {filter.count}

@@ -10,6 +10,7 @@ interface AppState {
 
     // Account State
     userTenantId: string;
+    tenantPlan: 'free' | 'pro' | 'enterprise';
     creditBalance: number;
 
     // Toast System
@@ -22,6 +23,7 @@ interface AppState {
     toggleSidebar: () => void;
     setSidebarOpen: (open: boolean) => void;
     setUserTenantId: (id: string) => void;
+    setTenantPlan: (plan: AppState['tenantPlan']) => void;
     setCreditBalance: (balance: number) => void;
     consumeCredits: (amount: number) => void;
 }
@@ -32,6 +34,7 @@ export const useStore = create<AppState>()(
             activeTab: 'dashboard',
             isSidebarOpen: true,
             userTenantId: '',
+            tenantPlan: 'pro',
             creditBalance: 0,
             toasts: [],
 
@@ -52,6 +55,7 @@ export const useStore = create<AppState>()(
             toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
             setSidebarOpen: (open) => set({ isSidebarOpen: open }),
             setUserTenantId: (id) => set({ userTenantId: id }),
+            setTenantPlan: (plan) => set({ tenantPlan: plan }),
             setCreditBalance: (balance) => set({ creditBalance: balance }),
             consumeCredits: (amount) =>
                 set((state) => ({ creditBalance: Math.max(0, state.creditBalance - amount) })),

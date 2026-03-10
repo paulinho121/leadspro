@@ -16,7 +16,7 @@ import { PRICING_PLANS } from '../constants/billing';
 import { StripeService } from '../services/stripeService';
 import { ExportService } from '../services/exportService';
 
-const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
+const BillingView: React.FC<{ tenantId: string; tenantPlan?: string }> = ({ tenantId, tenantPlan = 'free' }) => {
     const [balance, setBalance] = useState<number>(0);
     const [transactions, setTransactions] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -207,7 +207,9 @@ const BillingView: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                     <div className="mt-8 pt-8 border-t border-white/5 relative z-10">
                         <div className="flex items-center justify-between mb-4">
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Plano Atual</span>
-                            <span className="text-[10px] font-black text-primary uppercase bg-primary/10 px-2 py-0.5 rounded-md tracking-widest">Enterprise WL</span>
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md tracking-widest ${tenantPlan === 'free' ? 'bg-slate-800 text-slate-400' : 'bg-primary/10 text-primary'}`}>
+                                {tenantPlan === 'enterprise' ? 'Infinity Enterprise' : tenantPlan === 'pro' ? 'Expert Pro' : 'Starter Free'}
+                            </span>
                         </div>
                         <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
                             <div className="h-full bg-primary" style={{ width: '85%' }}></div>

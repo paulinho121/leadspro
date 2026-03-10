@@ -516,6 +516,16 @@ input:-webkit-autofill:active {
   line-clamp: 2;
 }
 
+.mask-fade-right {
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
+
+.mask-fade-both {
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}
+
 /* Responsive fluid typography */
 @media (max-width: 480px) {
   .fluid-title {

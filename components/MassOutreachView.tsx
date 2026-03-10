@@ -9,7 +9,7 @@ import {
     ShieldCheck, BarChart3, Fingerprint,
     MessageCircle, Globe, Terminal,
     Sparkles, Activity, Mail, Edit2, Trash2, MoreVertical,
-    Bot, RotateCcw, Radio
+    Bot, RotateCcw, Radio, DollarSign
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { OutreachCampaign, Lead } from '../types';
@@ -17,9 +17,17 @@ import { CampaignService } from '../services/campaignService';
 
 interface MassOutreachViewProps {
     tenantId: string;
+    creditBalance?: number;
+    tenantPlan?: 'free' | 'pro' | 'enterprise';
 }
 
-const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
+const COSTS = {
+    WHATSAPP: 2,
+    EMAIL: 1,
+    AI_PREMIUM: 10
+};
+
+const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId, creditBalance, tenantPlan = 'pro' }) => {
     const [campaigns, setCampaigns] = useState<OutreachCampaign[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -157,6 +165,13 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
     }, [tenantId]);
     // ─────────────────────────────────────────────────────────────────────────
 
+    const estimatedCost = React.useMemo(() => {
+        if (!leadCount) return 0;
+        const baseCost = newCampaign.channel === 'whatsapp' ? COSTS.WHATSAPP : COSTS.EMAIL;
+        const aiCost = newCampaign.use_ai_personalization ? COSTS.AI_PREMIUM : 0;
+        return leadCount * (baseCost + aiCost);
+    }, [leadCount, newCampaign.channel, newCampaign.use_ai_personalization]);
+
     const handleSaveCampaign = async () => {
         setSaveError(null);
 
@@ -166,6 +181,17 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
         }
         if (!newCampaign.use_ai_personalization && !newCampaign.template_content.trim()) {
             setSaveError('Adicione o template da mensagem ou ative a Personalização com IA.');
+            return;
+        }
+
+        // ─── MONETIZATION CHECK ───
+        if (tenantPlan === 'free' && leadCount && leadCount > 50) {
+            setSaveError(`Limite de Plano: O Plano FREE permite apenas 50 leads por campanha. Sua seleção atual possui ${leadCount} leads. Faça o upgrade para PRO para disparos ilimitados.`);
+            return;
+        }
+
+        if (creditBalance !== undefined && estimatedCost > creditBalance) {
+            setSaveError(`Saldo insuficiente. Esta campanha requer aproximadamente ${estimatedCost.toLocaleString()} créditos, mas seu saldo atual é de ${creditBalance.toLocaleString()}.`);
             return;
         }
 
@@ -550,16 +576,27 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
 
                             {/* Toggle IA */}
                             {!editingCampaignId && (
-                                <div className="p-5 bg-primary/5 border border-primary/10 rounded-2xl flex items-center justify-between">
+                                <div className={`p-5 bg-primary/5 border border-primary/10 rounded-2xl flex items-center justify-between group/ia relative overflow-hidden ${tenantPlan === 'free' ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}>
                                     <div className="flex items-center gap-3">
                                         <Bot size={18} className="text-primary" />
                                         <div>
-                                            <p className="text-[10px] font-black text-white uppercase tracking-widest">Personalização com IA</p>
-                                            <p className="text-[8px] text-slate-500">Cada lead recebe uma mensagem única gerada pelo Gemini</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-[10px] font-black text-white uppercase tracking-widest">Personalização com IA (Gemini)</p>
+                                                {tenantPlan === 'free' && (
+                                                    <span className="px-2 py-0.5 bg-primary text-[7px] text-slate-950 font-black rounded-full shadow-lg">PRO</span>
+                                                )}
+                                            </div>
+                                            <p className="text-[8px] text-slate-500">Cada lead recebe uma mensagem única gerada pelo Neural Brain</p>
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() => setNewCampaign(prev => ({ ...prev, use_ai_personalization: !prev.use_ai_personalization }))}
+                                        onClick={() => {
+                                            if (tenantPlan === 'free') {
+                                                alert('A Personalização com IA é um recurso Premium. Faça o upgrade para o Plano PRO para liberar o Neural Brain.');
+                                                return;
+                                            }
+                                            setNewCampaign(prev => ({ ...prev, use_ai_personalization: !prev.use_ai_personalization }));
+                                        }}
                                         className={`relative w-12 h-6 rounded-full border transition-all duration-300 ${newCampaign.use_ai_personalization
                                             ? 'bg-primary/30 border-primary/50'
                                             : 'bg-slate-800 border-white/10'
@@ -598,6 +635,28 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId }) => {
                                     onChange={e => setNewCampaign({ ...newCampaign, template_content: e.target.value })}
                                 />
                             </div>
+
+                            {/* Detalhes de Faturamento da Campanha */}
+                            {!editingCampaignId && leadCount !== null && (
+                                <div className="p-8 bg-black/40 border border-primary/20 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 animate-in slide-in-from-bottom-4">
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 shadow-xl">
+                                            <DollarSign className="text-primary" size={24} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1.5">Investimento Estimado</p>
+                                            <h4 className="text-2xl font-black text-white italic leading-none">{estimatedCost.toLocaleString()} <span className="text-[10px] text-primary not-italic">CRÉDITOS</span></h4>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1">Volume de Leads</p>
+                                        <div className="flex items-center gap-2 justify-end">
+                                            <Users size={12} className="text-primary" />
+                                            <span className="text-sm font-black text-white">{leadCount}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Botões de ação — Área de erro e confirmação */}
                             {saveError && (

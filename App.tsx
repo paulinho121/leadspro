@@ -3,7 +3,7 @@ import {
   Bell, LayoutDashboard, Search, Database, Rocket, TrendingUp,
   Megaphone, ShieldCheck, Menu, X, LogOut, BrainCircuit, Activity,
   HelpCircle, AlertTriangle, ScrollText, Cpu, ChevronRight, BarChart3,
-  Send as SendIcon, CheckCircle, Info, DollarSign as MoneyIcon, Archive, LifeBuoy, MessageCircle
+  Send as SendIcon, CheckCircle, Info, DollarSign as MoneyIcon, Archive, LifeBuoy, MessageCircle, ArrowUpRight
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import TermsModal from './components/TermsModal';
@@ -50,7 +50,6 @@ const AutomationHealthDashboard = lazyWithRetry(() => import('./components/Autom
 const LeadAdminView = lazyWithRetry(() => import('./components/LeadAdminView'));
 import { ToastContainer, registerToastFn, toast } from './components/Toast';
 import { DiscoveryService } from './services/discoveryService';
-import { ThemeToggle } from './components/ThemeToggle';
 import { useTheme } from './components/ThemeProvider';
 import { CommunicationService } from './services/communicationService';
 import { EnrichmentService } from './services/enrichmentService';
@@ -78,6 +77,7 @@ const App: React.FC = () => {
     activeTab, setActiveTab,
     isSidebarOpen, setSidebarOpen,
     userTenantId, setUserTenantId,
+    tenantPlan, setTenantPlan,
     creditBalance,
     toasts, addToast, removeToast,
   } = useStore();
@@ -275,6 +275,20 @@ const App: React.FC = () => {
             if (profile.full_name) setUserName(profile.full_name);
             const tid = profile.tenant_id || '';
             setUserTenantId(tid);
+
+            // Buscar Plano do Tenant
+            if (tid) {
+              supabase
+                .from('tenants')
+                .select('plan')
+                .eq('id', tid)
+                .single()
+                .then(({ data: tenantData }) => {
+                  if (tenantData?.plan) {
+                    setTenantPlan(tenantData.plan as any);
+                  }
+                });
+            }
 
             // Verificação silenciosa de bônus inicial: só exibe mensagem em caso de sucesso
             supabase.rpc('claim_initial_credits').then(({ data, error }) => {
@@ -678,11 +692,11 @@ const App: React.FC = () => {
       case 'pipeline':
         return <Suspense fallback={<LazyFallback />}><PipelineView tenantId={userTenantId} userId={session?.user?.id} apiKeys={tenantSecrets} /></Suspense>;
       case 'automation':
-        return <Suspense fallback={<LazyFallback />}><AutomationView tenantId={userTenantId} apiKeys={tenantSecrets} /></Suspense>;
+        return <Suspense fallback={<LazyFallback />}><AutomationView tenantId={userTenantId} apiKeys={tenantSecrets} creditBalance={creditBalance} /></Suspense>;
       case 'monitor':
         return <Suspense fallback={<LazyFallback />}><AutomationHealthDashboard tenantId={userTenantId} isMaster={isMaster} /></Suspense>;
       case 'billing':
-        return <Suspense fallback={<LazyFallback />}><BillingView tenantId={userTenantId} /></Suspense>;
+        return <Suspense fallback={<LazyFallback />}><BillingView tenantId={userTenantId} tenantPlan={tenantPlan} /></Suspense>;
       default:
         return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab as any} />;
     }
@@ -786,7 +800,6 @@ const App: React.FC = () => {
           )}
 
           <div className="pt-2">
-            <ThemeToggle expanded={isSidebarOpen} />
             <NavItem icon={<LifeBuoy size={20} className="text-primary" />} label="Suporte" active={showSupport} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => setShowSupport(true)} />
           </div>
         </nav>
@@ -851,6 +864,35 @@ const App: React.FC = () => {
                   >
                     <LogOut size={14} /> Encerrar Conexão
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Plan Widget - Monetização */}
+          {isSidebarOpen && (
+            <div className="mx-4 mb-4 p-5 glass-strong border border-primary/20 rounded-[2rem] bg-gradient-to-br from-primary/5 to-transparent relative overflow-hidden group/plan">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 blur-2xl rounded-full -mr-10 -mt-10 group-hover/plan:bg-primary/20 transition-all duration-500"></div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Assinatura Atual</p>
+                  <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg ${tenantPlan === 'free' ? 'bg-slate-800 text-slate-400' : 'bg-primary text-slate-900 animate-pulse'}`}>
+                    {tenantPlan.toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex items-end justify-between gap-2">
+                  <div>
+                    <h4 className="text-sm font-black text-white italic leading-none mb-1">LeadMatrix {tenantPlan === 'enterprise' ? 'Infinity' : tenantPlan === 'pro' ? 'Expert' : 'Starter'}</h4>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{creditBalance.toLocaleString()} créditos</p>
+                  </div>
+                  {tenantPlan === 'free' && (
+                    <button
+                      onClick={() => setActiveTab('billing')}
+                      className="p-2 bg-primary text-slate-900 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                    >
+                      <ArrowUpRight size={14} strokeWidth={3} />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

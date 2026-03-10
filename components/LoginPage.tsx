@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useBranding } from './BrandingProvider';
-import { ThemeToggle } from './ThemeToggle';
 import { Lock, Mail, ChevronRight, Loader2, AlertCircle, ShieldCheck, TrendingUp, ShieldAlert, ScrollText, MessageCircle } from 'lucide-react';
 import TermsModal from './TermsModal';
 
@@ -161,9 +160,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, isRecoveringPassw
             <div className={`fixed top-0 left-0 w-full h-full opacity-20 bg-[radial-gradient(circle_at_50%_0%,var(--color-primary)_0%,transparent_70%)] animate-pulse-slow pointer-events-none`}></div>
 
             {/* Card */}
-            <div className="fixed top-6 right-6 z-50">
-                <ThemeToggle expanded={false} />
-            </div>
 
             <div className="w-full max-w-md p-8 rounded-[2.5rem] glass border border-white/10 relative z-10 shadow-2xl backdrop-blur-xl animate-fade-in-up mb-10">
                 <div className="text-center mb-12 flex flex-col items-center justify-center w-full">

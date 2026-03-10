@@ -12,9 +12,10 @@ import { AutomationRule } from '../types';
 
 interface AutomationRulesViewProps {
     tenantId: string;
+    tenantPlan?: 'free' | 'pro' | 'enterprise';
 }
 
-const AutomationRulesView: React.FC<AutomationRulesViewProps> = ({ tenantId }) => {
+const AutomationRulesView: React.FC<AutomationRulesViewProps> = ({ tenantId, tenantPlan = 'pro' }) => {
     const [rules, setRules] = useState<AutomationRule[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -57,6 +58,12 @@ const AutomationRulesView: React.FC<AutomationRulesViewProps> = ({ tenantId }) =
         }
         if (newRule.action_type === 'send_reply' && !newRule.action_payload?.template?.trim()) {
             setSaveError('Adicione o script da mensagem antes de ativar.');
+            return;
+        }
+
+        // ─── LIMIT CHECK ───
+        if (tenantPlan === 'free' && rules.filter(r => r.is_active).length >= 3) {
+            setSaveError('Limite Atingido: O Plano FREE permite apenas 3 Regras de Automação ativas. Faça o upgrade para PRO para liberar o Neural Brain ilimitado.');
             return;
         }
 

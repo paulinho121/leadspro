@@ -17,9 +17,11 @@ import VisualWorkflowBuilder from './VisualWorkflowBuilder';
 interface AutomationViewProps {
     tenantId: string;
     apiKeys?: any;
+    creditBalance?: number;
+    tenantPlan?: 'free' | 'pro' | 'enterprise';
 }
 
-const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys }) => {
+const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys, creditBalance, tenantPlan = 'pro' }) => {
     const { config } = useBranding();
     const [sequences, setSequences] = useState<OutreachSequence[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -52,6 +54,12 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys }) =>
 
     const handleCreateSequence = async () => {
         if (!newSequence.name) return;
+
+        // ─── LIMIT CHECK ───
+        if (tenantPlan === 'free' && sequences.length >= 1) {
+            alert('Limite Atingido: O Plano FREE permite apenas 1 Cadência ativa. Faça o upgrade para PRO para criar fluxos ilimitados.');
+            return;
+        }
 
         try {
             const { error } = await supabase
@@ -141,10 +149,19 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys }) =>
                         <Layout size={14} /> Cadências
                     </button>
                     <button
-                        onClick={() => setActiveTab('visual')}
-                        className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all italic ${activeTab === 'visual' ? 'bg-primary text-slate-900 shadow-xl shadow-primary/20 scale-[1.02]' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                        onClick={() => {
+                            if (tenantPlan === 'free') {
+                                alert('O Fluxo Visual é um recurso exclusivo do Plano PRO. Faça o upgrade para automatizar visualmente suas operações.');
+                                return;
+                            }
+                            setActiveTab('visual');
+                        }}
+                        className={`group relative flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all italic ${activeTab === 'visual' ? 'bg-primary text-slate-900 shadow-xl shadow-primary/20 scale-[1.02]' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
                     >
                         <Activity size={14} /> Fluxo Visual
+                        {tenantPlan === 'free' && (
+                            <span className="absolute -top-1 -right-1 px-2 py-0.5 bg-primary text-[8px] text-slate-950 font-black rounded-full shadow-lg group-hover:scale-110 transition-transform">PRO</span>
+                        )}
                     </button>
                     <button
                         onClick={() => setActiveTab('settings')}
@@ -157,8 +174,8 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys }) =>
             </div>
 
             <div className="mt-4 min-h-[600px]">
-                {activeTab === 'campaigns' && <MassOutreachView tenantId={tenantId} />}
-                {activeTab === 'rules' && <AutomationRulesView tenantId={tenantId} />}
+                {activeTab === 'campaigns' && <MassOutreachView tenantId={tenantId} creditBalance={creditBalance} tenantPlan={tenantPlan} />}
+                {activeTab === 'rules' && <AutomationRulesView tenantId={tenantId} tenantPlan={tenantPlan} />}
                 {activeTab === 'settings' && <CommunicationSettingsView tenantId={tenantId} />}
                 {activeTab === 'visual' && <VisualWorkflowBuilder tenantId={tenantId} />}
 
