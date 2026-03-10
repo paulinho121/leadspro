@@ -32,7 +32,7 @@ export class CommunicationService {
                     channel: 'whatsapp',
                     settings: {
                         provider_type: settings.provider_type,
-                        api_url: settings.api_url,
+                        api_url: settings.api_url ? settings.api_url.replace(/\/$/, '') : '',
                         api_key: settings.api_key,
                         instance_name: settings.instance_name,
                         client_token: settings.client_token

@@ -14,6 +14,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { OutreachCampaign, Lead } from '../types';
 import { CampaignService } from '../services/campaignService';
+import { CommunicationService } from '../services/communicationService';
 
 interface MassOutreachViewProps {
     tenantId: string;
@@ -163,6 +164,25 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId, creditBal
             setIsRealtimeConnected(false);
         };
     }, [tenantId]);
+    // 3. WORKER SIMULATOR: processa a fila enquanto o usuário estiver na tela
+    useEffect(() => {
+        if (!tenantId || !hasInfrastructure) return;
+
+        console.log('[Worker] Simulador de processamento iniciado...');
+        
+        const workerInterval = setInterval(async () => {
+            // Só processa se houver campanhas rodando
+            const hasRunning = campaigns.some(c => c.status === 'running');
+            if (hasRunning) {
+                await CommunicationService.processMessageQueue();
+            }
+        }, 15000); // Tenta processar lotes a cada 15 segundos
+
+        return () => {
+            console.log('[Worker] Simulador de processamento parado.');
+            clearInterval(workerInterval);
+        };
+    }, [tenantId, hasInfrastructure, campaigns]);
     // ─────────────────────────────────────────────────────────────────────────
 
     const estimatedCost = React.useMemo(() => {
