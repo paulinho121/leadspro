@@ -334,8 +334,7 @@ const PartnersInfo: React.FC<{ lead: Lead }> = ({ lead }) => {
 };
 
 // Componente de Ações Profissional
-const ProfessionalActions: React.FC<{ lead: Lead; actions: EnhancedProfessionalLeadRowProps }> = ({ lead, actions }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+const ProfessionalActions: React.FC<{ lead: Lead; actions: EnhancedProfessionalLeadRowProps; isDropdownOpen: boolean; setIsDropdownOpen: (open: boolean) => void }> = ({ lead, actions, isDropdownOpen, setIsDropdownOpen }) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handlePrimaryAction = async () => {
@@ -512,9 +511,10 @@ const ProfessionalActions: React.FC<{ lead: Lead; actions: EnhancedProfessionalL
 // Componente Principal (Layout 6-colunas para acomodar novas informações)
 export const EnhancedProfessionalLeadRow: React.FC<EnhancedProfessionalLeadRowProps> = (props) => {
   const { lead } = props;
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   return (
-    <div className="group hover:bg-slate-800/40 transition-all duration-300 border-b border-slate-700/30">
+    <div className={`group hover:bg-slate-800/40 transition-all duration-300 border-b border-slate-700/30 w-full ${isDropdownOpen ? 'z-[1000] relative' : 'z-1'}`}>
       <div className="grid grid-cols-12 gap-6 px-8 py-6 items-center min-h-[120px]">
         
         {/* Empresa - 4 colunas */}
@@ -547,7 +547,7 @@ export const EnhancedProfessionalLeadRow: React.FC<EnhancedProfessionalLeadRowPr
 
         {/* Ações - no final da linha */}
         <div className="col-span-12 flex justify-end mt-4">
-          <ProfessionalActions lead={lead} actions={props} />
+          <ProfessionalActions lead={lead} actions={props} isDropdownOpen={isDropdownOpen} setIsDropdownOpen={setIsDropdownOpen} />
         </div>
       </div>
     </div>

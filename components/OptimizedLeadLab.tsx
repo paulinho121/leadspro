@@ -134,7 +134,7 @@ export const OptimizedLeadLab: React.FC<OptimizedLeadLabProps> = ({
       .slice(0, 8)
       .map(location => ({
         key: location,
-        label: location.split(',')[0] || location,
+        label: ((location as string) || '').split(',')[0] || (location as string),
         count: leads.filter(l => l.location === location).length,
         active: selectedLocation === location
       }));
@@ -404,6 +404,7 @@ export const OptimizedLeadLab: React.FC<OptimizedLeadLabProps> = ({
                   return (
                     <div
                       key={lead.id}
+                      className="virtualization-row"
                       style={{
                         position: 'absolute',
                         top: 0,

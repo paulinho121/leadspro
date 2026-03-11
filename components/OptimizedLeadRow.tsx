@@ -3,6 +3,7 @@ import {
   MessageCircle, TrendingUp, Linkedin, Archive, Ban, Trash2,
   MoreHorizontal, CheckCircle, Clock, Loader2, Zap
 } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { Lead, LeadStatus } from '../types';
 import '../dropdown-fix.css';
 
@@ -73,8 +74,7 @@ const StatusIndicator: React.FC<{ status: LeadStatus; progress?: number }> = ({ 
   );
 };
 
-const ActionGroup: React.FC<{ lead: Lead; actions: OptimizedLeadRowProps }> = ({ lead, actions }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+const ActionGroup: React.FC<{ lead: Lead; actions: OptimizedLeadRowProps; isDropdownOpen: boolean; setIsDropdownOpen: (open: boolean) => void }> = ({ lead, actions, isDropdownOpen, setIsDropdownOpen }) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handlePrimaryAction = async () => {
@@ -136,27 +136,27 @@ const ActionGroup: React.FC<{ lead: Lead; actions: OptimizedLeadRowProps }> = ({
           <>
             <div 
               className="dropdown-overlay" 
-              onClick={() => setIsDropdownOpen(false)}
+              onClick={(e) => { e.stopPropagation(); setIsDropdownOpen(false); }}
             />
             <div className="dropdown-menu">
-              <div className="dropdown-header">
-                <h4 className="dropdown-title">Ações Rápidas</h4>
-                <p className="dropdown-subtitle">{lead.details?.tradeName || lead.name}</p>
-              </div>
-              <div className="dropdown-content p-2 space-y-1">
-                {/* WhatsApp */}
-                {lead.phone && (
-                  <button
-                    onClick={handleWhatsApp}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-emerald-500/10 hover:text-emerald-400 transition-all duration-200 text-slate-300"
-                  >
-                    <MessageCircle size={14} />
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">WhatsApp</div>
-                      <div className="text-xs text-slate-500">Enviar mensagem</div>
-                    </div>
-                  </button>
-                )}
+                <div className="dropdown-header">
+                  <h4 className="dropdown-title">Ações Rápidas</h4>
+                  <p className="dropdown-subtitle">{lead.details?.tradeName || lead.name}</p>
+                </div>
+                <div className="dropdown-content p-2 space-y-1">
+                  {/* WhatsApp */}
+                  {lead.phone && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleWhatsApp(); setIsDropdownOpen(false); }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-emerald-500/10 hover:text-emerald-400 transition-all duration-200 text-white font-bold"
+                    >
+                      <MessageCircle size={18} className="text-emerald-400" />
+                      <div className="flex-1">
+                        <div className="text-sm font-bold">WhatsApp</div>
+                        <div className="text-xs text-slate-400">Enviar mensagem</div>
+                      </div>
+                    </button>
+                  )}
 
                 {/* LinkedIn */}
                 {lead.socialLinks?.linkedin && (
@@ -239,8 +239,8 @@ const ActionGroup: React.FC<{ lead: Lead; actions: OptimizedLeadRowProps }> = ({
                     <div className="text-xs text-slate-500">Apagar permanentemente</div>
                   </div>
                 </button>
+                </div>
               </div>
-            </div>
           </>
         )}
       </div>
@@ -331,10 +331,13 @@ const TimestampInfo: React.FC<{ lead: Lead }> = ({ lead }) => {
 
 export const OptimizedLeadRow: React.FC<OptimizedLeadRowProps> = (props) => {
   const { lead } = props;
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   return (
-    <div className="group hover:bg-slate-800/30 transition-all duration-300 border-b border-slate-700/30">
-      <div className="grid grid-cols-12 gap-4 px-6 py-4 items-center">
+    <div 
+      className={`group hover:bg-slate-800/30 transition-all duration-300 border-b border-slate-700/30 w-full h-full ${isDropdownOpen ? 'z-[1000] relative' : 'z-1'}`}
+    >
+      <div className="grid grid-cols-12 gap-4 px-6 py-4 items-center h-full">
         {/* Empresa - 5 colunas */}
         <div className="col-span-5">
           <CompanyInfo lead={lead} />
@@ -352,7 +355,7 @@ export const OptimizedLeadRow: React.FC<OptimizedLeadRowProps> = (props) => {
 
         {/* Ações - 2 colunas */}
         <div className="col-span-2 flex justify-end">
-          <ActionGroup lead={lead} actions={props} />
+          <ActionGroup lead={lead} actions={props} isDropdownOpen={isDropdownOpen} setIsDropdownOpen={setIsDropdownOpen} />
         </div>
       </div>
     </div>

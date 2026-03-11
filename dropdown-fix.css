@@ -34,16 +34,22 @@
   margin-top: 0.75rem;
   min-width: 22rem;
   max-width: 22rem;
-  z-index: 100000;
-  background: #0f172a; /* Solid background to prevent bleeding */
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  z-index: 1000000 !important;
+  background: #0f172a !important; /* Fundo totalmente opaco */
+  border: 1px solid rgba(255, 255, 255, 0.3) !important; /* Bordas mais visíveis */
   border-radius: 1.25rem;
   box-shadow: 
-    0 25px 50px -12px rgba(0, 0, 0, 0.7),
-    0 0 15px rgba(249, 115, 22, 0.1); /* Subtle primary glow */
-  backdrop-filter: none; /* Disable blur to improve clarity on some systems */
+    0 30px 60px -12px rgba(0, 0, 0, 0.9),
+    0 0 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: none !important;
   overflow: visible;
   animation: dropdownSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Forçar o contêiner do lead a ficar por cima quando o dropdown estiver aberto */
+.virtualization-row:has(.dropdown-menu),
+.lead-row-active {
+  z-index: 50 !important;
 }
 
 /* Animação de entrada do dropdown */
@@ -142,53 +148,78 @@
 }
 
 .dropdown-item-label {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: #f8fafc;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 1rem !important; /* Texto um pouco maior */
+  font-weight: 800 !important; /* Negrito extra */
+  color: #ffffff !important; /* Branco puro */
+  margin-bottom: 2px;
 }
 
 .dropdown-item-description {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-top: 0.125rem;
+  font-size: 0.8rem !important;
+  color: #cbd5e1 !important; /* Cinza claro para melhor leitura */
+  opacity: 1 !important;
 }
 
-/* Cores específicas dos itens */
-.dropdown-item-icon.whatsapp {
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
+.dropdown-item-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.05); /* Fundo sutil para o ícone */
 }
 
-.dropdown-item-icon.linkedin {
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.1);
+.dropdown-item-icon svg {
+  width: 20px !important;
+  height: 20px !important;
+  stroke-width: 2.5px !important; /* Ícones mais grossos */
+  opacity: 1 !important;
 }
 
-.dropdown-item-icon.funnel {
-  color: #8b5cf6;
-  background: rgba(139, 92, 246, 0.1);
+
+/* Cores específicas dos itens (suporta ID e classe de cor) */
+.dropdown-item-icon.whatsapp,
+.dropdown-item-icon.emerald-400,
+.dropdown-item-icon.emerald-500 {
+  color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.15) !important;
 }
 
-.dropdown-item-icon.archive {
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.1);
+.dropdown-item-icon.linkedin,
+.dropdown-item-icon.blue-400,
+.dropdown-item-icon.blue-500 {
+  color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.15) !important;
 }
 
-.dropdown-item-icon.discard {
-  color: #f97316;
-  background: rgba(249, 115, 22, 0.1);
+.dropdown-item-icon.funnel,
+.dropdown-item-icon.violet-400,
+.dropdown-item-icon.violet-500 {
+  color: #8b5cf6 !important;
+  background: rgba(139, 92, 246, 0.15) !important;
 }
 
-.dropdown-item-icon.delete {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+.dropdown-item-icon.archive,
+.dropdown-item-icon.amber-400,
+.dropdown-item-icon.amber-500 {
+  color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.15) !important;
+}
+
+.dropdown-item-icon.discard,
+.dropdown-item-icon.orange-400,
+.dropdown-item-icon.orange-500 {
+  color: #f97316 !important;
+  background: rgba(249, 115, 22, 0.15) !important;
+}
+
+.dropdown-item-icon.delete,
+.dropdown-item-icon.red-400,
+.dropdown-item-icon.red-500 {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.15) !important;
 }
 
 /* Hover colors */
