@@ -361,6 +361,7 @@ const ProfessionalActions: React.FC<{ lead: Lead; actions: EnhancedProfessionalL
 
   const actionItems = [
     {
+      id: 'whatsapp',
       icon: <MessageCircle size={16} />,
       label: 'WhatsApp',
       description: 'Enviar mensagem',
@@ -370,6 +371,7 @@ const ProfessionalActions: React.FC<{ lead: Lead; actions: EnhancedProfessionalL
       disabled: !lead.phone
     },
     {
+      id: 'linkedin',
       icon: <Linkedin size={16} />,
       label: 'LinkedIn',
       description: 'Ver perfil',
@@ -379,6 +381,7 @@ const ProfessionalActions: React.FC<{ lead: Lead; actions: EnhancedProfessionalL
       disabled: !lead.socialLinks?.linkedin
     },
     {
+      id: 'funnel',
       icon: <TrendingUp size={16} />,
       label: 'Funil',
       description: 'Mover para vendas',
@@ -388,6 +391,7 @@ const ProfessionalActions: React.FC<{ lead: Lead; actions: EnhancedProfessionalL
       disabled: lead.status !== LeadStatus.ENRICHED
     },
     {
+      id: 'archive',
       icon: <Archive size={16} />,
       label: 'Arquivar',
       description: 'Mover para admin',
@@ -396,6 +400,7 @@ const ProfessionalActions: React.FC<{ lead: Lead; actions: EnhancedProfessionalL
       action: () => actions.onPark(lead.id)
     },
     {
+      id: 'discard',
       icon: <Ban size={16} />,
       label: 'Descartar',
       description: 'Remover da lista',
@@ -404,6 +409,7 @@ const ProfessionalActions: React.FC<{ lead: Lead; actions: EnhancedProfessionalL
       action: () => actions.onDiscard(lead.id)
     },
     {
+      id: 'delete',
       icon: <Trash2 size={16} />,
       label: 'Excluir',
       description: 'Apagar permanentemente',
@@ -481,7 +487,7 @@ const ProfessionalActions: React.FC<{ lead: Lead; actions: EnhancedProfessionalL
                     disabled={item.disabled}
                     className={`dropdown-item ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    <div className={`dropdown-item-icon ${item.color.replace('text-', '')}`}>
+                    <div className={`dropdown-item-icon ${item.id}`}>
                       {item.icon}
                     </div>
                     <div className="dropdown-item-text">

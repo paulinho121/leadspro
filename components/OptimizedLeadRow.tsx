@@ -4,6 +4,7 @@ import {
   MoreHorizontal, CheckCircle, Clock, Loader2, Zap
 } from 'lucide-react';
 import { Lead, LeadStatus } from '../types';
+import '../dropdown-fix.css';
 
 interface OptimizedLeadRowProps {
   lead: Lead;
@@ -123,10 +124,10 @@ const ActionGroup: React.FC<{ lead: Lead; actions: OptimizedLeadRowProps }> = ({
       </button>
 
       {/* Menu Dropdown */}
-      <div className="relative">
+      <div className="dropdown-container">
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="p-2.5 rounded-lg bg-slate-700/50 text-slate-400 hover:bg-slate-700 hover:text-slate-300 transition-all duration-300 border border-slate-600/30"
+          className="dropdown-trigger p-2.5 rounded-lg bg-slate-700/50 text-slate-400 hover:bg-slate-700 hover:text-slate-300 transition-all duration-300 border border-slate-600/30"
         >
           <MoreHorizontal size={16} />
         </button>
@@ -134,11 +135,15 @@ const ActionGroup: React.FC<{ lead: Lead; actions: OptimizedLeadRowProps }> = ({
         {isDropdownOpen && (
           <>
             <div 
-              className="fixed inset-0 z-10" 
+              className="dropdown-overlay" 
               onClick={() => setIsDropdownOpen(false)}
             />
-            <div className="absolute right-0 top-full mt-2 w-56 glass-strong rounded-xl border border-white/10 shadow-2xl z-50 overflow-hidden">
-              <div className="p-2 space-y-1">
+            <div className="dropdown-menu">
+              <div className="dropdown-header">
+                <h4 className="dropdown-title">Ações Rápidas</h4>
+                <p className="dropdown-subtitle">{lead.details?.tradeName || lead.name}</p>
+              </div>
+              <div className="dropdown-content p-2 space-y-1">
                 {/* WhatsApp */}
                 {lead.phone && (
                   <button
