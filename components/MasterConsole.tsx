@@ -224,6 +224,7 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
     const [generatedInvite, setGeneratedInvite] = useState<{ link: string, message: string } | null>(null);
 
     const [selectedTenantForUsers, setSelectedTenantForUsers] = useState<Tenant | null>(null);
+    const [userToPromote, setUserToPromote] = useState<{ id: string, name: string } | null>(null);
     const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
     const [activeTab, setActiveTab] = useState<'dashboard' | 'infrastructure'>('dashboard');
@@ -325,6 +326,7 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
 
             if (error) throw error;
             toast.success('Perfil atualizado!', `Usuário agora é ${newRole === 'admin' ? 'Administrador' : 'Vendedor'}.`);
+            setUserToPromote(null); // Fecha confirmação se aberta
             fetchData();
         } catch (err: any) {
             toast.error('Erro ao atualizar cargo', err.message);
@@ -1732,7 +1734,7 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                                                 </button>
                                             ) : (
                                                 <button
-                                                    onClick={() => handleUpdateUserRole(user.id, 'admin')}
+                                                    onClick={() => setUserToPromote({ id: user.id, name: user.full_name || 'este usuário' })}
                                                     disabled={isUpdatingRole}
                                                     className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-emerald-500/20"
                                                 >
@@ -1761,6 +1763,45 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                                     className="w-full py-4 border border-white/10 text-slate-400 hover:text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2"
                                 >
                                     <UserPlus size={14} /> Convidar novo integrante
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Modal de Confirmação de Promoção */}
+            {userToPromote && (
+                <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="glass w-full max-w-md rounded-[2.5rem] border border-emerald-500/50 overflow-hidden animate-in zoom-in-95 duration-500 shadow-[0_0_50px_rgba(16,185,129,0.2)]">
+                        <div className="p-8 text-center space-y-6">
+                            <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-500 mx-auto animate-bounce-slow">
+                                <Crown size={40} />
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <h3 className="text-white font-black text-xl uppercase italic">Transformar em Admin?</h3>
+                                <p className="text-xs text-slate-400 leading-relaxed px-4">
+                                    Ao promover <span className="text-emerald-400 font-bold">{userToPromote.name}</span>, este usuário se tornará uma unidade independente. Ele terá controle total sobre APIs, configurações e gestão desta empresa.
+                                </p>
+                            </div>
+
+                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-normal">
+                                ⚠️ Esta ação isola a gestão da estrutura para este usuário.
+                            </div>
+
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setUserToPromote(null)}
+                                    className="flex-1 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={() => handleUpdateUserRole(userToPromote.id, 'admin')}
+                                    disabled={isUpdatingRole}
+                                    className="flex-1 py-4 bg-emerald-500 text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-emerald-500/30"
+                                >
+                                    {isUpdatingRole ? 'Promovendo...' : 'Sim, Promover'}
                                 </button>
                             </div>
                         </div>
