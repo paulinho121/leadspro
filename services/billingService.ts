@@ -20,8 +20,12 @@ export class BillingService {
             .maybeSingle();
 
         if (error) {
-            console.error('[Billing] Erro ao buscar saldo:', error);
+            console.error(`[Billing] Erro ao buscar saldo para tenant ${tenantId}:`, error);
             return 0;
+        }
+
+        if (!data) {
+            console.warn(`[Billing] Nenhuma carteira encontrada para o tenant ${tenantId}.`);
         }
 
         return data?.credit_balance || 0;
@@ -42,8 +46,16 @@ export class BillingService {
         });
 
         if (error) {
-            console.error('[Billing] Falha ao deduzir créditos:', error);
+            console.error('[Billing] Falha crítica ao deduzir créditos:', error);
+            // Se for erro de sintaxe (ex: UUID inválido), logar detalhes
+            if (error.message?.includes('invalid input syntax for type uuid')) {
+                console.error('[Billing] Tenant ID inválido detectado:', tenantId);
+            }
             return false;
+        }
+
+        if (data === false) {
+            console.warn(`[Billing] Saldo insuficiente para o tenant ${tenantId}. Necessário: ${amount}`);
         }
 
         return data === true;

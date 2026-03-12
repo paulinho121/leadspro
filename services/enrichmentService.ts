@@ -17,14 +17,18 @@ export class EnrichmentService {
         console.log(`[Neural Enrichment] Processing: ${lead.name}`);
 
         // Enterprise Scaling: Validação de Créditos
-        if (tenantId) {
+        const activeTenantId = tenantId && tenantId !== 'default' ? tenantId : undefined;
+
+        if (activeTenantId) {
             const hasCredits = await BillingService.useCredits(
-                tenantId,
+                activeTenantId,
                 10,
                 'NEURAL_AI',
                 `Neural Enrichment: ${lead.name}`
             );
             if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");
+        } else {
+            console.warn('[Neural Enrichment] Processando enriquecimento sem Tenant ID válido. Pulando débito de créditos.');
         }
 
         try {

@@ -17,14 +17,18 @@ export class DiscoveryService {
 
         try {
             // Enterprise Scaling: Validação de Créditos
-            if (tenantId) {
+            const activeTenantId = tenantId && tenantId !== 'default' ? tenantId : undefined;
+            
+            if (activeTenantId) {
                 const hasCredits = await BillingService.useCredits(
-                    tenantId,
+                    activeTenantId,
                     5,
                     'DISCOVERY_ENGINE',
                     `Neural Discovery: ${keyword} em ${location} (Pág: ${page})`
                 );
                 if (!hasCredits) throw new Error("INSUFFICIENT_CREDITS");
+            } else {
+                console.warn('[Neural Discovery] Varredura sem Tenant ID válido. Pulando validação de créditos.');
             }
 
             // Verificar cache primeiro
@@ -167,9 +171,11 @@ export class DiscoveryService {
             );
 
             // Enterprise Scaling: Validação de Créditos para CNPJ Massivo
-            if (tenantId) {
+            const activeTenantId = tenantId && tenantId !== 'default' ? tenantId : undefined;
+            
+            if (activeTenantId) {
                 const hasCredits = await BillingService.useCredits(
-                    tenantId,
+                    activeTenantId,
                     10,
                     'DISCOVERY_ENGINE',
                     `CNPJ Mass Scan: ${keyword} em ${location} (Pág: ${page})`

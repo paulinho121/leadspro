@@ -223,16 +223,17 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
             const currentLimit = filters.limit || 50;
             const remainingNeededBeforeApi = currentLimit - currentTotalFound;
 
+            // Resolução robusta de Tenant ID para evitar erros de 'default'
+            const effectiveTenantId = (userTenantId && userTenantId !== 'default') ? userTenantId : config.tenantId;
+
             if (searchMode === 'MAPS') {
-              results = await DiscoveryService.performDeepScan(cleanKeyword, currentSearchLocation, userTenantId || config.tenantId, apiKeys, currentPage);
+              results = await DiscoveryService.performDeepScan(cleanKeyword, currentSearchLocation, effectiveTenantId, apiKeys, currentPage);
             } else if (searchMode === 'SHERLOCK') {
               // No modo SHERLOCK, usamos o campo "industry" para passar as palavras-chave de contexto
               const contextKeywords = filters.industry;
-              console.log(`[Sherlock] Chamando performCompetitorScan com Alvo: ${cleanKeyword} e Contexto: ${contextKeywords}`);
-              results = await DiscoveryService.performCompetitorScan(cleanKeyword, currentSearchLocation, userTenantId || config.tenantId, apiKeys, currentPage, contextKeywords);
+              results = await DiscoveryService.performCompetitorScan(cleanKeyword, currentSearchLocation, effectiveTenantId, apiKeys, currentPage, contextKeywords);
             } else {
-              console.log(`[CNPJ] Chamando performCNPJScan com Q: ${cleanKeyword}`);
-              results = await DiscoveryService.performCNPJScan(cleanKeyword, currentSearchLocation, userTenantId || config.tenantId, apiKeys, currentPage);
+              results = await DiscoveryService.performCNPJScan(cleanKeyword, currentSearchLocation, effectiveTenantId, apiKeys, currentPage);
             }
           } finally {
             clearInterval(progressInterval);
