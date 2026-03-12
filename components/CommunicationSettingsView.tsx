@@ -18,9 +18,13 @@ interface CommunicationSettingsViewProps {
 type WhatsAppProvider = 'whatsapp_evolution' | 'whatsapp_zapi' | 'whatsapp_duilio' | 'whatsapp_cloud_api';
 
 const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ tenantId }) => {
-    const [loading, setLoading] = useState(false);
-    const [success, setSuccess] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [waLoading, setWaLoading] = useState(false);
+    const [waSuccess, setWaSuccess] = useState(false);
+    const [waError, setWaError] = useState<string | null>(null);
+
+    const [mailLoading, setMailLoading] = useState(false);
+    const [mailSuccess, setMailSuccess] = useState(false);
+    const [mailError, setMailError] = useState<string | null>(null);
 
     // --- Estados para Teste de Conexão ---
     const [testingWa, setTestingWa] = useState(false);
@@ -202,7 +206,7 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
     // --- Fluxo de QR Code REAL (Evolution API) ---
     const handleGenerateQr = async () => {
         if (!waSettings.apiUrl || !waSettings.apiKey || !waSettings.instanceName) {
-            setError('Preencha Endpoint, Chave e Instância para gerar o QR Code.');
+            setWaError('Preencha Endpoint, Chave e Instância para gerar o QR Code.');
             return;
         }
 
@@ -257,14 +261,14 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
         } catch (err: any) {
             setWaStatus('disconnected');
             setShowQrModal(false);
-            setError(`Erro Real: ${err.message || 'Verifique se o seu servidor Evolution permite CORS ou se a instância está criada.'}`);
+            setWaError(`Erro Real: ${err.message || 'Verifique se o seu servidor Evolution permite CORS ou se a instância está criada.'}`);
         }
     };
 
-    const handleSave = async () => {
-        setLoading(true);
-        setError(null);
-        setSuccess(false);
+    const handleSaveWhatsApp = async () => {
+        setWaLoading(true);
+        setWaError(null);
+        setWaSuccess(false);
 
         try {
             // 1. Deactivate all other WhatsApp providers for this tenant first
@@ -285,10 +289,31 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                     instance_name: waSettings.instanceName,
                     client_token: waSettings.clientToken,
                     is_active: true
-                }, { onConflict: 'tenant_id,provider_type' });
+                }, { onConflict: 'tenant_id, provider_type' });
 
-            if (waError) throw waError;
+            if (waError) {
+                console.error('WhatsApp Settings Error:', waError);
+                throw new Error(`Erro ao salvar WhatsApp: ${waError.message}`);
+            }
 
+            setWaSuccess(true);
+            toast.success('WhatsApp Salvo!', 'Configurações de WhatsApp atualizadas.');
+            setTimeout(() => setWaSuccess(false), 3000);
+        } catch (err: any) {
+            console.error('Save WhatsApp Error:', err);
+            setWaError(err.message || 'Erro ao sincronizar WhatsApp');
+            toast.error('Falha no WhatsApp', err.message);
+        } finally {
+            setWaLoading(false);
+        }
+    };
+
+    const handleSaveEmail = async () => {
+        setMailLoading(true);
+        setMailError(null);
+        setMailSuccess(false);
+
+        try {
             // 3. Salvar Email
             if (emailSettings.resendKey) {
                 const { error: mailError } = await supabase
@@ -298,17 +323,23 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                         provider_type: 'email_resend',
                         api_key: emailSettings.resendKey,
                         is_active: true
-                    }, { onConflict: 'tenant_id,provider_type' });
+                    }, { onConflict: 'tenant_id, provider_type' });
 
-                if (mailError) throw mailError;
+                if (mailError) {
+                    console.error('Email Settings Error:', mailError);
+                    throw new Error(`Erro ao salvar E-mail: ${mailError.message}`);
+                }
             }
 
-            setSuccess(true);
-            setTimeout(() => setSuccess(false), 3000);
+            setMailSuccess(true);
+            toast.success('E-mail Salvo!', 'Configuração do Resend atualizada.');
+            setTimeout(() => setMailSuccess(false), 3000);
         } catch (err: any) {
-            setError(err.message || 'Erro ao salvar configurações');
+            console.error('Save Email Error:', err);
+            setMailError(err.message || 'Erro ao sincronizar E-mail');
+            toast.error('Falha no E-mail', err.message);
         } finally {
-            setLoading(false);
+            setMailLoading(false);
         }
     };
 
@@ -424,7 +455,7 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                     </div>
 
                     {/* Botão Testar Conexão WhatsApp */}
-                    <div className="mt-8 pt-6 border-t border-white/5 space-y-3">
+                    <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
                         {selectedWaProvider === 'whatsapp_evolution' && (
                             <button
                                 onClick={handleGenerateQr}
@@ -454,6 +485,25 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                                 }`}>
                                 {testResultWa.ok ? <Wifi size={14} className="shrink-0 mt-0.5" /> : <WifiOff size={14} className="shrink-0 mt-0.5" />}
                                 <span>{testResultWa.msg}</span>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={handleSaveWhatsApp}
+                            disabled={waLoading}
+                            className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all italic ${
+                                waLoading ? 'bg-slate-800 text-slate-600' : 
+                                waSuccess ? 'bg-emerald-500 text-slate-900 shadow-emerald-500/20' : 
+                                'bg-primary text-slate-900 shadow-primary/20 hover:scale-[1.02] active:scale-95'
+                            } shadow-xl`}
+                        >
+                            {waLoading ? <Activity size={16} className="animate-spin" /> : waSuccess ? <CheckCircle2 size={16} /> : <Save size={16} />}
+                            {waLoading ? 'Sincronizando...' : waSuccess ? 'WhatsApp Sincronizado' : 'Salvar Configuração WhatsApp'}
+                        </button>
+
+                        {waError && (
+                            <div className="flex items-center gap-2 text-red-400 text-[9px] font-bold uppercase tracking-widest bg-red-400/5 p-3 rounded-xl border border-red-400/20">
+                                <AlertCircle size={12} /> {waError}
                             </div>
                         )}
                     </div>
@@ -500,7 +550,7 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                     </div>
 
                     {/* Botão Testar Conexão Email */}
-                    <div className="mt-8 pt-6 border-t border-white/5">
+                    <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
                         <button
                             id="btn-test-email-connection"
                             onClick={handleTestEmailConnection}
@@ -513,6 +563,7 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                                 <><Wifi size={14} /> Testar Conexão Resend</>
                             )}
                         </button>
+
                         {testResultEmail && (
                             <div className={`mt-3 flex items-start gap-3 px-5 py-3.5 rounded-2xl border text-[10px] font-bold leading-relaxed ${testResultEmail.ok
                                 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
@@ -522,45 +573,30 @@ const CommunicationSettingsView: React.FC<CommunicationSettingsViewProps> = ({ t
                                 <span>{testResultEmail.msg}</span>
                             </div>
                         )}
+
+                        <button
+                            onClick={handleSaveEmail}
+                            disabled={mailLoading}
+                            className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all italic ${
+                                mailLoading ? 'bg-slate-800 text-slate-600' : 
+                                mailSuccess ? 'bg-emerald-500 text-slate-900 shadow-emerald-500/20' : 
+                                'bg-blue-500 text-white shadow-blue-500/20 hover:scale-[1.02] active:scale-95'
+                            } shadow-xl`}
+                        >
+                            {mailLoading ? <Activity size={16} className="animate-spin" /> : mailSuccess ? <CheckCircle2 size={16} /> : <Save size={16} />}
+                            {mailLoading ? 'Sincronizando...' : mailSuccess ? 'E-mail Sincronizado' : 'Salvar Configuração E-mail'}
+                        </button>
+
+                        {mailError && (
+                            <div className="flex items-center gap-2 text-red-400 text-[9px] font-bold uppercase tracking-widest bg-red-400/5 p-3 rounded-xl border border-red-400/20">
+                                <AlertCircle size={12} /> {mailError}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Save Action */}
-            <div className="flex flex-col items-center gap-6 py-8">
-                <button
-                    onClick={handleSave}
-                    disabled={loading}
-                    className={`group flex items-center gap-4 px-12 py-5 rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-xl italic ${loading
-                        ? 'bg-slate-800 text-slate-600 cursor-not-allowed border border-white/5'
-                        : 'bg-primary text-slate-900 hover:scale-[1.03] active:scale-95 shadow-primary/20'
-                        }`}
-                >
-                    {loading ? (
-                        <>
-                            <Activity className="animate-spin" size={18} />
-                            <span>Processando Alterações</span>
-                        </>
-                    ) : success ? (
-                        <>
-                            <CheckCircle2 className="text-slate-900" size={18} />
-                            <span>Sistema Sincronizado</span>
-                        </>
-                    ) : (
-                        <>
-                            <Save size={18} />
-                            <span>Sincronizar Infraestrutura</span>
-                        </>
-                    )}
-                </button>
-
-                {error && (
-                    <div className="flex items-center gap-3 text-red-400 bg-red-400/5 px-8 py-4 rounded-full border border-red-400/20">
-                        <AlertCircle size={18} />
-                        <span className="text-[10px] font-bold uppercase tracking-widest italic">{error}</span>
-                    </div>
-                )}
-            </div>
+            {/* Removed Global Save Action */}
             {/* QR Code Modal Integration */}
             {showQrModal && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">

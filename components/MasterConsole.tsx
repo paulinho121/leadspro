@@ -4,11 +4,25 @@ import {
     Users, Building2, ShieldCheck, Zap, TrendingUp,
     Search, Filter, MoreHorizontal, UserCheck, UserX,
     CreditCard, LayoutDashboard, Globe, Mail, Phone, Bell, Send, AlertTriangle, Info, DollarSign, X, CheckCircle,
-    Terminal, Lock, ShieldAlert, History, LifeBuoy, MessageSquare, Clock, CheckCircle2, Cpu
+    Terminal, Lock, ShieldAlert, History, LifeBuoy, MessageSquare, Clock, CheckCircle2, Cpu, UserPlus, Key, Server
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from './Toast';
 import ActivityHistory from './ActivityHistory';
+import { CommunicationService } from '../services/communicationService';
+import CommunicationSettingsView from './CommunicationSettingsView';
+
+const FeatureToggle: React.FC<{ label: string, active: boolean, onChange: (val: boolean) => void }> = ({ label, active, onChange }) => (
+    <div 
+        onClick={() => onChange(!active)}
+        className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${active ? 'bg-blue-500/10 border-blue-500/30' : 'bg-white/5 border-white/5 opacity-50'}`}
+    >
+        <span className={`text-[10px] font-black uppercase tracking-widest ${active ? 'text-blue-400' : 'text-slate-500'}`}>{label}</span>
+        <div className={`w-8 h-4 rounded-full relative transition-all ${active ? 'bg-blue-500' : 'bg-slate-700'}`}>
+            <div className={`absolute top-1 w-2 h-2 bg-white rounded-full transition-all ${active ? 'right-1' : 'left-1'}`}></div>
+        </div>
+    </div>
+);
 
 
 interface Tenant {
@@ -121,12 +135,17 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
 
         setIsCreatingTenant(true);
         try {
+            // Gerar ID no cliente para evitar erro de constraint no banco
+            const newId = crypto.randomUUID();
+            const cleanSlug = newTenantData.slug.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+
             // 1. Criar o Tenant
             const { data: tenant, error: tenantError } = await supabase
                 .from('tenants')
                 .insert([{
+                    id: newId,
                     name: newTenantData.name,
-                    slug: newTenantData.slug.toLowerCase().replace(/\s+/g, '-'),
+                    slug: cleanSlug,
                     plan: 'pro',
                     is_active: true
                 }])
@@ -137,7 +156,7 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
 
             // 2. Criar Configuração White Label Inicial
             await supabase.from('white_label_configs').insert([{
-                tenant_id: tenant.id,
+                tenant_id: newId,
                 platform_name: newTenantData.name,
                 primary_color: '#06b6d4',
                 secondary_color: '#3b82f6'
@@ -145,7 +164,7 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
 
             // 3. Inicializar Carteira com Bônus (ex: 50 créditos)
             await supabase.rpc('adjust_tenant_credits', {
-                p_tenant_id: tenant.id,
+                p_tenant_id: newId,
                 p_amount: 50,
                 p_description: 'Bônus de boas-vindas (Ativação master)'
             });
@@ -197,6 +216,77 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
 
     const [selectedTenantForFeatures, setSelectedTenantForFeatures] = useState<Tenant | null>(null);
     const [isUpdatingFeatures, setIsUpdatingFeatures] = useState(false);
+
+    const [selectedTenantForInvite, setSelectedTenantForInvite] = useState<Tenant | null>(null);
+    const [isInviting, setIsInviting] = useState(false);
+    const [inviteForm, setInviteForm] = useState({ name: '', email: '' });
+    const [generatedInvite, setGeneratedInvite] = useState<{ link: string, message: string } | null>(null);
+
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'infrastructure'>('dashboard');
+
+    const closeInviteModal = () => {
+        setSelectedTenantForInvite(null);
+        setInviteForm({ name: '', email: '' });
+        setGeneratedInvite(null);
+    };
+
+    const handleInviteAdmin = async () => {
+        if (!selectedTenantForInvite || !inviteForm.email || !inviteForm.name) {
+            toast.warning('Campos incompletos', 'Preencha o nome e o e-mail do administrador.');
+            return;
+        }
+
+        setIsInviting(true);
+        try {
+            // 1. Inserir em tenant_users como Admin
+            const { error } = await supabase.from('tenant_users').insert({
+                tenant_id: selectedTenantForInvite.id,
+                email: inviteForm.email.trim().toLowerCase(),
+                name: inviteForm.name.trim(),
+                role: 'admin',
+                status: 'active'
+            });
+
+            if (error) throw error;
+
+            const finalEmail = inviteForm.email.trim().toLowerCase();
+            const finalName = inviteForm.name.trim();
+
+            // 2. Gerar link e mensagem de convite
+            const loginLink = `https://app.leadflowpro.com/${selectedTenantForInvite.slug}/login`;
+            const message = `Olá ${finalName}! Bem-vindo ao ${selectedTenantForInvite.name}. Seu acesso administrativo foi liberado.\n\nAcesse aqui: ${loginLink}\nE-mail: ${finalEmail}`;
+
+            setGeneratedInvite({
+                link: loginLink,
+                message: message
+            });
+
+            // 3. Tentar enviar e-mail real via CommunicationService (Tenant Master)
+            const masterTenantId = '00000000-0000-0000-0000-000000000000';
+            const emailResult = await CommunicationService.sendEmail({
+                tenantId: masterTenantId,
+                leadId: finalEmail,
+                channel: 'email',
+                subject: `Bem-vindo ao ${selectedTenantForInvite.name} - Seu acesso está liberado`,
+                content: message.replace(/\n/g, '<br>')
+            });
+
+            if (emailResult.success) {
+                toast.success('E-mail enviado!', `Um convite real foi enviado para ${finalEmail}`);
+            } else {
+                console.warn('E-mail não pôde ser enviado automaticamente. Verifique as configurações de Resend do Master.');
+                toast.warning('Link gerado', 'O usuário foi criado, mas o e-mail automático falhou. Copie o link abaixo e envie manualmente.');
+            }
+
+            toast.success('Convite Gerado!', `O acesso de ${finalName} foi registrado no sistema.`);
+            fetchData();
+        } catch (err: any) {
+            console.error('Error inviting admin:', err);
+            toast.error('Erro ao convidar', err.message);
+        } finally {
+            setIsInviting(false);
+        }
+    };
 
     const handleUpdateFeatures = async (tenantId: string, features: any) => {
         setIsUpdatingFeatures(true);
@@ -552,8 +642,32 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                 </div>
             </div>
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            {/* Tab Navigation */}
+            <div className="flex items-center gap-2 p-1.5 bg-white/5 border border-white/5 rounded-2xl w-fit">
+                <button
+                    onClick={() => setActiveTab('dashboard')}
+                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'dashboard' ? 'bg-primary text-slate-900 shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-white'}`}
+                >
+                    <div className="flex items-center gap-2">
+                        <LayoutDashboard size={14} />
+                        Visão Geral
+                    </div>
+                </button>
+                <button
+                    onClick={() => setActiveTab('infrastructure')}
+                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'infrastructure' ? 'bg-primary text-slate-900 shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-white'}`}
+                >
+                    <div className="flex items-center gap-2">
+                        <Server size={14} />
+                        Infraestrutura Global
+                    </div>
+                </button>
+            </div>
+
+            {activeTab === 'dashboard' ? (
+                <React.Fragment>
+                    {/* Main Content Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {/* Tenants List */}
                 <div className="lg:col-span-2 space-y-6">
 
@@ -679,6 +793,18 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                                                                 title="Gerenciar Créditos"
                                                             >
                                                                 <DollarSign size={18} />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedTenantForInvite(tenant);
+                                                                    setInviteForm({ name: '', email: '' });
+                                                                    setGeneratedInvite(null);
+                                                                }}
+                                                                className="p-2 rounded-xl text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                                                                title="Convidar Administrador"
+                                                            >
+                                                                <UserPlus size={18} />
                                                             </button>
                                                             <button
                                                                 onClick={(e) => {
@@ -1139,6 +1265,24 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                     </div>
                 </div>
             </div>
+        </React.Fragment>
+        ) : (
+                /* System Infrastructure View */
+                <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+                    <div className="p-8 bg-black/20 border border-white/5 rounded-[2.5rem] space-y-8">
+                        <div>
+                            <h3 className="text-xl font-black text-white italic uppercase flex items-center gap-3">
+                                <Cpu className="text-primary" size={24} />
+                                Configuração de E-mail da Central (Master)
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-2">
+                                Configure aqui o token do Resend que o sistema usará para enviar convites e notificações reais para todos os clientes.
+                            </p>
+                        </div>
+                        <CommunicationSettingsView tenantId="00000000-0000-0000-0000-000000000000" />
+                    </div>
+                </div>
+            )}
             {/* Modal de Créditos */}
             {selectedTenantForCredits && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
@@ -1402,20 +1546,112 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                     </div>
                 </div>
             )}
+            {/* Modal de Convite de Administrador */}
+            {selectedTenantForInvite && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="glass w-full max-w-lg rounded-[2.5rem] border border-emerald-500/30 overflow-hidden animate-in zoom-in-95 duration-300 shadow-2xl">
+                        <div className="p-8 bg-emerald-500/5 border-b border-white/5 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-400">
+                                    <UserPlus size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-black text-xl uppercase italic">Convidar Admin</h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{selectedTenantForInvite.name}</p>
+                                </div>
+                            </div>
+                            <button onClick={closeInviteModal} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+                                <X size={24} className="text-slate-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-8 space-y-6">
+                            {!generatedInvite ? (
+                                <>
+                                    <p className="text-xs text-slate-400">Este usuário terá poderes administrativos totais dentro da sub-conta do cliente.</p>
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Nome do Responsável</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Ex: João Silva"
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-emerald-500 transition-all font-bold"
+                                                value={inviteForm.name}
+                                                onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">E-mail de Acesso</label>
+                                            <input
+                                                type="email"
+                                                placeholder="cliente@empresa.com"
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-emerald-500 transition-all font-mono text-sm"
+                                                value={inviteForm.email}
+                                                onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                                                autoComplete="off"
+                                                autoCorrect="off"
+                                                autoCapitalize="off"
+                                                spellCheck={false}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={handleInviteAdmin}
+                                        disabled={isInviting || !inviteForm.email || !inviteForm.name}
+                                        className="w-full py-5 bg-emerald-500 text-slate-900 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                                    >
+                                        {isInviting ? 'PROCESSANDO...' : 'REGISTRAR E GERAR LINK'}
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+                                    <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl space-y-4">
+                                        <div className="flex items-center gap-3 text-emerald-400 mb-2">
+                                            <CheckCircle size={20} />
+                                            <span className="font-black text-xs uppercase tracking-widest">Acesso Liberado</span>
+                                        </div>
+                                        <p className="text-sm text-white font-medium">Copie a mensagem abaixo e envie para o cliente:</p>
+                                        
+                                        <div className="bg-black/40 p-5 rounded-2xl border border-white/5 text-xs text-slate-300 font-mono leading-relaxed whitespace-pre-wrap">
+                                            {generatedInvite.message}
+                                        </div>
+
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(generatedInvite.message);
+                                                toast.success('Copiado!', 'Mensagem de convite copiada para a área de transferência.');
+                                            }}
+                                            className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <History size={14} /> Copiar Texto do Convite
+                                        </button>
+                                    </div>
+
+                                    <div className="flex gap-4">
+                                        <button
+                                            onClick={() => {
+                                                window.open(generatedInvite.link, '_blank');
+                                            }}
+                                            className="flex-1 py-4 border border-white/10 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <Globe size={14} /> Testar Link
+                                        </button>
+                                        <button
+                                            onClick={closeInviteModal}
+                                            className="flex-1 py-4 bg-emerald-500 text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg"
+                                        >
+                                            Concluir
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
-
-const FeatureToggle: React.FC<{ label: string, active: boolean, onChange: (val: boolean) => void }> = ({ label, active, onChange }) => (
-    <div 
-        onClick={() => onChange(!active)}
-        className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${active ? 'bg-blue-500/10 border-blue-500/30' : 'bg-white/5 border-white/5 opacity-50'}`}
-    >
-        <span className={`text-[10px] font-black uppercase tracking-widest ${active ? 'text-blue-400' : 'text-slate-500'}`}>{label}</span>
-        <div className={`w-8 h-4 rounded-full relative transition-all ${active ? 'bg-blue-500' : 'bg-slate-700'}`}>
-            <div className={`absolute top-1 w-2 h-2 bg-white rounded-full transition-all ${active ? 'right-1' : 'left-1'}`}></div>
-        </div>
-    </div>
-);
 
 export default MasterConsole;
