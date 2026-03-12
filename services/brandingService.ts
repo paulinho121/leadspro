@@ -10,6 +10,39 @@ export class BrandingService {
         const hostname = window.location.hostname;
 
         try {
+            // 0. Tentar buscar por parâmetro de URL (ex: ?tenant=slug)
+            const urlParams = new URLSearchParams(window.location.search);
+            const tenantSlug = urlParams.get('tenant');
+
+            if (tenantSlug) {
+                const { data: slugConfig } = await supabase
+                    .from('white_label_configs')
+                    .select('*')
+                    .eq('subdomain', tenantSlug) // Supondo que o slug seja guardado em subdomain ou slug
+                    .maybeSingle();
+                
+                if (!slugConfig) {
+                    // Tentar por tenant_id ou slug se houvesse a coluna, mas vamos tentar por subdomain primeiro
+                    const { data: tenantBySlug } = await supabase
+                        .from('tenants')
+                        .select('id')
+                        .eq('slug', tenantSlug)
+                        .maybeSingle();
+                    
+                    if (tenantBySlug) {
+                        const { data: configByTenant } = await supabase
+                            .from('white_label_configs')
+                            .select('*')
+                            .eq('tenant_id', tenantBySlug.id)
+                            .maybeSingle();
+                        
+                        if (configByTenant) return BrandingService.mapToConfig(configByTenant);
+                    }
+                } else {
+                    return BrandingService.mapToConfig(slugConfig);
+                }
+            }
+
             // 1. Tentar buscar por domínio customizado ou subdomínio
             const { data: domainConfig } = await supabase
                 .from('white_label_configs')

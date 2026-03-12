@@ -253,7 +253,8 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
             const finalName = inviteForm.name.trim();
 
             // 2. Gerar link e mensagem de convite
-            const loginLink = `https://app.leadflowpro.com/${selectedTenantForInvite.slug}/login`;
+            const baseUrl = window.location.origin;
+            const loginLink = `${baseUrl}?tenant=${selectedTenantForInvite.slug}`;
             const message = `Olá ${finalName}! Bem-vindo ao ${selectedTenantForInvite.name}. Seu acesso administrativo foi liberado.\n\nAcesse aqui: ${loginLink}\nE-mail: ${finalEmail}`;
 
             setGeneratedInvite({
