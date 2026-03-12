@@ -775,14 +775,38 @@ const App: React.FC = () => {
 
         <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto custom-scrollbar">
           <NavItem icon={<LayoutDashboard size={20} />} label={I18nService.t('Dashboard')} active={activeTab === 'dashboard'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('dashboard'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<Search size={20} />} label={I18nService.t('Extração')} active={activeTab === 'discovery'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('discovery'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<Database size={20} />} label={I18nService.t('Laboratório')} active={activeTab === 'lab'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('lab'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<Archive size={20} />} label={I18nService.t('Adm. Leads')} active={activeTab === 'leadAdmin'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('leadAdmin'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<Rocket size={20} />} label={I18nService.t('Enriquecidos')} active={activeTab === 'enriched'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<TrendingUp size={20} />} label={I18nService.t('Pipeline')} active={activeTab === 'pipeline'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('pipeline'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<Megaphone size={20} />} label={I18nService.t('Automação')} active={activeTab === 'automation'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('automation'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<BarChart3 size={20} />} label={I18nService.t('Monitor')} active={activeTab === 'monitor'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('monitor'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
-          <NavItem icon={<MoneyIcon size={20} />} label={I18nService.t('Faturamento')} active={activeTab === 'billing'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('billing'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          
+          {config.enabledFeatures?.discovery !== false && (
+            <NavItem icon={<Search size={20} />} label={I18nService.t('Extração')} active={activeTab === 'discovery'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('discovery'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          )}
+          
+          {config.enabledFeatures?.lab !== false && (
+            <NavItem icon={<Database size={20} />} label={I18nService.t('Laboratório')} active={activeTab === 'lab'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('lab'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          )}
+
+          {config.enabledFeatures?.leadAdmin !== false && (
+            <NavItem icon={<Archive size={20} />} label={I18nService.t('Adm. Leads')} active={activeTab === 'leadAdmin'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('leadAdmin'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          )}
+
+          {config.enabledFeatures?.enriched !== false && (
+            <NavItem icon={<Rocket size={20} />} label={I18nService.t('Enriquecidos')} active={activeTab === 'enriched'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('enriched'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          )}
+
+          {config.enabledFeatures?.pipeline !== false && (
+            <NavItem icon={<TrendingUp size={20} />} label={I18nService.t('Pipeline')} active={activeTab === 'pipeline'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('pipeline'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          )}
+
+          {config.enabledFeatures?.automation !== false && (
+            <NavItem icon={<Megaphone size={20} />} label={I18nService.t('Automação')} active={activeTab === 'automation'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('automation'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          )}
+
+          {config.enabledFeatures?.monitor !== false && (
+            <NavItem icon={<BarChart3 size={20} />} label={I18nService.t('Monitor')} active={activeTab === 'monitor'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('monitor'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          )}
+
+          {config.enabledFeatures?.billing !== false && (
+            <NavItem icon={<MoneyIcon size={20} />} label={I18nService.t('Faturamento')} active={activeTab === 'billing'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('billing'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
+          )}
 
 
           <div className="pt-8 pb-4">

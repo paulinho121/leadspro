@@ -73,7 +73,17 @@ export class BrandingService {
                 sidebar: data.sidebar_color,
             },
             domain: data.custom_domain,
-            subdomain: data.subdomain
+            subdomain: data.subdomain,
+            enabledFeatures: data.enabled_features ? {
+                automation: data.enabled_features.automation ?? true,
+                discovery: data.enabled_features.discovery ?? true,
+                lab: data.enabled_features.lab ?? true,
+                pipeline: data.enabled_features.pipeline ?? true,
+                billing: data.enabled_features.billing ?? true,
+                enriched: data.enabled_features.enriched ?? true,
+                monitor: data.enabled_features.monitor ?? true,
+                leadAdmin: data.enabled_features.leadAdmin ?? true,
+            } : DEFAULT_BRANDING.enabledFeatures
         };
     }
 

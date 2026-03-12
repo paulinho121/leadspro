@@ -16,6 +16,16 @@ export interface BrandingConfig {
     subdomain?: string;
     customScripts?: string;
     language?: 'pt' | 'en' | 'es';
+    enabledFeatures?: {
+        automation: boolean;
+        discovery: boolean;
+        lab: boolean;
+        pipeline: boolean;
+        billing: boolean;
+        enriched: boolean;
+        monitor: boolean;
+        leadAdmin: boolean;
+    };
 }
 
 export const DEFAULT_BRANDING: BrandingConfig = {
@@ -30,5 +40,15 @@ export const DEFAULT_BRANDING: BrandingConfig = {
         accent: '#fb923c', // Laranja claro para realces
         background: '#020617', // Fundo ultra dark (Deep Navy)
         sidebar: 'rgba(2, 6, 23, 0.95)',
+    },
+    enabledFeatures: {
+        automation: true,
+        discovery: true,
+        lab: true,
+        pipeline: true,
+        billing: true,
+        enriched: true,
+        monitor: true,
+        leadAdmin: true
     }
 };

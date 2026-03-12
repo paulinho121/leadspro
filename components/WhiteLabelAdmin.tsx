@@ -6,7 +6,8 @@ import { DEFAULT_BRANDING } from '../types/branding';
 import { SecretService } from '../services/secretService';
 import { toast } from './Toast';
 import { ApiGatewayService } from '../services/apiGatewayService';
-import { Wallet } from 'lucide-react';
+import { GeminiService } from '../services/geminiService';
+import { Wallet, Sparkles, Wand2 } from 'lucide-react';
 import { I18nService } from '../services/i18nService';
 
 const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' | 'api', isMaster?: boolean }> = ({ initialTab = 'branding', isMaster = false }) => {
@@ -326,6 +327,42 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
         console.log('[WhiteLabelAdmin] Cores restauradas para o padrão.');
     };
 
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    const handleAutoBranding = async () => {
+        if (!formData.platformName) {
+            toast.warning('Nome necessário', 'Insira o nome da plataforma para a I.A. analisar.');
+            return;
+        }
+
+        setIsAnalyzing(true);
+        try {
+            const secrets = await SecretService.getTenantSecrets(config.tenantId);
+            const palette = await GeminiService.generateBrandingPalette(
+                formData.logoUrl,
+                formData.platformName,
+                secrets
+            );
+
+            if (palette) {
+                setFormData({
+                    ...formData,
+                    primaryColor: palette.primary || formData.primaryColor,
+                    secondaryColor: palette.secondary || formData.secondaryColor,
+                    backgroundColor: palette.background || formData.backgroundColor,
+                    sidebarColor: palette.sidebar || formData.sidebarColor
+                });
+                toast.success('Mágica concluída!', 'Cores sincronizadas com a sua marca e logo.');
+            } else {
+                toast.error('Falha na análise', 'Não foi possível gerar a paleta automaticamente.');
+            }
+        } catch (err: any) {
+            toast.error('Erro na I.A.', err.message);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
     const handleSave = async () => {
         console.log('[WhiteLabelAdmin] Iniciando salvamento...');
         setSaving(true);
@@ -539,12 +576,22 @@ const WhiteLabelAdmin: React.FC<{ initialTab?: 'branding' | 'domain' | 'users' |
                                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
                                         <Palette className="text-primary" /> Cores & Estilização
                                     </h3>
-                                    <button
-                                        onClick={handleResetColors}
-                                        className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors"
-                                    >
-                                        Restaurar Padrão
-                                    </button>
+                                    <div className="flex items-center gap-4">
+                                        <button
+                                            onClick={handleAutoBranding}
+                                            disabled={isAnalyzing}
+                                            className="flex items-center gap-2 bg-gradient-to-r from-primary to-blue-500 text-slate-900 px-4 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.3)] disabled:opacity-50"
+                                        >
+                                            {isAnalyzing ? <Loader2 className="animate-spin" size={14} /> : <Wand2 size={12} />}
+                                            Mágica do Visual (I.A.)
+                                        </button>
+                                        <button
+                                            onClick={handleResetColors}
+                                            className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors"
+                                        >
+                                            Restaurar Padrão
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-6">
                                     <ColorPicker

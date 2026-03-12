@@ -4,7 +4,7 @@ import {
     Users, Building2, ShieldCheck, Zap, TrendingUp,
     Search, Filter, MoreHorizontal, UserCheck, UserX,
     CreditCard, LayoutDashboard, Globe, Mail, Phone, Bell, Send, AlertTriangle, Info, DollarSign, X, CheckCircle,
-    Terminal, Lock, ShieldAlert, History, LifeBuoy, MessageSquare, Clock, CheckCircle2
+    Terminal, Lock, ShieldAlert, History, LifeBuoy, MessageSquare, Clock, CheckCircle2, Cpu
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from './Toast';
@@ -21,6 +21,7 @@ interface Tenant {
     leadsCount?: number;
     enrichedCount?: number;
     creditBalance?: number;
+    enabled_features?: any;
 }
 
 interface UserProfile {
@@ -105,6 +106,61 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
     });
     const [isUpdatingCredits, setIsUpdatingCredits] = useState(false);
     const [showSystemLogs, setShowSystemLogs] = useState(false);
+    const [showNewTenantModal, setShowNewTenantModal] = useState(false);
+    const [isCreatingTenant, setIsCreatingTenant] = useState(false);
+    const [newTenantData, setNewTenantData] = useState({
+        name: '',
+        slug: ''
+    });
+
+    const handleCreateTenant = async () => {
+        if (!newTenantData.name || !newTenantData.slug) {
+            toast.warning('Campos obrigatórios', 'Preencha o nome e o slug da empresa.');
+            return;
+        }
+
+        setIsCreatingTenant(true);
+        try {
+            // 1. Criar o Tenant
+            const { data: tenant, error: tenantError } = await supabase
+                .from('tenants')
+                .insert([{
+                    name: newTenantData.name,
+                    slug: newTenantData.slug.toLowerCase().replace(/\s+/g, '-'),
+                    plan: 'pro',
+                    is_active: true
+                }])
+                .select()
+                .single();
+
+            if (tenantError) throw tenantError;
+
+            // 2. Criar Configuração White Label Inicial
+            await supabase.from('white_label_configs').insert([{
+                tenant_id: tenant.id,
+                platform_name: newTenantData.name,
+                primary_color: '#06b6d4',
+                secondary_color: '#3b82f6'
+            }]);
+
+            // 3. Inicializar Carteira com Bônus (ex: 50 créditos)
+            await supabase.rpc('adjust_tenant_credits', {
+                p_tenant_id: tenant.id,
+                p_amount: 50,
+                p_description: 'Bônus de boas-vindas (Ativação master)'
+            });
+
+            toast.success('Licenciamento Ativo!', `A empresa ${newTenantData.name} foi criada com sucesso.`);
+            setShowNewTenantModal(false);
+            setNewTenantData({ name: '', slug: '' });
+            fetchData();
+        } catch (err: any) {
+            console.error('Error creating tenant:', err);
+            toast.error('Erro ao criar', err.message);
+        } finally {
+            setIsCreatingTenant(false);
+        }
+    };
 
 
     const handleUpdateCredits = async () => {
@@ -139,6 +195,31 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
         }
     };
 
+    const [selectedTenantForFeatures, setSelectedTenantForFeatures] = useState<Tenant | null>(null);
+    const [isUpdatingFeatures, setIsUpdatingFeatures] = useState(false);
+
+    const handleUpdateFeatures = async (tenantId: string, features: any) => {
+        setIsUpdatingFeatures(true);
+        try {
+            const { error } = await supabase
+                .from('white_label_configs')
+                .upsert({
+                    tenant_id: tenantId,
+                    enabled_features: features,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'tenant_id' });
+
+            if (error) throw error;
+            toast.success('Serviços atualizados!', 'As permissões do cliente foram modificadas.');
+            setSelectedTenantForFeatures(null);
+            fetchData();
+        } catch (err: any) {
+            toast.error('Erro ao atualizar serviços', err.message);
+        } finally {
+            setIsUpdatingFeatures(false);
+        }
+    };
+
     const fetchData = async () => {
         console.log('[Master Console] Iniciando sincronização de dados...');
         setIsLoading(true);
@@ -146,12 +227,26 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
             // 1. Fetch Tenants
             const { data: tenantsData, error: tenantsError } = await supabase
                 .from('tenants')
-                .select('*')
+                .select('*, white_label_configs(enabled_features)')
                 .order('created_at', { ascending: false });
 
             if (tenantsError) throw tenantsError;
             if (tenantsData) {
-                setTenants(tenantsData);
+                // Map the nested config back to the tenant object for easier access
+                const mappedTenants = (tenantsData as any[]).map(t => ({
+                    ...t,
+                    enabled_features: t.white_label_configs?.[0]?.enabled_features || {
+                        automation: true,
+                        discovery: true,
+                        lab: true,
+                        pipeline: true,
+                        billing: true,
+                        enriched: true,
+                        monitor: true,
+                        leadAdmin: true
+                    }
+                }));
+                setTenants(mappedTenants);
             }
 
             // 2. Fetch Profiles (User information)
@@ -429,6 +524,13 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 lg:gap-4">
+                    <button
+                        onClick={() => setShowNewTenantModal(true)}
+                        className="bg-primary hover:opacity-90 text-slate-900 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.3)] hover:scale-[1.02] active:scale-95"
+                    >
+                        <Building2 size={16} />
+                        Novo Licenciamento
+                    </button>
                     <div className="flex-1 min-w-[140px] glass p-3 lg:p-4 rounded-2xl border border-white/5 flex items-center gap-3 lg:gap-4">
                         <div className="p-2 lg:p-3 bg-primary/10 rounded-xl shrink-0">
                             <Building2 className="text-primary" size={18} />
@@ -589,6 +691,16 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                                                                 <Bell size={18} />
                                                             </button>
                                                             <button
+                                                                 onClick={(e) => {
+                                                                     e.stopPropagation();
+                                                                     setSelectedTenantForFeatures(tenant);
+                                                                 }}
+                                                                 className="p-2 rounded-xl text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
+                                                                 title="Ativar/Desativar Serviços"
+                                                             >
+                                                                 <Zap size={18} />
+                                                             </button>
+                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     toggleTenantStatus(tenant.id, tenant.is_active);
@@ -1103,8 +1215,207 @@ const MasterConsole: React.FC<MasterConsoleProps> = ({ onlineUsers = [] }) => {
                     </div>
                 </div>
             )}
+            {/* Modal de Gestão de Serviços */}
+            {selectedTenantForFeatures && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="glass w-full max-w-lg rounded-[2.5rem] border border-blue-500/30 overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-8 bg-blue-500/5 border-b border-white/5 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-blue-500/10 rounded-2xl">
+                                    <Cpu className="text-blue-400" size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-black text-xl uppercase italic">Módulos do Sistema</h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{selectedTenantForFeatures.name}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setSelectedTenantForFeatures(null)} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+                                <X size={20} className="text-slate-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-8 space-y-6">
+                            <p className="text-xs text-slate-400">Ative ou desative as abas laterais para este licenciamento. Itens desativados serão ocultados da interface do cliente.</p>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <FeatureToggle 
+                                    label="Automação" 
+                                    active={selectedTenantForFeatures.enabled_features?.automation !== false}
+                                    onChange={(val) => {
+                                        setSelectedTenantForFeatures({
+                                            ...selectedTenantForFeatures,
+                                            enabled_features: { ...selectedTenantForFeatures.enabled_features, automation: val }
+                                        });
+                                    }}
+                                />
+                                <FeatureToggle 
+                                    label="Pipeline (Carbans)" 
+                                    active={selectedTenantForFeatures.enabled_features?.pipeline !== false}
+                                    onChange={(val) => {
+                                        setSelectedTenantForFeatures({
+                                            ...selectedTenantForFeatures,
+                                            enabled_features: { ...selectedTenantForFeatures.enabled_features, pipeline: val }
+                                        });
+                                    }}
+                                />
+                                <FeatureToggle 
+                                    label="Extração" 
+                                    active={selectedTenantForFeatures.enabled_features?.discovery !== false}
+                                    onChange={(val) => {
+                                        setSelectedTenantForFeatures({
+                                            ...selectedTenantForFeatures,
+                                            enabled_features: { ...selectedTenantForFeatures.enabled_features, discovery: val }
+                                        });
+                                    }}
+                                />
+                                <FeatureToggle 
+                                    label="Laboratório" 
+                                    active={selectedTenantForFeatures.enabled_features?.lab !== false}
+                                    onChange={(val) => {
+                                        setSelectedTenantForFeatures({
+                                            ...selectedTenantForFeatures,
+                                            enabled_features: { ...selectedTenantForFeatures.enabled_features, lab: val }
+                                        });
+                                    }}
+                                />
+                                <FeatureToggle 
+                                    label="Enriquecidos" 
+                                    active={selectedTenantForFeatures.enabled_features?.enriched !== false}
+                                    onChange={(val) => {
+                                        setSelectedTenantForFeatures({
+                                            ...selectedTenantForFeatures,
+                                            enabled_features: { ...selectedTenantForFeatures.enabled_features, enriched: val }
+                                        });
+                                    }}
+                                />
+                                <FeatureToggle 
+                                    label="Monitor" 
+                                    active={selectedTenantForFeatures.enabled_features?.monitor !== false}
+                                    onChange={(val) => {
+                                        setSelectedTenantForFeatures({
+                                            ...selectedTenantForFeatures,
+                                            enabled_features: { ...selectedTenantForFeatures.enabled_features, monitor: val }
+                                        });
+                                    }}
+                                />
+                                <FeatureToggle 
+                                    label="Adm. Leads" 
+                                    active={selectedTenantForFeatures.enabled_features?.leadAdmin !== false}
+                                    onChange={(val) => {
+                                        setSelectedTenantForFeatures({
+                                            ...selectedTenantForFeatures,
+                                            enabled_features: { ...selectedTenantForFeatures.enabled_features, leadAdmin: val }
+                                        });
+                                    }}
+                                />
+                                <FeatureToggle 
+                                    label="Faturamento" 
+                                    active={selectedTenantForFeatures.enabled_features?.billing !== false}
+                                    onChange={(val) => {
+                                        setSelectedTenantForFeatures({
+                                            ...selectedTenantForFeatures,
+                                            enabled_features: { ...selectedTenantForFeatures.enabled_features, billing: val }
+                                        });
+                                    }}
+                                />
+                            </div>
+
+                            <button
+                                onClick={() => handleUpdateFeatures(selectedTenantForFeatures.id, selectedTenantForFeatures.enabled_features)}
+                                disabled={isUpdatingFeatures}
+                                className="w-full py-5 bg-blue-500 text-slate-900 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                            >
+                                {isUpdatingFeatures ? 'SALVANDO PROTOCOLO...' : 'APLICAR CONFIGURAÇÃO'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Modal de Novo Licenciamento */}
+            {showNewTenantModal && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="glass w-full max-w-lg rounded-[2.5rem] border border-primary/30 overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-8 bg-primary/5 border-b border-white/5 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                                    <Building2 size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-black text-xl uppercase italic">Ativar Empresa</h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-primary/70">Novo Cliente White Label</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowNewTenantModal(false)} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+                                <X size={24} className="text-slate-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-8 space-y-6">
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Nome Comercial</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ex: Agência Magnus"
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-primary transition-all"
+                                        value={newTenantData.name}
+                                        onChange={(e) => {
+                                            const name = e.target.value;
+                                            const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+                                            setNewTenantData({ ...newTenantData, name, slug });
+                                        }}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Slug da Sub-conta (ID Único)</label>
+                                    <div className="relative">
+                                        <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-mono">
+                                            app.leadflow.pro/
+                                        </div>
+                                        <input
+                                            type="text"
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-32 pr-6 text-primary font-mono text-xs outline-none focus:border-primary transition-all"
+                                            value={newTenantData.slug}
+                                            onChange={(e) => setNewTenantData({ ...newTenantData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                                        />
+                                    </div>
+                                    <p className="text-[9px] text-slate-600 px-2 leading-relaxed">Este slug define a URL de acesso e isola os dados do cliente.</p>
+                                </div>
+                            </div>
+
+                            <div className="p-5 bg-primary/10 border border-primary/20 rounded-2xl flex gap-4">
+                                <Info className="text-primary shrink-0" size={20} />
+                                <p className="text-[10px] text-slate-300 leading-relaxed font-medium">
+                                    Ao ativar, o sistema criará automaticamente a carteira de créditos e as permissões padrão. 
+                                    Você poderá convidar o administrador do cliente logo após a criação através da aba de usuários.
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={handleCreateTenant}
+                                disabled={isCreatingTenant || !newTenantData.name || !newTenantData.slug}
+                                className="w-full py-5 bg-primary text-slate-900 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                            >
+                                {isCreatingTenant ? 'CONFIGURANDO ECOSSISTEMA...' : 'ATIVAR LICENCIAMENTO'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
+
+const FeatureToggle: React.FC<{ label: string, active: boolean, onChange: (val: boolean) => void }> = ({ label, active, onChange }) => (
+    <div 
+        onClick={() => onChange(!active)}
+        className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${active ? 'bg-blue-500/10 border-blue-500/30' : 'bg-white/5 border-white/5 opacity-50'}`}
+    >
+        <span className={`text-[10px] font-black uppercase tracking-widest ${active ? 'text-blue-400' : 'text-slate-500'}`}>{label}</span>
+        <div className={`w-8 h-4 rounded-full relative transition-all ${active ? 'bg-blue-500' : 'bg-slate-700'}`}>
+            <div className={`absolute top-1 w-2 h-2 bg-white rounded-full transition-all ${active ? 'right-1' : 'left-1'}`}></div>
+        </div>
+    </div>
+);
 
 export default MasterConsole;
