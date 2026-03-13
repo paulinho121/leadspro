@@ -4,6 +4,10 @@
 -- ========================================================
 
 -- 1. CORREÇÃO DE TIPO: Ajustar deduct_tenant_credits para BIGINT
+-- Resolver ambiguidade de sobrecarga (PGRST203)
+DROP FUNCTION IF EXISTS deduct_tenant_credits(UUID, INT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS deduct_tenant_credits(UUID, BIGINT, TEXT, TEXT);
+
 CREATE OR REPLACE FUNCTION deduct_tenant_credits(
     p_tenant_id UUID,
     p_amount BIGINT, -- Mudado de INT para BIGINT para evitar overflow e mismatch

@@ -323,6 +323,11 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
         type: 'CREDITS',
         message: 'Você esgotou os créditos da sua assinatura. Adquira mais no seu painel ou aguarde a renovação mensal.'
       });
+    } else if (msg.includes('BILLING_RPC_ERROR')) {
+        setNeuralError({
+          type: 'GENERIC',
+          message: 'Erro no motor de faturamento (Ambiguidade detectada). Execute o script de correção SQL no painel do Supabase.'
+        });
     } else if (msg.includes('429') || msg.includes('rate limit') || msg.includes('quota')) {
       setNeuralError({
         type: 'API_LIMIT',

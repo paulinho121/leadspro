@@ -64,19 +64,17 @@ export class BillingService {
 
         if (error) {
             console.error('[Billing] Falha crítica ao deduzir créditos:', error);
-            if (error.message?.includes('invalid input syntax for type uuid')) {
-                console.error('[Billing] Tenant ID inválido detectado:', tenantId);
-            }
-            return false;
+            // Lançar erro real para evitar que o UI mostre "saldo esgotado" quando na verdade é erro de código
+            throw new Error(`BILLING_RPC_ERROR: ${error.message}`);
         }
 
         if (data === false) {
             console.warn(`[Billing] Saldo insuficiente para o tenant ${tenantId}. Necessário: ${amount}`);
-        } else {
-            console.log(`[BillingService] Créditos deduzidos com sucesso (${amount})`);
+            return false;
         }
 
-        return data === true;
+        console.log(`[BillingService] Créditos deduzidos com sucesso (${amount})`);
+        return true;
     }
 
     /**
