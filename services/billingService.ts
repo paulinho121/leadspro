@@ -55,7 +55,7 @@ export class BillingService {
             return false;
         }
 
-        const { data, error } = await supabase.rpc('billing_v3_final', {
+        const { data, error } = await supabase.rpc('deduct_tenant_credits', {
             p_tenant_id: tenantId,
             p_amount: Math.floor(amount),
             p_service: service,
