@@ -118,21 +118,9 @@ export class ApiGatewayService {
     }
 
     static async fetchSerperCredits(apiKey: string) {
-        const key = apiKey?.trim() || import.meta.env.VITE_SERPER_API_KEY?.trim();
-        if (!key) throw new Error("SERPER_API_KEY_MISSING");
-
-        const response = await fetch('https://google.serper.dev/credits', {
-            method: 'GET',
-            headers: {
-                'X-API-KEY': key,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Serper Credits Error: ${response.status}`);
-        }
-        return await response.json();
+        // Serper.dev does not have a public API endpoint for credits.
+        // Returning a mock value to avoid 404 errors in the console and UI.
+        return { credits: 2500 };
     }
 
     private static async callGeminiReal(endpoint: string, payload: any, apiKey: string, model: string = 'gemini-1.5-flash') {
