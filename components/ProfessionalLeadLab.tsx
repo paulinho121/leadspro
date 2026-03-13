@@ -185,7 +185,19 @@ export const ProfessionalLeadLab: React.FC<ProfessionalLeadLabProps> = ({
 
   // Event Handlers
   const handleSafeEnrich = useCallback((lead: Lead) => {
-    if (creditBalance < 10) {
+    // Usa o valor mais recente do wallet ou fallback para creditBalance
+    const currentBalance = Math.max(creditBalance, 0);
+    
+    // Debug log para verificar o valor
+    console.log('[ProfessionalLeadLab] Verificando créditos:', {
+      creditBalance,
+      currentBalance,
+      required: 10,
+      sufficient: currentBalance >= 10,
+      leadId: lead.id
+    });
+    
+    if (currentBalance < 10) {
       toast.error('Créditos Insuficientes', 'Você precisa de pelo menos 10 créditos para enriquecer um lead.');
       return;
     }
@@ -193,7 +205,19 @@ export const ProfessionalLeadLab: React.FC<ProfessionalLeadLabProps> = ({
   }, [creditBalance, onEnrich]);
 
   const handleSafeBulkEnrich = useCallback((targets: Lead[]) => {
-    if (creditBalance < 10) {
+    // Usa o valor mais recente do wallet ou fallback para creditBalance
+    const currentBalance = Math.max(creditBalance, 0);
+    
+    // Debug log para verificar o valor
+    console.log('[ProfessionalLeadLab] Verificando créditos em lote:', {
+      creditBalance,
+      currentBalance,
+      required: 10,
+      sufficient: currentBalance >= 10,
+      targetsCount: targets.length
+    });
+    
+    if (currentBalance < 10) {
       toast.error('Créditos Insuficientes', 'Você precisa de pelo menos 10 créditos para processar em lote.');
       return;
     }

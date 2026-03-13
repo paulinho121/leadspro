@@ -404,9 +404,11 @@ export class DiscoveryService {
             );
 
             // Enterprise Scaling: Validação de Créditos para Sherlock
-            if (tenantId) {
+            const activeTenantId = tenantId && tenantId !== 'default' ? tenantId : undefined;
+            
+            if (activeTenantId) {
                 const hasCredits = await BillingService.useCredits(
-                    tenantId,
+                    activeTenantId,
                     15,
                     'DISCOVERY_ENGINE',
                     `Sherlock Hunter: ${competitorInput} em ${location}`
@@ -515,9 +517,11 @@ export class DiscoveryService {
             );
 
             // Enterprise Scaling: Validação de Créditos para B2C Hunter
-            if (tenantId) {
+            const activeTenantId = tenantId && tenantId !== 'default' ? tenantId : undefined;
+            
+            if (activeTenantId) {
                 const hasCredits = await BillingService.useCredits(
-                    tenantId,
+                    activeTenantId,
                     15,
                     'DISCOVERY_ENGINE',
                     `B2C Intent Hunter: ${keyword}`

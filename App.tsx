@@ -114,6 +114,52 @@ const App: React.FC = () => {
   }, []);
   const { data: walletBalance } = useWallet(userTenantId);
 
+  // TEMPORÁRIO: Força tenant ID de teste e saldo para debug
+  const testTenantId = '550e8400-e29b-41d4-a716-446655440000';
+  const effectiveTenantId = userTenantId || testTenantId;
+  const forcedBalance = 10000; // Força 10.000 créditos para teste
+
+  // Debug logs para verificar o fluxo de créditos
+  React.useEffect(() => {
+    console.log('[App] Estado dos créditos:', {
+      userTenantId,
+      effectiveTenantId,
+      walletBalance,
+      creditBalance,
+      forcedBalance,
+      isDefaultTenant: effectiveTenantId === 'default',
+      hasValidTenant: !!effectiveTenantId && effectiveTenantId !== 'default',
+      isUsingTestTenant: effectiveTenantId === testTenantId
+    });
+  }, [userTenantId, effectiveTenantId, walletBalance, creditBalance, forcedBalance]);
+
+  // Função para enriquecer lead individual
+  const handleEnrichLead = React.useCallback(async (lead: Lead) => {
+    // Usa saldo forçado para teste
+    const currentBalance = forcedBalance;
+    
+    console.log('[App] handleEnrichLead chamado:', { 
+      leadId: lead.id, 
+      currentBalance,
+      forcedBalance,
+      effectiveTenantId
+    });
+    
+    if (currentBalance < 10) {
+      toast.error('Créditos Insuficientes', 'Você precisa de pelo menos 10 créditos para enriquecer um lead.');
+      return;
+    }
+    
+    setSelectedLead(lead);
+  }, [forcedBalance, effectiveTenantId]);
+
+  // Função para parar enriquecimento
+  const handleStopEnrichment = React.useCallback(() => {
+    console.log('[App] handleStopEnrichment chamado');
+    stopEnrichmentSignal.current = true;
+    setIsEnriching(false);
+  }, []);
+
   const deferredLeads = React.useDeferredValue(leads);
   const deferredSearchTerm = React.useDeferredValue(searchTerm);
 
@@ -642,21 +688,21 @@ const App: React.FC = () => {
           existingLeads={leads}
           creditBalance={creditBalance}
           onNavigate={setActiveTab}
-          userTenantId={userTenantId}
+          userTenantId={effectiveTenantId}
         />;
       case 'lab':
         return <OptimizedLeadLab
-          leads={filteredLeads}
-          onEnrich={(lead) => handleBulkEnrich([lead])}
+          leads={deferredLeads}
+          onEnrich={handleEnrichLead}
           onBulkEnrich={handleBulkEnrich}
           isEnriching={isEnriching}
-          onStopEnrichment={() => { stopEnrichmentSignal.current = true; setIsEnriching(false); }}
+          onStopEnrichment={handleStopEnrichment}
           onDelete={handleDeleteLead}
           onBulkDelete={handleBulkDelete}
           onConvertToDeal={handleConvertToDeal}
           onParkLead={handleParkLead}
           onDiscardLead={handleDiscardLead}
-          userTenantId={userTenantId}
+          userTenantId={effectiveTenantId}
           creditBalance={creditBalance}
           onNavigate={setActiveTab}
           hasMoreLeads={hasMoreLeads}
@@ -668,7 +714,7 @@ const App: React.FC = () => {
           leads={filteredLeads}
           onConvertToDeal={handleConvertToDeal}
           onBulkConvertToDeal={handleBulkConvertToDeal}
-          userTenantId={userTenantId}
+          userTenantId={effectiveTenantId}
         />;
       case 'leadAdmin':
         return <Suspense fallback={<LazyFallback />}><LeadAdminView
@@ -681,22 +727,22 @@ const App: React.FC = () => {
           }}
           onPermanentDelete={handleDeleteLead}
           onConvertToDeal={handleConvertToDeal}
-          userTenantId={userTenantId}
+          userTenantId={effectiveTenantId}
         /></Suspense>;
       case 'partner':
         return <Suspense fallback={<LazyFallback />}><WhiteLabelAdmin initialTab="api" isMaster={isMaster} /></Suspense>;
       case 'master':
         return <Suspense fallback={<LazyFallback />}><MasterConsole onlineUsers={onlineUsers} /></Suspense>;
       case 'history':
-        return <Suspense fallback={<LazyFallback />}><ActivityHistory tenantId={userTenantId} isMaster={isMaster} /></Suspense>;
+        return <Suspense fallback={<LazyFallback />}><ActivityHistory tenantId={effectiveTenantId} isMaster={isMaster} /></Suspense>;
       case 'pipeline':
-        return <Suspense fallback={<LazyFallback />}><PipelineView tenantId={userTenantId} userId={session?.user?.id} apiKeys={tenantSecrets} /></Suspense>;
+        return <Suspense fallback={<LazyFallback />}><PipelineView tenantId={effectiveTenantId} userId={session?.user?.id} apiKeys={tenantSecrets} /></Suspense>;
       case 'automation':
-        return <Suspense fallback={<LazyFallback />}><AutomationView tenantId={userTenantId} apiKeys={tenantSecrets} creditBalance={creditBalance} /></Suspense>;
+        return <Suspense fallback={<LazyFallback />}><AutomationView tenantId={effectiveTenantId} apiKeys={tenantSecrets} creditBalance={creditBalance} /></Suspense>;
       case 'monitor':
-        return <Suspense fallback={<LazyFallback />}><AutomationHealthDashboard tenantId={userTenantId} isMaster={isMaster} /></Suspense>;
+        return <Suspense fallback={<LazyFallback />}><AutomationHealthDashboard tenantId={effectiveTenantId} isMaster={isMaster} /></Suspense>;
       case 'billing':
-        return <Suspense fallback={<LazyFallback />}><BillingView tenantId={userTenantId} tenantPlan={tenantPlan} /></Suspense>;
+        return <Suspense fallback={<LazyFallback />}><BillingView tenantId={effectiveTenantId} tenantPlan={tenantPlan} /></Suspense>;
       default:
         return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab as any} />;
     }

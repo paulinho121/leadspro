@@ -11,13 +11,22 @@ export class BillingService {
      * Busca o saldo atual do Tenant
      */
     static async getBalance(tenantId: string): Promise<number> {
-        if (!tenantId || tenantId === 'default') return 0;
+        console.log('[BillingService] getBalance chamado com tenantId:', tenantId);
+        
+        if (!tenantId || tenantId === 'default') {
+            console.log('[BillingService] tenantId inválido ou default, retornando 0');
+            return 0;
+        }
 
+        console.log(`[BillingService] Buscando saldo para tenant ${tenantId}...`);
+        
         const { data, error } = await supabase
             .from('tenant_wallets')
             .select('credit_balance')
             .eq('tenant_id', tenantId)
             .maybeSingle();
+
+        console.log('[BillingService] Resultado da query:', { data, error });
 
         if (error) {
             console.error(`[Billing] Erro ao buscar saldo para tenant ${tenantId}:`, error);
@@ -28,7 +37,10 @@ export class BillingService {
             console.warn(`[Billing] Nenhuma carteira encontrada para o tenant ${tenantId}.`);
         }
 
-        return data?.credit_balance || 0;
+        const balance = data?.credit_balance || 0;
+        console.log(`[BillingService] Saldo final retornado: ${balance}`);
+        
+        return balance;
     }
 
     /**
@@ -36,7 +48,12 @@ export class BillingService {
      * Retorna true se houver saldo e o consumo for realizado
      */
     static async useCredits(tenantId: string, amount: number, service: string, description: string): Promise<boolean> {
-        if (!tenantId || tenantId === 'default') return false;
+        console.log(`[BillingService] useCredits: tenant=${tenantId}, amount=${amount}, service=${service}`);
+        
+        if (!tenantId || tenantId === 'default') {
+            console.warn('[BillingService] useCredits negado: tenantId inválido ou default');
+            return false;
+        }
 
         const { data, error } = await supabase.rpc('deduct_tenant_credits', {
             p_tenant_id: tenantId,
@@ -47,7 +64,6 @@ export class BillingService {
 
         if (error) {
             console.error('[Billing] Falha crítica ao deduzir créditos:', error);
-            // Se for erro de sintaxe (ex: UUID inválido), logar detalhes
             if (error.message?.includes('invalid input syntax for type uuid')) {
                 console.error('[Billing] Tenant ID inválido detectado:', tenantId);
             }
@@ -56,6 +72,8 @@ export class BillingService {
 
         if (data === false) {
             console.warn(`[Billing] Saldo insuficiente para o tenant ${tenantId}. Necessário: ${amount}`);
+        } else {
+            console.log(`[BillingService] Créditos deduzidos com sucesso (${amount})`);
         }
 
         return data === true;
