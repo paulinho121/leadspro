@@ -44,16 +44,21 @@
     }
   </script>
   <script>
-    // TEMPORARIAMENTE DESABILITADO - Reativar após debug
     // Bloqueio imediato para proteção de IP
-    // document.addEventListener('contextmenu', event => event.preventDefault());
-    // document.onkeydown = function (e) {
-    //   if (e.keyCode == 123) return false;
-    //   if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false;
-    //   if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) return false;
-    //   if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false;
-    //   if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
-    // };
+    document.addEventListener('contextmenu', event => event.preventDefault());
+    
+    document.onkeydown = function (e) {
+      // F12
+      if (e.keyCode === 123) return false;
+      // Ctrl+Shift+I (Inspecionar)
+      if (e.ctrlKey && e.shiftKey && e.keyCode === 'I'.charCodeAt(0)) return false;
+      // Ctrl+Shift+C (Inspecionar Elemento)
+      if (e.ctrlKey && e.shiftKey && e.keyCode === 'C'.charCodeAt(0)) return false;
+      // Ctrl+Shift+J (Console)
+      if (e.ctrlKey && e.shiftKey && e.keyCode === 'J'.charCodeAt(0)) return false;
+      // Ctrl+U (Ver código-fonte)
+      if (e.ctrlKey && e.keyCode === 'U'.charCodeAt(0)) return false;
+    };
   </script>
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap"
