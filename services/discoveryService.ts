@@ -161,7 +161,8 @@ export class DiscoveryService {
         try {
             // Ampliamos a busca para múltiplos diretórios grandes de CNPJ
             // Removendo aspas da keyword para permitir correspondências mais flexíveis (ex: CNAE parcial ou nome)
-            const query = `(site:cnpj.biz OR site:econodata.com.br OR site:casadosdados.com.br OR site:cnpj.rocks) ${keyword} ${location} CNPJ`;
+            // Removidos operadores `site:` excessivos que estouram o limite/trigger bloqueio do Serper.
+            const query = `${keyword} ${location} cnpj`;
 
             let searchResponse: any = await ApiGatewayService.callApi(
                 'google-search',
@@ -186,7 +187,7 @@ export class DiscoveryService {
             // Fallback: Se não encontrar nada nos diretórios específicos, tentamos uma busca aberta
             if (!searchResponse || !searchResponse.organic || searchResponse.organic.length === 0) {
                 console.log(`[CNPJ] Nenhum resultado nos diretórios. Tentando busca aberta...`);
-                const fallbackQuery = `${keyword} ${location} "CNPJ" empresas governamentais`;
+                const fallbackQuery = `${keyword} ${location} empresas`;
                 searchResponse = await ApiGatewayService.callApi(
                     'google-search',
                     'search',
