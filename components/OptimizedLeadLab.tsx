@@ -250,6 +250,14 @@ export const OptimizedLeadLab: React.FC<OptimizedLeadLabProps> = ({
     }
   }, [isEnriching]);
 
+  const handleOpenFilters = useCallback(() => {
+    if (window.innerWidth < 1024) {
+      setIsMobileFilterOpen(true);
+    } else {
+      setIsFilterPanelOpen(true);
+    }
+  }, []);
+
   return (
     <div className="flex flex-col h-full bg-background text-slate-200 animate-fade-in">
       
@@ -271,15 +279,6 @@ export const OptimizedLeadLab: React.FC<OptimizedLeadLabProps> = ({
               </p>
             </div>
           </div>
-
-          {/* Mobile Filter Toggle */}
-          <button
-            onClick={() => setIsMobileFilterOpen(true)}
-            className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-primary/10 text-primary rounded-xl border border-primary/20 font-medium text-sm"
-          >
-            <Filter size={16} />
-            Filtros
-          </button>
         </div>
 
         {/* Metrics Panel */}
@@ -302,25 +301,17 @@ export const OptimizedLeadLab: React.FC<OptimizedLeadLabProps> = ({
         />
 
         {/* Search and Filter Bar */}
-        <div className="px-6 space-y-3">
+        <div className="px-6 space-y-4">
           <OptimizedSearchBar
             value={searchTerm}
             onChange={setSearchTerm}
-            onFilterClick={() => setIsFilterPanelOpen(true)}
+            onFilterClick={handleOpenFilters}
             placeholder="Buscar leads por nome, local ou nicho..."
             resultCount={filteredLeads.length}
             totalCount={leads.length}
           />
 
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-            {/* Result Count (Professional View) */}
-            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary/5 border border-primary/10 shrink-0">
-              <span className="text-[10px] font-black text-primary uppercase tracking-widest">{filteredLeads.length}</span>
-              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">de</span>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{leads.length}</span>
-              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest ml-1">leads</span>
-            </div>
-
             {/* Quick Filters */}
             <QuickFilters
               filters={[
@@ -342,19 +333,6 @@ export const OptimizedLeadLab: React.FC<OptimizedLeadLabProps> = ({
             />
           </div>
         </div>
-
-        {/* Quick Filter Bar (Desktop) */}
-        <QuickFilterBar
-          activeFilters={{
-            status: selectedStatus,
-            niche: selectedNiche,
-            location: selectedLocation
-          }}
-          onClearFilter={handleClearFilter}
-          onOpenPanel={() => setIsFilterPanelOpen(true)}
-          resultCount={filteredLeads.length}
-          totalCount={leads.length}
-        />
       </div>
 
       {/* Main Content */}

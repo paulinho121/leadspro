@@ -114,34 +114,16 @@ const App: React.FC = () => {
   }, []);
   const { data: walletBalance } = useWallet(userTenantId);
 
-  // TEMPORÁRIO: Força tenant ID de teste e saldo para debug
-  const testTenantId = '550e8400-e29b-41d4-a716-446655440000';
-  const effectiveTenantId = userTenantId || testTenantId;
-  const forcedBalance = 10000; // Força 10.000 créditos para teste
-
-  // Debug logs para verificar o fluxo de créditos
-  React.useEffect(() => {
-    console.log('[App] Estado dos créditos:', {
-      userTenantId,
-      effectiveTenantId,
-      walletBalance,
-      creditBalance,
-      forcedBalance,
-      isDefaultTenant: effectiveTenantId === 'default',
-      hasValidTenant: !!effectiveTenantId && effectiveTenantId !== 'default',
-      isUsingTestTenant: effectiveTenantId === testTenantId
-    });
-  }, [userTenantId, effectiveTenantId, walletBalance, creditBalance, forcedBalance]);
+  const effectiveTenantId = userTenantId;
 
   // Função para enriquecer lead individual
   const handleEnrichLead = React.useCallback(async (lead: Lead) => {
-    // Usa saldo forçado para teste
-    const currentBalance = forcedBalance;
+    // Usa saldo real
+    const currentBalance = creditBalance;
     
     console.log('[App] handleEnrichLead chamado:', { 
       leadId: lead.id, 
       currentBalance,
-      forcedBalance,
       effectiveTenantId
     });
     
@@ -151,7 +133,7 @@ const App: React.FC = () => {
     }
     
     setSelectedLead(lead);
-  }, [forcedBalance, effectiveTenantId]);
+  }, [creditBalance, effectiveTenantId]);
 
   // Função para parar enriquecimento
   const handleStopEnrichment = React.useCallback(() => {
