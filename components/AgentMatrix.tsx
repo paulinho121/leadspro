@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   BrainCircuit, 
   Send, 
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from './Toast';
 import { DiscoveryService } from '../services/discoveryService';
+import { useStore } from '../store/useStore';
 
 interface AgentMatrixProps {
   userTenantId: string;
@@ -55,6 +57,10 @@ export const AgentMatrix: React.FC<AgentMatrixProps> = ({ userTenantId, apiKeys,
     ticket: ''
   });
   const [activeSubTab, setActiveSubTab] = useState<'chat' | 'config' | 'picoclaw'>('chat');
+  const [isCommandsOpen, setIsCommandsOpen] = useState(false);
+  
+  const { creditBalance } = useStore();
+  const queryClient = useQueryClient();
   
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -113,6 +119,9 @@ export const AgentMatrix: React.FC<AgentMatrixProps> = ({ userTenantId, apiKeys,
       if (results.length > 0 && onLeadsCaptured) {
         onLeadsCaptured(results);
       }
+
+      // Atualizar saldo de créditos imediatamente após o consumo
+      queryClient.invalidateQueries({ queryKey: ['wallet', userTenantId] });
     } catch (error: any) {
       console.error('[AgentMatrix] Discovery Error:', error);
       toast.error('Erro no Protocolo', 'Não foi possível completar a varredura neural. Verifique sua conexão ou créditos.');
@@ -149,12 +158,43 @@ export const AgentMatrix: React.FC<AgentMatrixProps> = ({ userTenantId, apiKeys,
       const reply: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Estou processando sua solicitação com base nos dados reais do mercado. Deseja que eu execute a varredura automática agora ou que eu refine o perfil do cliente ideal primeiro?',
+        content: input.includes('varredura') 
+          ? 'Entendido. Iniciando varredura neural agora. Por favor, aguarde a conclusão do protocolo...'
+          : 'Estou processando sua solicitação com base nos dados reais do mercado. Deseja que eu execute a varredura automática agora ou que eu refine o perfil do cliente ideal primeiro?',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, reply]);
       setIsProcessing(false);
+      
+      // Se for um comando de varredura vindo de quick command, podemos engajar o protocolo automaticamente
+      if (input.toLowerCase().includes('varredura')) {
+        // Opcional: Auto-start scan logic here
+      }
     }, 1500);
+  };
+
+  const handleQuickCommand = (cmd: string) => {
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: cmd,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, newMessage]);
+    setIsProcessing(true);
+    
+    // Simulação de resposta imediata para comandos rápidos
+    setTimeout(() => {
+      const reply: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `Protocolo "${cmd}" reconhecido. Ativando módulos neurais de resposta rápida...`,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, reply]);
+      setIsProcessing(false);
+    }, 1000);
   };
 
   return (
@@ -450,43 +490,60 @@ export const AgentMatrix: React.FC<AgentMatrixProps> = ({ userTenantId, apiKeys,
             <div className="pt-4 border-t border-white/5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Credit Usage</span>
-                <span className="text-[9px] font-black text-primary uppercase">Critical</span>
+                {creditBalance < 1000 ? (
+                  <span className="text-[9px] font-black text-primary uppercase animate-pulse">Critical</span>
+                ) : (
+                  <span className="text-[9px] font-black text-emerald-500 uppercase">Operational</span>
+                )}
               </div>
               <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                <div className="w-[85%] h-full bg-gradient-to-r from-primary to-secondary"></div>
+                <div 
+                  className={`h-full transition-all duration-1000 ease-out bg-gradient-to-r ${creditBalance < 1000 ? 'from-primary to-rose-500' : 'from-emerald-500 to-primary'}`}
+                  style={{ 
+                    width: `${Math.min(100, Math.max(5, creditBalance < 1000 ? 85 + (1000 - creditBalance) / 100 : (1 - (creditBalance / 1000000)) * 100))}%` 
+                  }}
+                ></div>
               </div>
             </div>
           </div>
 
-          <div className="glass rounded-[2rem] p-6 border-white/5 flex-1 relative overflow-hidden group">
+          <div className={`glass rounded-[2rem] p-6 border-white/5 flex flex-col relative overflow-hidden group transition-all duration-500 ${isCommandsOpen ? 'flex-1' : 'flex-none'}`}>
             <div className="absolute top-0 right-0 p-4">
               <Settings size={16} className="text-slate-600 hover:text-white cursor-pointer transition-colors" />
             </div>
             
-            <div className="bg-primary/10 w-12 h-12 rounded-2xl flex items-center justify-center mb-6 border border-primary/20">
-              <Command size={24} className="text-primary" />
+            <div 
+              className="flex items-center gap-4 cursor-pointer"
+              onClick={() => setIsCommandsOpen(!isCommandsOpen)}
+            >
+              <div className="bg-primary/10 w-12 h-12 rounded-2xl flex items-center justify-center border border-primary/20 shrink-0">
+                <Command size={24} className="text-primary" />
+              </div>
+              <div>
+                <h4 className="text-white font-black uppercase tracking-widest text-sm leading-none mb-1">Quick Commands</h4>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Sugestões baseadas no seu perfil</p>
+              </div>
             </div>
 
-            <h4 className="text-white font-black uppercase tracking-widest text-sm mb-2">Quick Commands</h4>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-6">Sugestões baseadas no seu perfil</p>
-
-            <div className="space-y-3">
-              {[
-                'Sugira abordagens frias',
-                'Analise o ticket médio',
-                'Gere follow-up WhatsApp',
-                'Inicie varredura SP'
-              ].map((cmd, idx) => (
-                <div 
-                  key={idx} 
-                  className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:border-primary/30 cursor-pointer group/item transition-all"
-                  onClick={() => setInput(cmd)}
-                >
-                  <span className="text-[10px] text-slate-400 group-hover/item:text-white uppercase font-bold transition-colors">{cmd}</span>
-                  <ChevronRight size={14} className="text-slate-700 group-hover/item:text-primary transition-all" />
-                </div>
-              ))}
-            </div>
+            {isCommandsOpen && (
+              <div className="space-y-3 mt-6 animate-in slide-in-from-top-4 duration-500">
+                {[
+                  'Sugira abordagens frias',
+                  'Analise o ticket médio',
+                  'Gere follow-up WhatsApp',
+                  'Inicie varredura SP'
+                ].map((cmd, idx) => (
+                  <div 
+                    key={idx} 
+                    className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:border-primary/30 cursor-pointer group/item transition-all"
+                    onClick={() => handleQuickCommand(cmd)}
+                  >
+                    <span className="text-[10px] text-slate-400 group-hover/item:text-white uppercase font-bold transition-colors">{cmd}</span>
+                    <ChevronRight size={14} className="text-slate-700 group-hover/item:text-primary transition-all" />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
