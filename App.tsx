@@ -48,6 +48,7 @@ const NotificationsList = lazyWithRetry(() => import('./components/Notifications
 const BillingView = lazyWithRetry(() => import('./components/BillingView'));
 const AutomationHealthDashboard = lazyWithRetry(() => import('./components/AutomationHealthDashboard'));
 const LeadAdminView = lazyWithRetry(() => import('./components/LeadAdminView'));
+const AgentMatrix = lazyWithRetry(() => import('./components/AgentMatrix'));
 import { ToastContainer, registerToastFn, toast } from './components/Toast';
 import { DiscoveryService } from './services/discoveryService';
 import { useTheme } from './components/ThemeProvider';
@@ -725,6 +726,8 @@ const App: React.FC = () => {
         return <Suspense fallback={<LazyFallback />}><AutomationHealthDashboard tenantId={effectiveTenantId} isMaster={isMaster} /></Suspense>;
       case 'billing':
         return <Suspense fallback={<LazyFallback />}><BillingView tenantId={effectiveTenantId} tenantPlan={tenantPlan} /></Suspense>;
+      case 'agent':
+        return <Suspense fallback={<LazyFallback />}><AgentMatrix userTenantId={effectiveTenantId} apiKeys={tenantSecrets} /></Suspense>;
       default:
         return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab as any} />;
     }
@@ -802,6 +805,7 @@ const App: React.FC = () => {
         </div>
 
         <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto custom-scrollbar">
+          <NavItem icon={<BrainCircuit size={20} className="text-primary" />} label={I18nService.t('Agente Matrix')} active={activeTab === 'agent'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('agent'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
           <NavItem icon={<LayoutDashboard size={20} />} label={I18nService.t('Dashboard')} active={activeTab === 'dashboard'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('dashboard'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
           
           {config.enabledFeatures?.discovery !== false && (
@@ -1026,6 +1030,7 @@ const App: React.FC = () => {
               {activeTab === 'partner' && I18nService.t('Branding')}
               {activeTab === 'master' && I18nService.t('Master')}
               {activeTab === 'history' && I18nService.t('Histórico')}
+              {activeTab === 'agent' && I18nService.t('Agente Matrix')}
             </h2>
           </div>
 

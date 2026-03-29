@@ -22,6 +22,7 @@ export const translations: Translations = {
     'Histórico': { pt: 'Histórico', en: 'History', es: 'Historial' },
     'Master': { pt: 'Master', en: 'Master', es: 'Maestro' },
     'Suporte': { pt: 'Suporte', en: 'Support', es: 'Soporte' },
+    'Agente Matrix': { pt: 'Agente Matrix', en: 'Agent Matrix', es: 'Agente Matrix' },
     
     // Actions & Buttons
     'Salvar Alterações': { pt: 'Salvar Alterações', en: 'Save Changes', es: 'Guardar Cambios' },
