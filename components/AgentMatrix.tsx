@@ -25,6 +25,7 @@ import { DiscoveryService } from '../services/discoveryService';
 interface AgentMatrixProps {
   userTenantId: string;
   apiKeys?: any;
+  onLeadsCaptured?: (leads: any[]) => void;
 }
 
 interface Message {
@@ -36,7 +37,7 @@ interface Message {
   tableData?: any[];
 }
 
-export const AgentMatrix: React.FC<AgentMatrixProps> = ({ userTenantId, apiKeys }) => {
+export const AgentMatrix: React.FC<AgentMatrixProps> = ({ userTenantId, apiKeys, onLeadsCaptured }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -80,24 +81,52 @@ export const AgentMatrix: React.FC<AgentMatrixProps> = ({ userTenantId, apiKeys 
     };
     setMessages(prev => [...prev, userMsg]);
 
-    // Simulação de processamento inteligente
-    setTimeout(() => {
+    // Call real discovery engine
+    try {
+      const results = await DiscoveryService.performDeepScan(
+        params.nicho, 
+        params.cidade, 
+        userTenantId, 
+        apiKeys
+      );
+
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `Entendido. Ativando o protocolo de prospecção para "${params.nicho}" em "${params.cidade}". Vou aplicar os 10 passos obrigatórios, incluindo detecção de dores e automação de follow-up. Abaixo está a visão estratégica inicial:`,
+        content: results.length > 0 
+          ? `Varredura neural concluída. Identifiquei ${results.length} oportunidades de alta conversão em ${params.cidade}. Abaixo está a visão estratégica detalhada:`
+          : `Varredura concluída, mas não identifiquei novos leads com os critérios "SNIPER" em ${params.cidade} agora. Deseja ampliar o raio de busca ou tentar um nicho relacionado?`,
         timestamp: new Date(),
-        isTable: true,
-        tableData: [
-          { Empresa: 'Carregando...', Segmento: params.nicho, Cidade: params.cidade, Potencial: 'Monitorando...', Estrategia: 'Neural' },
-          { Empresa: 'Carregando...', Segmento: params.nicho, Cidade: params.cidade, Potencial: 'Monitorando...', Estrategia: 'Neural' },
-          { Empresa: 'Carregando...', Segmento: params.nicho, Cidade: params.cidade, Potencial: 'Monitorando...', Estrategia: 'Neural' },
-        ]
+        isTable: results.length > 0,
+        tableData: results.map(lead => ({
+          Empresa: lead.name,
+          Segmento: lead.industry || params.nicho,
+          Cidade: lead.location || params.cidade,
+          Potencial: lead.details?.rating ? `${lead.details.rating}/5.0` : 'ALTO',
+          Estrategia: 'Neural'
+        }))
       };
       setMessages(prev => [...prev, assistantMsg]);
+      toast.success('Protocolo Concluído', `Encontrados ${results.length} leads qualificados.`);
+
+      // Sincronizar com o Laboratório se houver resultados
+      if (results.length > 0 && onLeadsCaptured) {
+        onLeadsCaptured(results);
+      }
+    } catch (error: any) {
+      console.error('[AgentMatrix] Discovery Error:', error);
+      toast.error('Erro no Protocolo', 'Não foi possível completar a varredura neural. Verifique sua conexão ou créditos.');
+      
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'Houve uma falha na sincronização neural. Certifique-se de que suas chaves de API estão ativas ou tente novamente em alguns instantes.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
       setIsProcessing(false);
-      toast.success('Protocolo Iniciado', 'Aguardando sincronização com o Maps Sniper...');
-    }, 2000);
+    }
   };
 
   const handleSendMessage = (e: React.FormEvent) => {

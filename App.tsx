@@ -727,7 +727,7 @@ const App: React.FC = () => {
       case 'billing':
         return <Suspense fallback={<LazyFallback />}><BillingView tenantId={effectiveTenantId} tenantPlan={tenantPlan} /></Suspense>;
       case 'agent':
-        return <Suspense fallback={<LazyFallback />}><AgentMatrix userTenantId={effectiveTenantId} apiKeys={tenantSecrets} /></Suspense>;
+        return <Suspense fallback={<LazyFallback />}><AgentMatrix userTenantId={effectiveTenantId} apiKeys={tenantSecrets} onLeadsCaptured={handleAddLeads} /></Suspense>;
       default:
         return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab as any} />;
     }
