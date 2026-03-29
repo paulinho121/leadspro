@@ -5,7 +5,7 @@ import { ToastMessage } from '../components/Toast';
 
 interface AppState {
     // UI State (persisted)
-    activeTab: 'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched' | 'master' | 'history' | 'pipeline' | 'automation' | 'billing' | 'monitor' | 'leadAdmin' | 'agent';
+    activeTab: 'dashboard' | 'discovery' | 'lab' | 'partner' | 'enriched' | 'master' | 'history' | 'pipeline' | 'automation' | 'billing' | 'monitor' | 'leadAdmin' | 'agent' | 'landing';
     isSidebarOpen: boolean;
 
     // Account State

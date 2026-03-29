@@ -3,7 +3,7 @@ import {
   Bell, LayoutDashboard, Search, Database, Rocket, TrendingUp,
   Megaphone, ShieldCheck, Menu, X, LogOut, BrainCircuit, Activity,
   HelpCircle, AlertTriangle, ScrollText, Cpu, ChevronRight, BarChart3,
-  Send as SendIcon, CheckCircle, Info, DollarSign as MoneyIcon, Archive, LifeBuoy, MessageCircle, ArrowUpRight
+  Send as SendIcon, CheckCircle, Info, DollarSign as MoneyIcon, Archive, LifeBuoy, MessageCircle, ArrowUpRight, Globe
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import TermsModal from './components/TermsModal';
@@ -13,6 +13,7 @@ import { OptimizedLeadLab } from './components/OptimizedLeadLab';
 import EnrichedLeadsView from './components/EnrichedLeadsView';
 import EnrichmentModal from './components/EnrichmentModal';
 import LoginPage from './components/LoginPage';
+import LandingPage from './components/LandingPage';
 import SecurityGuard from './components/SecurityGuard';
 // Heavy components loaded lazily to avoid blocking first-paint
 // Helper para carregamento resiliente de módulos (evita erro de cache em novas versões)
@@ -98,6 +99,7 @@ const App: React.FC = () => {
   const [isRecovering, setIsRecovering] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSupport, setShowSupport] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
   const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
   const [supportForm, setSupportForm] = useState({ subject: '', message: '', category: 'technical' });
   const [tenantSecrets, setTenantSecrets] = useState<TenantSecrets>({});
@@ -347,6 +349,7 @@ const App: React.FC = () => {
       setSession(s);
       if (s) {
         handleAuthCheck(s);
+        setShowLogin(false); // Reset login view when authenticated
         if (event === 'SIGNED_IN') {
           ActivityService.log(userTenantId, s.user.id, 'LOGIN', 'Usuário autenticado.');
         }
@@ -728,6 +731,8 @@ const App: React.FC = () => {
         return <Suspense fallback={<LazyFallback />}><BillingView tenantId={effectiveTenantId} tenantPlan={tenantPlan} /></Suspense>;
       case 'agent':
         return <Suspense fallback={<LazyFallback />}><AgentMatrix userTenantId={effectiveTenantId} apiKeys={tenantSecrets} onLeadsCaptured={handleAddLeads} /></Suspense>;
+      case 'landing':
+        return <LandingPage onGoToLogin={() => setActiveTab('dashboard')} />;
       default:
         return <BentoDashboard leads={filteredLeads} onEnrich={() => setActiveTab('lab')} onNavigate={setActiveTab as any} />;
     }
@@ -751,7 +756,10 @@ const App: React.FC = () => {
   }
 
   if (!session || isRecovering) {
-    return <LoginPage onLoginSuccess={setSession} isRecoveringPassword={isRecovering} onPasswordReset={() => setIsRecovering(false)} />;
+    if (showLogin || isRecovering) {
+      return <LoginPage onLoginSuccess={setSession} isRecoveringPassword={isRecovering} onPasswordReset={() => setIsRecovering(false)} />;
+    }
+    return <LandingPage onGoToLogin={() => setShowLogin(true)} />;
   }
 
   const needsOnboarding = session?.user && !session.user.user_metadata?.company_name;
@@ -846,6 +854,7 @@ const App: React.FC = () => {
             <div className="h-px bg-slate-200 dark:bg-white/10 mx-4 mb-4"></div>
           </div>
 
+          <NavItem icon={<Globe size={20} className="text-secondary" />} label="Landing Page" active={activeTab === 'landing'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('landing'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
           <NavItem icon={<ShieldCheck size={20} />} label={I18nService.t('Branding')} active={activeTab === 'partner'} expanded={isSidebarOpen} primaryColor={config.colors.primary} onClick={() => { setActiveTab('partner'); if (window.innerWidth < 768) setSidebarOpen(false); }} />
 
           {isMaster && (
