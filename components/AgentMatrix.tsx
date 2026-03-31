@@ -23,6 +23,7 @@ import {
 import { toast } from './Toast';
 import { DiscoveryService } from '../services/discoveryService';
 import { useStore } from '../store/useStore';
+import { PicoClawService } from '../services/picoClawService';
 
 interface AgentMatrixProps {
   userTenantId: string;
@@ -138,7 +139,7 @@ export const AgentMatrix: React.FC<AgentMatrixProps> = ({ userTenantId, apiKeys,
     }
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
 
@@ -150,27 +151,27 @@ export const AgentMatrix: React.FC<AgentMatrixProps> = ({ userTenantId, apiKeys,
     };
 
     setMessages(prev => [...prev, newMessage]);
+    const userInput = input;
     setInput('');
     setIsProcessing(true);
 
-    // Simulação de resposta da IA
-    setTimeout(() => {
+    try {
+      const response = await PicoClawService.chat(userTenantId, userInput, apiKeys);
+      
       const reply: Message = {
-        id: (Date.now() + 1).toString(),
+        id: Date.now().toString(),
         role: 'assistant',
-        content: input.includes('varredura') 
-          ? 'Entendido. Iniciando varredura neural agora. Por favor, aguarde a conclusão do protocolo...'
-          : 'Estou processando sua solicitação com base nos dados reais do mercado. Deseja que eu execute a varredura automática agora ou que eu refine o perfil do cliente ideal primeiro?',
+        content: response,
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, reply]);
-      setIsProcessing(false);
       
-      // Se for um comando de varredura vindo de quick command, podemos engajar o protocolo automaticamente
-      if (input.toLowerCase().includes('varredura')) {
-        // Opcional: Auto-start scan logic here
-      }
-    }, 1500);
+      setMessages(prev => [...prev, reply]);
+    } catch (error) {
+      console.error('[AgentMatrix] Chat integration failed:', error);
+      toast.error('Erro de Comunicação', 'Não consegui me conectar com a Matriz Neural agora.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleQuickCommand = (cmd: string) => {

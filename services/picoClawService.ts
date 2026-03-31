@@ -8,6 +8,9 @@
 
 import { supabase } from '../lib/supabase';
 import { DiscoveryService } from './discoveryService';
+import { GeminiService } from './geminiService';
+import { getPicoClawPrompt } from './picoClawPrompts';
+import { ApiGatewayService } from './apiGatewayService';
 
 export interface PicoClawCommand {
   intent: 'EXTRACT_MAPS' | 'EXTRACT_CNPJ' | 'ENRICH_LEAD' | 'GET_STATS' | 'NOTIFY_USER';
@@ -81,6 +84,55 @@ export class PicoClawService {
       bridgeStatus: this.status,
       lastSync: new Date().toISOString()
     };
+  }
+
+  /**
+   * Processes a direct chat message from the user using PicoClaw's persona
+   */
+  static async chat(tenantId: string, message: string, apiKeys?: any) {
+    console.log(`[PicoClaw] Processing chat for tenant: ${tenantId}`);
+    
+    // 1. Gather Operational Context
+    const stats = await this.getPlatformStats(tenantId);
+    
+    // 2. Gather Recent Activity (for Churn Detection)
+    const { data: recentActivity } = await supabase
+      .from('activity_logs')
+      .select('action, details, created_at')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    const context = `
+      - Total de Leads: ${stats.totalLeads}
+      - Status da Conexão: ${stats.bridgeStatus}
+      - Atividades Recentes: ${JSON.stringify(recentActivity || [])}
+      - Timestamp Atual: ${new Date().toISOString()}
+    `;
+
+    // 3. Build Prompt and Call AI
+    const systemPrompt = getPicoClawPrompt(context);
+    
+    try {
+      const response = await ApiGatewayService.callApi<string>(
+        'gemini',
+        'custom-prompt',
+        { prompt: systemPrompt + `\n\nUsuário diz: "${message}"` },
+        { apiKeys, useCache: false }
+      );
+
+      // Log the interaction
+      await supabase.from('activity_logs').insert([{
+        tenant_id: tenantId,
+        action: 'PICOCLAW_CHAT',
+        details: `Mensagem: ${message.substring(0, 50)}...`
+      }]);
+
+      return response.replace(/```json|```/g, '').trim();
+    } catch (error) {
+      console.error('[PicoClaw] Chat failed:', error);
+      return "Estou com uma pequena instabilidade na minha matriz neural, mas posso ajudar você com a busca de leads agora mesmo. O que você precisa?";
+    }
   }
 
   /**
