@@ -57,8 +57,19 @@ export const AgentMatrix: React.FC<AgentMatrixProps> = ({ userTenantId, apiKeys,
     icp: '',
     ticket: ''
   });
-  const [activeSubTab, setActiveSubTab] = useState<'chat' | 'config' | 'picoclaw'>('chat');
+  const [activeSubTab, setActiveSubTab] = useState<'chat' | 'config' | 'picoclaw' | 'scripts'>('chat');
   const [isCommandsOpen, setIsCommandsOpen] = useState(false);
+  const [bridgeStatus, setBridgeStatus] = useState<'CONNECTED' | 'DISCONNECTED' | 'SYNCING'>(PicoClawService.getBridgeStatus());
+  const [lastSync, setLastSync] = useState<string | null>(null);
+  const [showDocs, setShowDocs] = useState(false);
+  const [suggestedScripts, setSuggestedScripts] = useState<{id: string, title: string, content: string, type: string}[]>([
+    {
+      id: '1',
+      title: 'Abordagem Odonto Sniper (Frio)',
+      type: 'WhatsApp',
+      content: 'Olá, [Nome do Dono]! Vi que sua clínica em [Bairro] tem tido uma excelente avaliação no Google. Notei um ponto na sua presença digital que pode estar fazendo você perder agendamentos para concorrentes próximos. Faz sentido conversarmos 2 min sobre como resolver isso?'
+    }
+  ]);
   
   const { creditBalance } = useStore();
   const queryClient = useQueryClient();
@@ -174,6 +185,23 @@ export const AgentMatrix: React.FC<AgentMatrixProps> = ({ userTenantId, apiKeys,
     }
   };
 
+  const handleActivateBridge = async () => {
+    setIsProcessing(true);
+    try {
+      await PicoClawService.initializeBridge(userTenantId, (status) => {
+        setBridgeStatus(status as any);
+        if (status === 'CONNECTED') {
+          setLastSync(new Date().toLocaleTimeString());
+          toast.success('Ponte Ativada', 'O Agente PicoClaw agora tem controle total da Matriz.');
+        }
+      });
+    } catch (error) {
+      toast.error('Falha de Conexão', 'Não foi possível estabelecer a ponte neural.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleQuickCommand = (cmd: string) => {
     const newMessage: Message = {
       id: Date.now().toString(),
@@ -233,6 +261,12 @@ export const AgentMatrix: React.FC<AgentMatrixProps> = ({ userTenantId, apiKeys,
             className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'picoclaw' ? 'bg-primary text-slate-900' : 'text-slate-500 hover:text-white'}`}
           >
             PicoClaw_Bridge
+          </button>
+          <button 
+            onClick={() => setActiveSubTab('scripts')}
+            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'scripts' ? 'bg-primary text-slate-900' : 'text-slate-500 hover:text-white'}`}
+          >
+            Scripts_Neural
           </button>
         </div>
       </div>
@@ -428,41 +462,127 @@ export const AgentMatrix: React.FC<AgentMatrixProps> = ({ userTenantId, apiKeys,
                 </div>
               </div>
             </div>
+          ) : activeSubTab === 'scripts' ? (
+            <div className="flex-1 glass rounded-[2.5rem] border-white/5 p-8 overflow-y-auto space-y-6 custom-scrollbar">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-2xl font-black text-white uppercase tracking-tight">Script Center</h3>
+                <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[8px] font-black text-primary uppercase">IA-Generated</div>
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                {suggestedScripts.map(script => (
+                  <div key={script.id} className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4 hover:border-primary/30 transition-all group animate-in slide-in-from-bottom-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="text-white font-bold">{script.title}</h4>
+                        <span className="text-[10px] text-slate-500 uppercase font-black">{script.type} Protocol</span>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(script.content);
+                          toast.success('Copiado', 'Script copiado para a área de transferência.');
+                        }}
+                        className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-slate-900 transition-all"
+                      >
+                        <Command size={14} />
+                      </button>
+                    </div>
+                    <p className="text-sm text-slate-400 italic leading-relaxed">"{script.content}"</p>
+                    <div className="pt-4 border-t border-white/5 flex gap-4">
+                      <div className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase">
+                        <Zap size={12} className="text-primary" /> Gatilho: Autoridade
+                      </div>
+                      <div className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase">
+                        <Target size={12} className="text-secondary" /> Foco: Agendamento
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
-            <div className="flex-1 glass rounded-[2.5rem] border-white/5 p-8 flex flex-col items-center justify-center text-center space-y-10 group">
+            <div className="flex-1 glass rounded-[2.5rem] border-white/5 p-8 flex flex-col items-center justify-center text-center space-y-10 group relative overflow-hidden">
               <div className="relative">
-                <div className="absolute inset-0 bg-primary/20 blur-[80px] rounded-full group-hover:bg-primary/30 transition-all duration-1000"></div>
-                <Cpu className="text-primary w-24 h-24 lg:w-32 lg:h-32 mb-4 animate-neural relative z-10" />
+                <div className={`absolute inset-0 blur-[80px] rounded-full transition-all duration-1000 ${bridgeStatus === 'CONNECTED' ? 'bg-emerald-500/20' : 'bg-primary/20'}`}></div>
+                <Cpu className={`w-24 h-24 lg:w-32 lg:h-32 mb-4 relative z-10 transition-colors ${bridgeStatus === 'CONNECTED' ? 'text-emerald-500 animate-pulse' : 'text-primary'}`} />
               </div>
               
-              <div className="max-w-xl space-y-6">
+              <div className="max-w-xl space-y-6 relative z-10">
                 <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Gateway PicoClaw</h3>
-                <p className="text-slate-400 leading-relaxed">
-                  Habilite o controle total do LeadMatrix via agentes externos. O PicoClaw é um framework ultra-leve que permite automações complexas em dispositivos de borda.
+                <p className="text-slate-400 leading-relaxed text-sm">
+                  O PicoClaw está pronto para assumir o controle estratégico. Ative a ponte para permitir que o agente realize automações, enriquecimento e monitoramento de churn de forma autônoma.
                 </p>
                 
                 <div className="bg-black/50 p-6 rounded-3xl border border-white/10 text-left font-mono text-[10px] space-y-2">
-                  <div className="text-emerald-500 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                    STATUS: READY_FOR_CONNECTION
+                  <div className={`flex items-center gap-2 font-bold ${
+                    bridgeStatus === 'CONNECTED' ? 'text-emerald-500' : 
+                    bridgeStatus === 'SYNCING' ? 'text-primary animate-pulse' : 'text-slate-500'
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${
+                      bridgeStatus === 'CONNECTED' ? 'bg-emerald-500' : 
+                      bridgeStatus === 'SYNCING' ? 'bg-primary' : 'bg-slate-700'
+                    }`}></div>
+                    STATUS: {bridgeStatus}
+                  </div>
+                  <div className="text-slate-500 flex justify-between">
+                    <span>ENDPOINT: <span className="text-primary italic">/api/v1/picoclaw/bridge</span></span>
+                    {lastSync && <span className="text-[8px]">LAST_SYNC: {lastSync}</span>}
                   </div>
                   <div className="text-slate-500">
-                    ENDPOINT: <span className="text-primary">/api/v1/picoclaw/bridge</span>
-                  </div>
-                  <div className="text-slate-500">
-                    PROTOCOL: <span className="text-secondary">SECURE_WEBSOCKET</span>
+                    PROTOCOL: <span className="text-secondary">SECURE_NEURAL_WEBSOCKET</span>
                   </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <button className="flex-1 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white font-black text-xs uppercase tracking-widest transition-all">
-                    Visualizar Docs
+                  <button 
+                    onClick={() => setShowDocs(!showDocs)}
+                    className="flex-1 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white font-black text-xs uppercase tracking-widest transition-all"
+                  >
+                    {showDocs ? 'Ocultar Manifest' : 'Visualizar Docs'}
                   </button>
-                  <button className="flex-1 py-4 bg-primary text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">
-                    Ativar Integração
+                  <button 
+                    onClick={handleActivateBridge}
+                    disabled={bridgeStatus === 'CONNECTED' || isProcessing}
+                    className={`flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 ${
+                      bridgeStatus === 'CONNECTED' ? 'bg-emerald-500 text-slate-900 shadow-emerald-500/20' : 'bg-primary text-slate-900 shadow-primary/20'
+                    }`}
+                  >
+                    {bridgeStatus === 'CONNECTED' ? 'Ponte Ativa' : bridgeStatus === 'SYNCING' ? 'Sincronizando...' : 'Ativar Integração'}
                   </button>
                 </div>
               </div>
+
+              {/* Technical Manifest Overlay */}
+              {showDocs && (
+                <div className="absolute inset-0 bg-slate-950/95 z-50 p-8 overflow-y-auto animate-in fade-in zoom-in duration-300">
+                  <div className="max-w-2xl mx-auto space-y-6 text-left">
+                    <div className="flex justify-between items-center border-b border-white/10 pb-4">
+                      <h4 className="text-xl font-black text-white uppercase tracking-widest">Neural Manifest v2.4</h4>
+                      <button onClick={() => setShowDocs(false)} className="text-slate-500 hover:text-white">✕</button>
+                    </div>
+                    <div className="space-y-4 font-mono text-[11px] text-slate-400">
+                      <p className="text-primary font-bold"># PicoClaw Agent Protocol</p>
+                      <p>O framework PicoClaw opera em camada 7 utilizando WebSockets para push imediato de leads e enriquecimento assíncrono.</p>
+                      <div className="bg-black/50 p-4 rounded-xl border border-white/5 space-y-1">
+                        <p className="text-emerald-500">GET /api/v1/picoclaw/leads</p>
+                        <p className="text-emerald-500">POST /api/v1/picoclaw/enrich</p>
+                        <p className="text-secondary">LISTEN agent-command::* (Realtime)</p>
+                      </div>
+                      <p className="font-bold text-white uppercase">Capacidades Ativas:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Detecção Proativa de Churn via Logs de Atividade</li>
+                        <li>Enriquecimento em Massa via Matriz Neural</li>
+                        <li>Sincronização de CRM Externa (White Label Ready)</li>
+                      </ul>
+                    </div>
+                    <button 
+                      onClick={() => setShowDocs(false)}
+                      className="w-full py-4 bg-primary text-slate-900 rounded-xl font-black text-xs uppercase tracking-widest"
+                    >
+                      Entendido, Fechar Manifest
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

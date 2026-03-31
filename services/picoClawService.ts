@@ -19,17 +19,31 @@ export interface PicoClawCommand {
 }
 
 export class PicoClawService {
+  private static currentChannel: any = null;
   private static status: 'CONNECTED' | 'DISCONNECTED' | 'SYNCING' = 'DISCONNECTED';
+
+  /**
+   * Returns current bridge status
+   */
+  static getBridgeStatus() {
+    return this.status;
+  }
 
   /**
    * Initializes the bridge and sets up listeners for incoming agent commands
    */
-  static async initializeBridge(tenantId: string) {
+  static async initializeBridge(tenantId: string, onStatusChange?: (status: string) => void) {
+    if (this.currentChannel) {
+      console.log('[PicoClaw] Bridge already active. Reusing channel.');
+      return this.currentChannel;
+    }
+
     console.log(`[PicoClaw] Initializing bridge for tenant: ${tenantId}`);
     this.status = 'SYNCING';
+    onStatusChange?.('SYNCING');
     
-    // In a real scenario, we would subscribe to a specific Realtime channel or an Edge Function
-    const channel = supabase
+    // Configurar canal de broadcast neural via Supabase
+    this.currentChannel = supabase
       .channel(`picoclaw-bridge-${tenantId}`)
       .on('broadcast', { event: 'agent-command' }, (payload) => {
         this.handleIncomingCommand(tenantId, payload.payload as PicoClawCommand);
@@ -37,11 +51,16 @@ export class PicoClawService {
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           this.status = 'CONNECTED';
+          onStatusChange?.('CONNECTED');
           console.log('[PicoClaw] Neural Bridge established.');
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          this.status = 'DISCONNECTED';
+          onStatusChange?.('DISCONNECTED');
+          this.currentChannel = null;
         }
       });
 
-    return channel;
+    return this.currentChannel;
   }
 
   /**
