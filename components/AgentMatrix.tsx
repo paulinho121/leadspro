@@ -202,28 +202,64 @@ export const AgentMatrix: React.FC<AgentMatrixProps> = ({ userTenantId, apiKeys,
     }
   };
 
-  const handleQuickCommand = (cmd: string) => {
+  const handleQuickCommand = async (cmd: string) => {
+    // 1. Log user message
     const newMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: cmd,
       timestamp: new Date()
     };
-
     setMessages(prev => [...prev, newMessage]);
     setIsProcessing(true);
-    
-    // Simulação de resposta imediata para comandos rápidos
-    setTimeout(() => {
+
+    // 2. Specialized Logic
+    if (cmd.includes('Inicie varredura SP')) {
+      setParams({
+        nicho: 'Clínicas Odontológicas',
+        cidade: 'São Paulo/SP',
+        icp: 'Donos de Clínicas Premium',
+        ticket: 'R$ 5.000,00+'
+      });
+      toast.success('Parâmetros Carregados', 'O Agente configurou a matriz para o mercado odontológico em SP.');
+      
+      // Auto-trigger prospecting after a brief delay for UI sync
+      setTimeout(() => {
+        handleStartProspecting();
+      }, 500);
+      return;
+    }
+
+    // 3. AI Direct Chat for other commands
+    try {
+      const response = await PicoClawService.chat(userTenantId, cmd, apiKeys);
+      
       const reply: Message = {
-        id: (Date.now() + 1).toString(),
+        id: Date.now().toString(),
         role: 'assistant',
-        content: `Protocolo "${cmd}" reconhecido. Ativando módulos neurais de resposta rápida...`,
+        content: response,
         timestamp: new Date()
       };
+      
       setMessages(prev => [...prev, reply]);
+
+      // If it looks like a script, inject into Script Center
+      if (response.includes('"') || response.length > 50) {
+        setSuggestedScripts(prev => [
+          {
+            id: Date.now().toString(),
+            title: `Sugestão: ${cmd.substring(0, 20)}...`,
+            type: cmd.includes('WhatsApp') ? 'WhatsApp' : 'Cold Mail',
+            content: response.substring(0, 300) // Truncate if too long for preview
+          },
+          ...prev
+        ]);
+      }
+    } catch (error) {
+      toast.error('Erro Neural', 'O PicoClaw não conseguiu processar este comando agora.');
+    } finally {
       setIsProcessing(false);
-    }, 1000);
+    }
   };
 
   return (
