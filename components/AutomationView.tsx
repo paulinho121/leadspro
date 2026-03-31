@@ -123,8 +123,8 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys, cred
                         <Cpu className="text-primary" size={32} />
                     </div>
                     <div>
-                        <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase italic leading-none">Centrifugação de Receita</h2>
-                        <p className="text-slate-500 font-mono text-[10px] uppercase tracking-[0.4em] mt-2 italic shadow-sm">Growth_Decision_Center_v5.Neural</p>
+                        <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase italic leading-none">Centro de Crescimento</h2>
+                        <p className="text-slate-500 font-mono text-[10px] uppercase tracking-[0.4em] mt-2 italic shadow-sm">Revenue_Intelligence_Center_v5</p>
                     </div>
                 </div>
 
@@ -134,7 +134,7 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys, cred
                         onClick={() => setActiveTab('campaigns')}
                         className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all italic ${activeTab === 'campaigns' ? 'bg-primary text-slate-900 shadow-xl shadow-primary/20 scale-[1.02]' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
                     >
-                        <Zap size={14} /> Disparos
+                        <Zap size={14} /> Campanhas
                     </button>
                     <button
                         onClick={() => setActiveTab('rules')}
@@ -186,8 +186,8 @@ const AutomationView: React.FC<AutomationViewProps> = ({ tenantId, apiKeys, cred
                             <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 blur-[120px] -mr-48 -mt-48 pointer-events-none transition-all group-hover:bg-primary/10"></div>
 
                             <div className="relative z-10 text-center md:text-left">
-                                <h3 className="text-3xl font-black text-white tracking-tighter italic uppercase mb-2">Abordagem Neural</h3>
-                                <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.3em italic leading-relaxed max-w-md">Flujos sequenciais de alta conversão para escala massiva de aquisição.</p>
+                                <h3 className="text-3xl font-black text-white tracking-tighter italic uppercase mb-2">Estratégia de Outreach</h3>
+                                <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.3em italic leading-relaxed max-w-md">Fluxos sequenciais de alta conversão para escala massiva de aquisição.</p>
                             </div>
 
                             <button

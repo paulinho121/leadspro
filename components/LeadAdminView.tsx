@@ -109,8 +109,8 @@ const LeadAdminView: React.FC<LeadAdminViewProps> = ({
     };
 
     const tabs: { id: AdminTab; label: string; icon: React.ReactNode; count: number; color: string }[] = [
-        { id: 'parked', label: 'Leads em Pausa', icon: <Archive size={16} />, count: parkedLeads.length, color: 'amber' },
-        { id: 'discarded', label: 'Descartados', icon: <Ban size={16} />, count: discardedLeads.length, color: 'red' },
+        { id: 'parked', label: 'Arquivados', icon: <Archive size={16} />, count: parkedLeads.length, color: 'amber' },
+        { id: 'discarded', label: 'Lixeira', icon: <Ban size={16} />, count: discardedLeads.length, color: 'red' },
     ];
 
     return (
@@ -122,13 +122,13 @@ const LeadAdminView: React.FC<LeadAdminViewProps> = ({
                     <div className="w-1.5 h-12 bg-amber-500 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.5)] hidden xl:block" />
                     <div>
                         <h2 className="text-2xl lg:text-3xl font-black text-white tracking-tighter flex items-center gap-4">
-                            Administração de Leads
+                            Gestão de Arquivos
                             <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20 uppercase tracking-[0.2em]">
                                 {parkedLeads.length + discardedLeads.length} total
                             </span>
                         </h2>
                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1 opacity-60">
-                            Gerencie leads pausados, descartados e restaurações
+                            Central de leads arquivados, descartados e restauração de dados
                         </p>
                     </div>
                 </div>
@@ -181,7 +181,7 @@ const LeadAdminView: React.FC<LeadAdminViewProps> = ({
                                 disabled={isProcessing}
                                 className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-primary/20"
                             >
-                                <RotateCcw size={12} /> Restaurar ao Lab
+                                <RotateCcw size={12} /> Retornar ao Lab
                             </button>
                             <button
                                 onClick={() => updateStatus([...selectedIds], LeadStatus.DISCARDED)}
@@ -206,7 +206,7 @@ const LeadAdminView: React.FC<LeadAdminViewProps> = ({
                                 disabled={isProcessing}
                                 className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-red-600/20"
                             >
-                                <Trash2 size={12} /> Excluir Permanente
+                                <Trash2 size={12} /> Limpar Permanentemente
                             </button>
                         </>
                     )}
@@ -352,7 +352,7 @@ const LeadAdminCard: React.FC<LeadAdminCardProps> = ({
                     ? 'bg-amber-500/20 text-amber-400'
                     : 'bg-red-500/20 text-red-400'
                 }`}>
-                {activeSection === 'parked' ? '⏸ Em Pausa' : '✕ Descartado'}
+                {activeSection === 'parked' ? '⏸ Arquivado' : '✕ Lixeira'}
             </div>
 
             {/* Header row */}

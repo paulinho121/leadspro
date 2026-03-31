@@ -350,7 +350,7 @@ export const EnrichedLeadsView: React.FC<EnrichedLeadsViewProps> = ({ leads, onC
                                 <Rocket size={24} />
                             </div>
                             <h2 className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tighter italic uppercase">
-                                Gerenciamento Comercial
+                                Central de Exportação
                             </h2>
                         </div>
                         <p className="text-slate-400 max-w-xl text-sm lg:text-base font-medium leading-relaxed">

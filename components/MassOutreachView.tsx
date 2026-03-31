@@ -355,7 +355,7 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId, creditBal
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                             <span className="text-[9px] text-slate-500 uppercase tracking-widest">Sistema Operacional Ativo</span>
                         </div>
-                        <h2 className="text-2xl font-black text-white tracking-tight uppercase italic leading-none">Painel de Disparos</h2>
+                        <h2 className="text-2xl font-black text-white tracking-tight uppercase italic leading-none">Monitor de Operações</h2>
                     </div>
                 </div>
 
@@ -504,7 +504,7 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId, creditBal
                                     {editingCampaignId ? 'Editar Campanha' : 'Nova Campanha'}
                                 </h3>
                                 <p className="text-[9px] text-slate-500 font-mono tracking-widest mt-2 uppercase">
-                                    {editingCampaignId ? 'Ajustar Configurações de Disparo' : 'Configuração de Disparo Massivo'}
+                                    {editingCampaignId ? 'Ajustar Configurações de Operação' : 'Configuração de Campanha de Outreach'}
                                 </p>
                             </div>
                             <button
@@ -714,12 +714,12 @@ const MassOutreachView: React.FC<MassOutreachViewProps> = ({ tenantId, creditBal
                                     {isSaving ? (
                                         <>
                                             <RotateCcw size={16} className="animate-spin" />
-                                            <span>Processando leads...</span>
+                                            <span>Preparando Campanha...</span>
                                         </>
                                     ) : (
                                         <>
                                             {editingCampaignId ? <Edit2 size={16} /> : <Send size={16} />}
-                                            <span>{editingCampaignId ? 'Salvar Alterações' : 'Iniciar Disparos'}</span>
+                                            <span>{editingCampaignId ? 'Salvar Alterações' : 'Ativar Operação'}</span>
                                         </>
                                     )}
                                 </button>

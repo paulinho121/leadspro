@@ -368,11 +368,11 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
                   <span className="text-[8px] lg:text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] font-mono">V2.0</span>
                 </div>
                 <h3 className="text-xl lg:text-3xl font-black text-white tracking-tight leading-tight">
-                  {mode === 'MAPS' ? 'Neural Extractor' :
-                    mode === 'CNPJ' ? 'Empresas Gov' :
-                      mode === 'SHERLOCK' ? 'Hunter Protocol' :
-                        mode === 'IMPORT' ? 'Excel Import' :
-                          'Deep Enrich'}
+                  {mode === 'MAPS' ? 'Radar de Prospecção' :
+                    mode === 'CNPJ' ? 'Varredura de Empresas' :
+                      mode === 'SHERLOCK' ? 'Scanner de Mercado' :
+                        mode === 'IMPORT' ? 'Importação de Base' :
+                          'Análise Preditiva'}
                 </h3>
               </div>
             </div>
@@ -418,31 +418,31 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
                 active={mode === 'MAPS'}
                 onClick={() => { setMode('MAPS'); console.log('[LeadDiscovery] Mode changed to MAPS'); }}
                 disabled={isScanning}
-                label="Neural Discovery"
+                label="Radar Neural"
               />
               <ModeButton
                 active={mode === 'CNPJ'}
                 onClick={() => { setMode('CNPJ'); console.log('[LeadDiscovery] Mode changed to CNPJ'); }}
                 disabled={isScanning}
-                label="CNPJ em Massa"
+                label="Varredura CNPJ"
               />
               <ModeButton
                 active={mode === 'SHERLOCK'}
                 onClick={() => { setMode('SHERLOCK'); console.log('[LeadDiscovery] Mode changed to SHERLOCK'); }}
                 disabled={isScanning}
-                label="Espionagem"
+                label="Inteligência Social"
               />
               <ModeButton
                 active={mode === 'ENRICH'}
                 onClick={() => { setMode('ENRICH'); console.log('[LeadDiscovery] Mode changed to ENRICH'); }}
                 disabled={isScanning}
-                label="Enriquecer Individual"
+                label="Análise de Perfil"
               />
               <ModeButton
                 active={mode === 'IMPORT'}
                 onClick={() => { setMode('IMPORT'); console.log('[LeadDiscovery] Mode changed to IMPORT'); }}
                 disabled={isScanning}
-                label="Importar Excel"
+                label="Importar Dados"
               />
             </div>
           </div>

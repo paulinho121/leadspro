@@ -376,8 +376,8 @@ const LeadLab: React.FC<LeadLabProps> = ({
                 <Database size={20} />
               </div>
               <div className="flex flex-col">
-                <h3 className="text-[14px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] leading-tight mb-1">Gaveta Core</h3>
-                <span className="text-[9px] text-slate-500 font-black uppercase tracking-[0.25em]">Filtros & Rotas</span>
+                <h3 className="text-[14px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] leading-tight mb-1">Base Central</h3>
+                <span className="text-[9px] text-slate-500 font-black uppercase tracking-[0.25em]">Filtros & Estados</span>
               </div>
             </div>
 
@@ -385,7 +385,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
               <div className="space-y-4 pb-6">
                 <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.25em] ml-2 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse shadow-[0_0_8px_var(--color-primary)]"></span>
-                  Status do Processo
+                  Estágio de Qualificação
                 </label>
                 <div className="flex flex-col gap-1">
                   <FilterOption
@@ -399,7 +399,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                   <FilterOption
                     active={filterStatus === LeadStatus.NEW}
                     onClick={() => setFilterStatus(LeadStatus.NEW)}
-                    label="Descobertas (Raw)"
+                    label="Novas Descobertas"
                     count={leads.filter(l => l.status === LeadStatus.NEW).length}
                     variant="secondary"
                     icon={<Zap size={14} />}
@@ -407,7 +407,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                   <FilterOption
                     active={filterStatus === LeadStatus.ENRICHED}
                     onClick={() => setFilterStatus(LeadStatus.ENRICHED)}
-                    label="Qualificados (IA)"
+                    label="Dados Enriquecidos"
                     count={leads.filter(l => l.status === LeadStatus.ENRICHED).length}
                     variant="accent"
                     icon={<Sparkles size={14} />}
@@ -614,13 +614,12 @@ const LeadLab: React.FC<LeadLabProps> = ({
             </button>
             <div>
               <h2 className="text-xl md:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tighter flex flex-wrap items-center gap-2 md:gap-4">
-                Laboratório
+                Laboratório de Leads
                 <span className="text-[10px] font-mono text-primary bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 uppercase tracking-[0.2em] shadow-inner">
                   {filteredLeads.length}/{labLeads.length}
-                  {totalCount > labLeads.length && <span className="text-slate-500 ml-1">({totalCount})</span>}
                 </span>
               </h2>
-              <p className="hidden md:block text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.2em] mt-2">Ambiente Científico de Extração e Refinamento Neural</p>
+              <p className="hidden md:block text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.2em] mt-2">Refinamento de Dados e Inteligência Preditiva</p>
             </div>
           </div>
 
@@ -738,7 +737,7 @@ const LeadLab: React.FC<LeadLabProps> = ({
                     <Search className="w-12 h-12 text-slate-600" />
                   </div>
                 </div>
-                <h4 className="text-2xl font-black text-white mb-3 tracking-tighter">Vazio Tático</h4>
+                <h4 className="text-2xl font-black text-white mb-3 tracking-tighter">Base Vazia</h4>
                 <p className="text-slate-500 text-[11px] font-bold uppercase tracking-[0.2em] max-w-sm leading-relaxed">Nenhum registro encontrado nos parâmetros de filtro atuais</p>
               </div>
             )}
