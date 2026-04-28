@@ -43,7 +43,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
   userTenantId
 }) => {
   const { config } = useBranding();
-  const [mode, setMode] = useState<'MAPS' | 'CNPJ' | 'ENRICH' | 'SHERLOCK' | 'IMPORT'>('MAPS');
+  const [mode, setMode] = useState<'MAPS' | 'CNPJ' | 'ENRICH' | 'IMPORT'>('MAPS');
   const [filters, setFilters] = useState<SearchFilters>({
     keyword: '',
     location: '',
@@ -228,10 +228,6 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
 
             if (searchMode === 'MAPS') {
               results = await DiscoveryService.performDeepScan(cleanKeyword, currentSearchLocation, effectiveTenantId, apiKeys, currentPage);
-            } else if (searchMode === 'SHERLOCK') {
-              // No modo SHERLOCK, usamos o campo "industry" para passar as palavras-chave de contexto
-              const contextKeywords = filters.industry;
-              results = await DiscoveryService.performCompetitorScan(cleanKeyword, currentSearchLocation, effectiveTenantId, apiKeys, currentPage, contextKeywords);
             } else {
               results = await DiscoveryService.performCNPJScan(cleanKeyword, currentSearchLocation, effectiveTenantId, apiKeys, currentPage);
             }
@@ -357,7 +353,6 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
                 <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover/neural:opacity-100 transition-opacity ${isScanning ? 'opacity-100 animate-spin-slow' : ''}`}></div>
                 {mode === 'MAPS' ? <Cpu size={24} className={isScanning ? 'animate-neural' : ''} /> :
                   mode === 'CNPJ' ? <Building2 size={24} /> :
-                    mode === 'SHERLOCK' ? <Crosshair size={24} className={isScanning ? 'animate-pulse text-red-500' : ''} /> :
                       mode === 'IMPORT' ? <FileDown size={24} /> :
                         <BrainCircuit size={24} className={isScanning ? 'animate-neural' : ''} />}
               </div>
@@ -370,8 +365,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
                 <h3 className="text-xl lg:text-3xl font-black text-white tracking-tight leading-tight">
                   {mode === 'MAPS' ? 'Radar de Prospecção' :
                     mode === 'CNPJ' ? 'Varredura de Empresas' :
-                      mode === 'SHERLOCK' ? 'Scanner de Mercado' :
-                        mode === 'IMPORT' ? 'Importação de Base' :
+                      mode === 'IMPORT' ? 'Importação de Base' :
                           'Análise Preditiva'}
                 </h3>
               </div>
@@ -382,9 +376,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
                 ? 'Localize leads qualificados com inteligência neural profunda.'
                 : mode === 'CNPJ'
                   ? 'Acesse a base oficial de empresas brasileiras com alta precisão.'
-                  : mode === 'SHERLOCK'
-                    ? 'Localize clientes insatisfeitos e interações públicas.'
-                    : mode === 'IMPORT'
+                  : mode === 'IMPORT'
                       ? 'Adicione sua própria base de contatos para prospecção em massa.'
                       : 'Enriqueça dados de um CNPJ individual com IA.'}
             </p>
@@ -393,7 +385,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
           {/* Stats Group */}
           <div className="flex items-center gap-4 shrink-0 w-full lg:w-auto justify-between lg:justify-start">
             <div className="flex flex-row lg:flex-col gap-2">
-              <FeatureTag icon={<Atom size={12} className="animate-spin-slow" />} label={mode === 'MAPS' ? 'Geo' : mode === 'SHERLOCK' ? 'Social' : 'Public'} />
+              <FeatureTag icon={<Atom size={12} className="animate-spin-slow" />} label={mode === 'MAPS' ? 'Geo' : 'Public'} />
               <FeatureTag icon={<Zap size={12} className="animate-pulse" />} label={mode === 'ENRICH' ? 'Direct' : 'Deep'} />
             </div>
             <div className="w-[120px] lg:w-[140px] h-[60px] lg:h-[70px]">
@@ -426,12 +418,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
                 disabled={isScanning}
                 label="Varredura CNPJ"
               />
-              <ModeButton
-                active={mode === 'SHERLOCK'}
-                onClick={() => { setMode('SHERLOCK'); console.log('[LeadDiscovery] Mode changed to SHERLOCK'); }}
-                disabled={isScanning}
-                label="Inteligência Social"
-              />
+
               <ModeButton
                 active={mode === 'ENRICH'}
                 onClick={() => { setMode('ENRICH'); console.log('[LeadDiscovery] Mode changed to ENRICH'); }}
@@ -476,12 +463,12 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
 
                 <div className="space-y-1">
                   <h3 className="text-xl focus font-black text-white tracking-widest uppercase">
-                    {mode === 'MAPS' ? 'VARREDURA NEURAL ATIVA' : mode === 'CNPJ' ? 'CONSULTA GOVERNAMENTAL ATIVA' : 'BUSCA AVANÇADA ATIVA'}
+                    {mode === 'MAPS' ? 'VARREDURA NEURAL ATIVA' : 'CONSULTA GOVERNAMENTAL ATIVA'}
                   </h3>
                   <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
                     ALVO: <span className="text-white">{filters.keyword}</span>
                   </p>
-                  {(mode === 'MAPS' || mode === 'CNPJ' || mode === 'SHERLOCK') && filters.location && (
+                  {(mode === 'MAPS' || mode === 'CNPJ') && filters.location && (
                     <p className="text-sm font-bold text-emerald-400 uppercase tracking-widest flex items-center justify-center gap-2 mt-2">
                       <MapPin size={14} />
                       {selectedCity === 'TODO_ESTADO' ? `VARRENDO O ESTADO INTEIRO (${selectedState})` : filters.location}
@@ -510,7 +497,6 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">
                   {mode === 'MAPS' ? 'Nicho ou Atividade' :
                     mode === 'CNPJ' ? 'CNAE ou Palavra-chave' :
-                      mode === 'SHERLOCK' ? 'Alvo / Concorrente' :
                         'Número do CNPJ'}
                 </label>
                 <div className="relative group/input">
@@ -518,7 +504,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
                   <input
                     type="text"
                     disabled={isScanning}
-                    placeholder={mode === 'MAPS' ? "Ex: Academias, Restaurantes..." : mode === 'CNPJ' ? "Ex: 6201-5/00 ou Tecnologia" : mode === 'SHERLOCK' ? "Link Instagram/Site ou Nome do Concorrente" : "00.000.000/0001-00"}
+                    placeholder={mode === 'MAPS' ? "Ex: Academias, Restaurantes..." : mode === 'CNPJ' ? "Ex: 6201-5/00 ou Tecnologia" : "00.000.000/0001-00"}
                     className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white text-lg focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
                     value={filters.keyword}
                     onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
@@ -526,24 +512,9 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
                 </div>
               </div>
 
-              {mode === 'SHERLOCK' && (
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Filtro de Contexto (Opcional)</label>
-                  <div className="relative group/input">
-                    <Filter className="absolute left-5 top-5 w-5 h-5 text-slate-600 group-focus-within/input:text-primary transition-colors" />
-                    <input
-                      type="text"
-                      disabled={isScanning}
-                      placeholder="Ex: insatisfeito, reclamação, preço, defeito..."
-                      className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white text-lg focus:ring-2 focus:ring-primary/40 focus:bg-white/10 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
-                      value={filters.industry}
-                      onChange={(e) => setFilters({ ...filters, industry: e.target.value })}
-                    />
-                  </div>
-                </div>
-              )}
 
-              {mode !== 'ENRICH' && mode !== 'SHERLOCK' && (
+
+              {mode !== 'ENRICH' && (
                 <>
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Estado (UF)</label>
@@ -659,8 +630,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
                           Custo Estimado: <span className="text-white font-black">
                             {mode === 'MAPS' ? Math.ceil((filters.limit || 50) / 20) * 5 :
-                              mode === 'CNPJ' ? Math.ceil((filters.limit || 50) / 15) * 10 :
-                                mode === 'SHERLOCK' ? Math.ceil((filters.limit || 50) / 15) * 15 : 10} Créditos
+                              mode === 'CNPJ' ? Math.ceil((filters.limit || 50) / 15) * 10 : 10} Créditos
                           </span>
                         </span>
                       </div>
@@ -685,7 +655,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
               ) : (
                 <button
                   onClick={handleSearch}
-                  disabled={(!isScanning && (!filters.keyword || (mode !== 'ENRICH' && mode !== 'SHERLOCK' && !filters.location))) || (isScanning && stopSignal)}
+                  disabled={(!isScanning && (!filters.keyword || (mode !== 'ENRICH' && !filters.location))) || (isScanning && stopSignal)}
                   className={`w-full py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 transition-all relative overflow-hidden group/btn shadow-2xl ${isScanning
                     ? 'bg-red-600 text-white border-red-400 shadow-red-900/40 hover:bg-red-700 animate-pulse'
                     : 'bg-primary text-slate-900 shadow-primary/20 hover:scale-[1.01] active:scale-[0.99]'
@@ -710,7 +680,7 @@ const LeadDiscovery: React.FC<LeadDiscoveryProps> = ({
                         <span>{mode === 'ENRICH' ? 'ENRIQUECER CNPJ AGORA' : 'INICIAR NEURAL EXTRACTION'}</span>
                         {filters.limit > 0 && mode !== 'ENRICH' && (
                           <span className="text-[10px] font-bold text-slate-900/70 tracking-widest mt-1">
-                            COMPROMETERÁ ATÉ {mode === 'MAPS' ? Math.ceil((filters.limit || 50) / 20) * 5 : mode === 'CNPJ' ? Math.ceil((filters.limit || 50) / 15) * 10 : Math.ceil((filters.limit || 50) / 15) * 15} CRÉDITOS
+                            COMPROMETERÁ ATÉ {mode === 'MAPS' ? Math.ceil((filters.limit || 50) / 20) * 5 : mode === 'CNPJ' ? Math.ceil((filters.limit || 50) / 15) * 10 : 10} CRÉDITOS
                           </span>
                         )}
                       </span>

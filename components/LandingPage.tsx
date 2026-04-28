@@ -181,10 +181,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
               <div className="bg-emerald-500/20 w-16 h-16 rounded-[1.5rem] flex items-center justify-center border border-emerald-500/30 group-hover:scale-110 transition-all shadow-xl shadow-emerald-500/10">
                 <Target size={32} className="text-emerald-500" />
               </div>
-              <h3 className="text-2xl font-black text-white uppercase italic tracking-tight">Sherlock Mode</h3>
-              <p className="text-slate-400 leading-relaxed font-medium">Espionagem estratégica. Encontre clientes insatisfeitos com seus concorrentes monitorando menções e reclamações públicas.</p>
+              <h3 className="text-2xl font-black text-white uppercase italic tracking-tight">IA Preditiva</h3>
+              <p className="text-slate-400 leading-relaxed font-medium">Antecipe necessidades. Nossa inteligência analisa padrões de mercado para identificar empresas em momento de compra ou expansão.</p>
               <ul className="space-y-3 pt-4">
-                 {['Monitor de Concorrência', 'Aviso de Intenção', 'Lead Sniper'].map((item, i) => (
+                 {['Padrões de Compra', 'Sinais de Intenção', 'Lead Sniper'].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                     <CheckCircle2 size={14} className="text-emerald-500" /> {item}
                   </li>
