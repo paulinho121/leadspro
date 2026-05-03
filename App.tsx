@@ -20,16 +20,16 @@ import SecurityGuard from './components/SecurityGuard';
 const lazyWithRetry = (importFn: () => Promise<any>) =>
   lazy(async () => {
     const pageHasBeenForceRefreshed = JSON.parse(
-      window.localStorage.getItem('page-has-been-force-refreshed') || 'false'
+      window.sessionStorage.getItem('page-has-been-force-refreshed') || 'false'
     );
 
     try {
       const component = await importFn();
-      window.localStorage.setItem('page-has-been-force-refreshed', 'false');
+      window.sessionStorage.setItem('page-has-been-force-refreshed', 'false');
       return component;
     } catch (error) {
       if (!pageHasBeenForceRefreshed) {
-        window.localStorage.setItem('page-has-been-force-refreshed', 'true');
+        window.sessionStorage.setItem('page-has-been-force-refreshed', 'true');
         window.location.reload();
         // Resolve com uma promessa que nunca termina para evitar erro no React.lazy 
         // enquanto a página está recarregando
